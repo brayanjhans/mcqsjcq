@@ -85,7 +85,7 @@ export const SalesAreaChart: React.FC<SalesAreaChartProps> = ({ data = [], selec
                 }
 
                 const value = series[seriesIndex][dataPointIndex];
-                const month = w?.globals?.labels?.[dataPointIndex] ?? '';
+                const month = allMonths[dataPointIndex] ?? '';
 
                 return `
                     <div class="px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-lg rounded-lg">

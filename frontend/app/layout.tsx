@@ -21,9 +21,9 @@ export const metadata: Metadata = {
     authors: [{ name: 'Michael Cesar Quispe Sebastian' }],
     creator: 'MCQS',
     icons: {
-        icon: '/mqs-logo-new.jpg',
-        shortcut: '/mqs-logo-new.jpg',
-        apple: '/mqs-logo-new.jpg',
+        icon: '/favicon-circle.png',
+        shortcut: '/favicon-circle.png',
+        apple: '/favicon-circle.png',
     },
     openGraph: {
         type: 'website',

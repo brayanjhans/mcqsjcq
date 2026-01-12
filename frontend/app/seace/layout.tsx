@@ -57,15 +57,19 @@ export default function SEACELayout({ children }: { children: React.ReactNode })
                     lg:relative
                 `}
             >
-                {/* Header - Logo */}
                 <div className="h-[90px] flex items-center justify-between px-6 relative">
-                    <div className={`transition-all duration-500 flex items-center justify-center w-full ${collapsed ? 'opacity-0 w-0' : 'opacity-100'}`}>
-                        {/* Texto MQS - JCQ Estilizado */}
-                        <div className="relative group cursor-default">
-                            <div className="absolute -inset-1 bg-gradient-to-r from-blue-400 to-cyan-300 rounded-lg blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
-                            <span className="relative font-black text-2xl tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-white via-blue-100 to-white drop-shadow-[0_2px_2px_rgba(0,0,0,0.3)]">
-                                MQS - JCQ
-                            </span>
+                    <div className={`transition-all duration-500 flex items-center justify-center gap-3 ${collapsed ? 'opacity-0 w-0' : 'opacity-100 flex-1'}`}>
+                        {/* Logo MQS */}
+                        <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-lg backdrop-blur-sm ring-1 ring-white/20 overflow-hidden flex-shrink-0">
+                            <img src="/logo-mqs.png" alt="MQS" className="w-full h-full object-cover" />
+                        </div>
+                        {/* Texto Marca */}
+                        <span className="font-bold text-2xl tracking-tight text-white font-sans drop-shadow-md whitespace-nowrap">
+                            MQS <span className="text-blue-200">JCQ</span>
+                        </span>
+                        {/* Logo JCQ */}
+                        <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-lg backdrop-blur-sm ring-1 ring-white/20 overflow-hidden flex-shrink-0">
+                            <img src="/logo-jcq.png" alt="JCQ" className="w-full h-full object-cover" />
                         </div>
                     </div>
 
