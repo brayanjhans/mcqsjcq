@@ -27,22 +27,52 @@ import { AutocompleteSearch } from "@/components/search/AutocompleteSearch";
 import type { Licitacion } from "@/types/licitacion";
 import { licitacionService } from "@/lib/services/licitacionService";
 
+const DEFAULT_TIPOS_PROCEDIMIENTO = [
+    "Adjudicación Abreviada",
+    "Adjudicación Directa Pública",
+    "Adjudicación Directa Selectiva",
+    "Adjudicación Selectiva",
+    "Adjudicación Simplificada",
+    "Adjudicación Simplificada - Décima Disposición Complementaria Final Reg. Ley 30225",
+    "Adjudicación Simplificada - Decreto Urgencia 012-2023",
+    "Adjudicación Simplificada - Decreto Urgencia 032-2023",
+    "Adjudicación Simplificada - Decreto Urgencia 034-2023",
+    "Adjudicación Simplificada - Ley Nº 26859",
+    "Adjudicación Simplificada - Ley Nº 30556",
+    "Adjudicación Simplificada - Ley N° 31125",
+    "Adjudicación Simplificada - Ley N° 31579",
+    "Adjudicación Simplificada - Ley N° 31589",
+    "Adjudicación Simplificada - Ley N° 31728",
+    "Concurso Público",
+    "Concurso Público de Servicios",
+    "Licitación Pública",
+    "Licitación Pública Abreviada",
+    "Licitación Pública Abreviada - Ley N°26859",
+    "Licitación Pública Abreviada - Ley N°31589",
+    "Licitación Pública Abreviada Emergencia",
+    "Licitación Pública Abreviada Homologación",
+    "Licitación Pública Abreviada Séptima DCF Ley N°32069",
+    "Procedimiento Especial de Selección",
+    "Subasta Inversa Electrónica"
+];
+
 export default function GestionManualPage() {
     // Filter States
     const [showFilters, setShowFilters] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
 
     // Select States
-    const [departamento, setDepartamento] = useState("Todos los departamentos");
-    const [estado, setEstado] = useState("Todos los estados");
-    const [categoria, setCategoria] = useState("Todas las categorías");
-    const [anio, setAnio] = useState("Año");
-    const [mes, setMes] = useState("Mes");
-    const [provincia, setProvincia] = useState("Provincia");
-    const [distrito, setDistrito] = useState("Distrito");
-    const [tipoGarantia, setTipoGarantia] = useState("Todos los tipos");
-    const [aseguradora, setAseguradora] = useState("Todas las aseguradoras");
-    const [entidad, setEntidad] = useState("Todas las entidades");
+    const [departamento, setDepartamento] = useState("");
+    const [estado, setEstado] = useState("");
+    const [categoria, setCategoria] = useState("");
+    const [anio, setAnio] = useState("");
+    const [mes, setMes] = useState("");
+    const [provincia, setProvincia] = useState("");
+    const [distrito, setDistrito] = useState("");
+    const [tipoGarantia, setTipoGarantia] = useState("");
+    const [aseguradora, setAseguradora] = useState("");
+    const [entidad, setEntidad] = useState("");
+    const [tipoProcedimiento, setTipoProcedimiento] = useState("");
     const [origenFilter, setOrigenFilter] = useState("Todos");
     const [isOrigenDropdownOpen, setIsOrigenDropdownOpen] = useState(false);
 
@@ -82,25 +112,24 @@ export default function GestionManualPage() {
         try {
             const filters: any = {};
             if (searchTerm) filters.search = searchTerm;
-            if (estado !== 'Todos los estados') filters.estado = estado;
-            if (departamento !== 'Todos los departamentos') filters.departamento = departamento;
-            if (provincia !== 'Provincia') filters.provincia = provincia;
-            if (distrito !== 'Distrito') filters.distrito = distrito;
-            if (categoria !== 'Todas las categorías') filters.categoria = categoria;
+            if (estado) filters.estado = estado;
+            if (departamento) filters.departamento = departamento;
+            if (provincia) filters.provincia = provincia;
+            if (distrito) filters.distrito = distrito;
+            if (categoria) filters.categoria = categoria;
             if (origenFilter !== 'Todos') filters.origen = origenFilter;
 
-            if (anio !== 'Año') filters.anio = anio;
-            if (mes !== 'Mes') {
+            if (anio) filters.anio = anio;
+            if (mes) {
                 // Convert month name to number if needed or send as is depending on backend
                 const monthMap: { [key: string]: number } = { "Enero": 1, "Febrero": 2, "Marzo": 3, "Abril": 4, "Mayo": 5, "Junio": 6, "Julio": 7, "Agosto": 8, "Septiembre": 9, "Octubre": 10, "Noviembre": 11, "Diciembre": 12 };
                 // Check if it's already a number or name
                 filters.mes = monthMap[mes] || mes;
             }
-            if (tipoGarantia !== 'Todos los tipos') filters.tipo_garantia = tipoGarantia;
-            if (aseguradora !== 'Todas las aseguradoras') filters.entidad_financiera = aseguradora;
-            if (entidad !== 'Todas las entidades') filters.comprador = entidad;
-
-            if (entidad !== 'Todas las entidades') filters.comprador = entidad;
+            if (tipoGarantia) filters.tipo_garantia = tipoGarantia;
+            if (aseguradora) filters.entidad_financiera = aseguradora;
+            if (entidad) filters.comprador = entidad;
+            if (tipoProcedimiento) filters.tipo_procedimiento = tipoProcedimiento;
 
             const response = await licitacionService.getAll(currentPage, 20, filters);
             setLicitaciones(response.items);
@@ -117,12 +146,12 @@ export default function GestionManualPage() {
     // Cascading: Load Provincias when Departamento changes
     useEffect(() => {
         const fetchProvincias = async () => {
-            setProvincia("Provincia");
-            setDistrito("Distrito");
+            setProvincia("");
+            setDistrito("");
             setProvinciaOptions([]);
             setDistritoOptions([]);
 
-            if (departamento && departamento !== 'Todos los departamentos') {
+            if (departamento) {
                 try {
                     const data = await licitacionService.getLocations(departamento);
                     setProvinciaOptions(data.provincias || []);
@@ -137,10 +166,10 @@ export default function GestionManualPage() {
     // Cascading: Load Distritos when Provincia changes
     useEffect(() => {
         const fetchDistritos = async () => {
-            setDistrito("Distrito");
+            setDistrito("");
             setDistritoOptions([]);
 
-            if (provincia && provincia !== 'Provincia' && departamento && departamento !== 'Todos los departamentos') {
+            if (provincia && departamento) {
                 try {
                     const data = await licitacionService.getLocations(departamento, provincia);
                     setDistritoOptions(data.distritos || []);
@@ -165,7 +194,7 @@ export default function GestionManualPage() {
     useEffect(() => {
         fetchFilters();
         fetchLicitaciones();
-    }, [searchTerm, estado, departamento, provincia, distrito, categoria, origenFilter, anio, mes, tipoGarantia, aseguradora, entidad, currentPage]);
+    }, [searchTerm, estado, departamento, provincia, distrito, categoria, origenFilter, anio, mes, tipoGarantia, aseguradora, entidad, tipoProcedimiento, currentPage]);
 
     // Handlers
     const handleCreate = () => {
@@ -224,16 +253,17 @@ export default function GestionManualPage() {
 
     const handleClear = () => {
         setSearchTerm("");
-        setDepartamento("Todos los departamentos");
-        setEstado("Todos los estados");
-        setCategoria("Todas las categorías");
-        setAnio("Año");
-        setMes("Mes");
-        setProvincia("Provincia");
-        setDistrito("Distrito");
-        setTipoGarantia("Todos los tipos");
-        setAseguradora("Todas las aseguradoras");
-        setEntidad("Todas las entidades");
+        setDepartamento("");
+        setEstado("");
+        setCategoria("");
+        setAnio("");
+        setMes("");
+        setProvincia("");
+        setDistrito("");
+        setTipoGarantia("");
+        setAseguradora("");
+        setEntidad("");
+        setTipoProcedimiento("");
         setOrigenFilter("Todos");
         setCurrentPage(1);
     };
@@ -275,13 +305,30 @@ export default function GestionManualPage() {
                             </div>
                         </div>
 
-                        {/* Search Bar */}
-                        <div className="mb-8">
-                            <AutocompleteSearch
-                                onSearch={setSearchTerm}
-                                initialValue={searchTerm}
-                                placeholder="Buscar por descripción, comprador, nomenclatura, ganador, banco..."
-                            />
+                        {/* Search Bar & Primary Filter */}
+                        <div className="mb-8 flex flex-col md:flex-row gap-4">
+                            <div className="flex-1">
+                                <AutocompleteSearch
+                                    onSearch={setSearchTerm}
+                                    initialValue={searchTerm}
+                                    placeholder="Buscar por descripción, comprador, nomenclatura, ganador, banco..."
+                                />
+                            </div>
+                            <div className="w-full md:w-64 flex-shrink-0">
+                                <div className="relative">
+                                    <select
+                                        className="w-full h-[52px] appearance-none rounded-xl border-2 border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 focus:border-[#4F46E5] focus:ring-4 focus:ring-[#4F46E5]/10 outline-none transition-all dark:bg-[#0b122b] dark:border-slate-700 dark:text-white"
+                                        value={tipoProcedimiento}
+                                        onChange={(e) => setTipoProcedimiento(e.target.value)}
+                                    >
+                                        <option value="">Todos los procedimientos</option>
+                                        {DEFAULT_TIPOS_PROCEDIMIENTO.map((tipo) => (
+                                            <option key={tipo} value={tipo}>{tipo}</option>
+                                        ))}
+                                    </select>
+                                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 pointer-events-none" />
+                                </div>
+                            </div>
                         </div>
 
                         {/* Filters Grid */}
@@ -295,7 +342,7 @@ export default function GestionManualPage() {
                                         className="w-full appearance-none rounded-xl border border-slate-200 bg-white py-3 pl-4 pr-10 text-sm font-semibold text-slate-700 focus:border-indigo-500 focus:ring-0 outline-none dark:bg-[#111c44] dark:border-slate-700 dark:text-slate-300"
                                         value={departamento} onChange={(e) => setDepartamento(e.target.value)}
                                     >
-                                        <option>Todos los departamentos</option>
+                                        <option value="">Todos los departamentos</option>
                                         {filterOptions.departamentos?.map((dept: string) => (
                                             <option key={dept} value={dept}>{dept}</option>
                                         ))}
@@ -310,7 +357,7 @@ export default function GestionManualPage() {
                                         className="w-full appearance-none rounded-xl border border-slate-200 bg-white py-3 pl-4 pr-10 text-sm font-semibold text-slate-700 focus:border-indigo-500 focus:ring-0 outline-none dark:bg-[#111c44] dark:border-slate-700 dark:text-slate-300"
                                         value={estado} onChange={(e) => setEstado(e.target.value)}
                                     >
-                                        <option>Todos los estados</option>
+                                        <option value="">Todos los estados</option>
                                         {filterOptions.estados?.map((est: string) => (
                                             <option key={est} value={est}>{est}</option>
                                         ))}
@@ -325,7 +372,7 @@ export default function GestionManualPage() {
                                         className="w-full appearance-none rounded-xl border border-slate-200 bg-white py-3 pl-4 pr-10 text-sm font-semibold text-slate-700 focus:border-indigo-500 focus:ring-0 outline-none dark:bg-[#111c44] dark:border-slate-700 dark:text-slate-300"
                                         value={categoria} onChange={(e) => setCategoria(e.target.value)}
                                     >
-                                        <option>Todas las categorías</option>
+                                        <option value="">Todas las categorías</option>
                                         {filterOptions.categorias?.map((cat: string) => (
                                             <option key={cat} value={cat}>{cat}</option>
                                         ))}
@@ -341,7 +388,7 @@ export default function GestionManualPage() {
                                             className="w-full appearance-none rounded-xl border border-slate-200 bg-white py-3 pl-4 pr-8 text-sm font-semibold text-slate-700 focus:border-indigo-500 focus:ring-0 outline-none dark:bg-[#111c44] dark:border-slate-700 dark:text-slate-300"
                                             value={anio} onChange={(e) => setAnio(e.target.value)}
                                         >
-                                            <option>Año</option>
+                                            <option value="">Año</option>
                                             {filterOptions.anios?.map((a: number) => (
                                                 <option key={a} value={String(a)}>{a}</option>
                                             ))}
@@ -353,7 +400,7 @@ export default function GestionManualPage() {
                                             className="w-full appearance-none rounded-xl border border-slate-200 bg-white py-3 pl-4 pr-8 text-sm font-semibold text-slate-700 focus:border-indigo-500 focus:ring-0 outline-none dark:bg-[#111c44] dark:border-slate-700 dark:text-slate-300"
                                             value={mes} onChange={(e) => setMes(e.target.value)}
                                         >
-                                            <option>Mes</option>
+                                            <option value="">Mes</option>
                                             {["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"].map((m) => (
                                                 <option key={m} value={m}>{m}</option>
                                             ))}
@@ -373,9 +420,9 @@ export default function GestionManualPage() {
                                                 <select
                                                     className="w-full appearance-none rounded-xl border border-slate-200 bg-white py-3 pl-4 pr-8 text-sm font-semibold text-slate-700 focus:border-indigo-500 focus:ring-0 outline-none dark:bg-[#111c44] dark:border-slate-700 dark:text-slate-300"
                                                     value={provincia} onChange={(e) => setProvincia(e.target.value)}
-                                                    disabled={!departamento || departamento === 'Todos los departamentos'}
+                                                    disabled={!departamento}
                                                 >
-                                                    <option>Provincia</option>
+                                                    <option value="">Provincia</option>
                                                     {provinciaOptions.map(opt => (
                                                         <option key={opt} value={opt}>{opt}</option>
                                                     ))}
@@ -386,9 +433,9 @@ export default function GestionManualPage() {
                                                 <select
                                                     className="w-full appearance-none rounded-xl border border-slate-200 bg-white py-3 pl-4 pr-8 text-sm font-semibold text-slate-700 focus:border-indigo-500 focus:ring-0 outline-none dark:bg-[#111c44] dark:border-slate-700 dark:text-slate-300"
                                                     value={distrito} onChange={(e) => setDistrito(e.target.value)}
-                                                    disabled={!provincia || provincia === 'Provincia'}
+                                                    disabled={!provincia}
                                                 >
-                                                    <option>Distrito</option>
+                                                    <option value="">Distrito</option>
                                                     {distritoOptions.map(opt => (
                                                         <option key={opt} value={opt}>{opt}</option>
                                                     ))}
@@ -404,7 +451,7 @@ export default function GestionManualPage() {
                                                 className="w-full appearance-none rounded-xl border border-slate-200 bg-white py-3 pl-4 pr-10 text-sm font-semibold text-slate-700 focus:border-indigo-500 focus:ring-0 outline-none dark:bg-[#111c44] dark:border-slate-700 dark:text-slate-300"
                                                 value={tipoGarantia} onChange={(e) => setTipoGarantia(e.target.value)}
                                             >
-                                                <option>Todos los tipos</option>
+                                                <option value="">Todos los tipos</option>
                                                 {filterOptions.tipos_garantia?.map((tipo: string) => (
                                                     <option key={tipo} value={tipo}>{tipo}</option>
                                                 ))}
@@ -419,7 +466,7 @@ export default function GestionManualPage() {
                                                 className="w-full appearance-none rounded-xl border border-slate-200 bg-white py-3 pl-4 pr-10 text-sm font-semibold text-slate-700 focus:border-indigo-500 focus:ring-0 outline-none dark:bg-[#111c44] dark:border-slate-700 dark:text-slate-300"
                                                 value={aseguradora} onChange={(e) => setAseguradora(e.target.value)}
                                             >
-                                                <option>Todas las aseguradoras</option>
+                                                <option value="">Todas las aseguradoras</option>
                                                 {filterOptions.aseguradoras?.map((aseg: string) => (
                                                     <option key={aseg} value={aseg}>{aseg}</option>
                                                 ))}
@@ -434,7 +481,7 @@ export default function GestionManualPage() {
                                                 className="w-full appearance-none rounded-xl border border-slate-200 bg-white py-3 pl-4 pr-10 text-sm font-semibold text-slate-700 focus:border-indigo-500 focus:ring-0 outline-none dark:bg-[#111c44] dark:border-slate-700 dark:text-slate-300"
                                                 value={entidad} onChange={(e) => setEntidad(e.target.value)}
                                             >
-                                                <option>Todas las entidades</option>
+                                                <option value="">Todas las entidades</option>
                                                 {filterOptions.entidades?.map((ent: string) => (
                                                     <option key={ent} value={ent}>{ent}</option>
                                                 ))}
@@ -442,6 +489,8 @@ export default function GestionManualPage() {
                                             <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
                                         </div>
                                     </div>
+
+
                                 </>
                             )}
                         </div>
@@ -538,37 +587,39 @@ export default function GestionManualPage() {
 
 
                 {/* Pagination */}
-                {totalPages > 1 && (
-                    <div className="flex justify-center pt-10 pb-6">
-                        <nav className="flex items-center gap-6" aria-label="Pagination">
-                            <button
-                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                disabled={currentPage === 1}
-                                className="group flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors disabled:opacity-30 disabled:pointer-events-none"
-                            >
-                                <div className="p-2 rounded-full group-hover:bg-slate-100 dark:group-hover:bg-white/5 transition-colors">
-                                    <ChevronUp className="h-4 w-4 -rotate-90" />
-                                </div>
-                                <span className="hidden sm:inline">Anterior</span>
-                            </button>
+                {
+                    totalPages > 1 && (
+                        <div className="flex justify-center pt-10 pb-6">
+                            <nav className="flex items-center gap-6" aria-label="Pagination">
+                                <button
+                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                    disabled={currentPage === 1}
+                                    className="group flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors disabled:opacity-30 disabled:pointer-events-none"
+                                >
+                                    <div className="p-2 rounded-full group-hover:bg-slate-100 dark:group-hover:bg-white/5 transition-colors">
+                                        <ChevronUp className="h-4 w-4 -rotate-90" />
+                                    </div>
+                                    <span className="hidden sm:inline">Anterior</span>
+                                </button>
 
-                            <div className="text-sm font-medium text-slate-500 dark:text-slate-400">
-                                Página <span className="text-slate-900 dark:text-white font-bold mx-1">{currentPage}</span> de <span className="mx-1">{totalPages}</span>
-                            </div>
-
-                            <button
-                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                                disabled={currentPage === totalPages}
-                                className="group flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors disabled:opacity-30 disabled:pointer-events-none"
-                            >
-                                <span className="hidden sm:inline">Siguiente</span>
-                                <div className="p-2 rounded-full group-hover:bg-slate-100 dark:group-hover:bg-white/5 transition-colors">
-                                    <ChevronDown className="h-4 w-4 -rotate-90" />
+                                <div className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                                    Página <span className="text-slate-900 dark:text-white font-bold mx-1">{currentPage}</span> de <span className="mx-1">{totalPages}</span>
                                 </div>
-                            </button>
-                        </nav>
-                    </div>
-                )}
+
+                                <button
+                                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                    disabled={currentPage === totalPages}
+                                    className="group flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors disabled:opacity-30 disabled:pointer-events-none"
+                                >
+                                    <span className="hidden sm:inline">Siguiente</span>
+                                    <div className="p-2 rounded-full group-hover:bg-slate-100 dark:group-hover:bg-white/5 transition-colors">
+                                        <ChevronDown className="h-4 w-4 -rotate-90" />
+                                    </div>
+                                </button>
+                            </nav>
+                        </div>
+                    )
+                }
 
                 <LicitacionModal
                     isOpen={isModalOpen}
@@ -588,7 +639,7 @@ export default function GestionManualPage() {
                     onConfirm={handleConfirmDelete}
                 />
 
-            </div>
+            </div >
         </div >
     );
 }

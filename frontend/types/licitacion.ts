@@ -62,6 +62,7 @@ export interface SearchFilters {
     year?: string;
     mes?: string;
     tipo_garantia?: string;
+    tipo_procedimiento?: string;
 }
 
 export type ReportType = 'entidad' | 'departamento' | 'categoria' | 'estado' | 'personalizado';

@@ -3,6 +3,7 @@ FastAPI main application for MQS Garantías - SEACE monitoring system.
 """
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+import app.models # Ensure all models are registered
 from app.routers import auth, mqs, admin, scraping, tendencias, etl, formatos, users, support, test, notifications, reportes, chatbot, exports
 from app.routers import dashboard_raw as dashboard
 from app.routers import licitaciones_raw as licitaciones

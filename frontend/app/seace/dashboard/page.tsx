@@ -7,6 +7,8 @@ import { DistributionRadialChart } from "@/components/ecommerce/DistributionRadi
 import { SalesAreaChart } from "@/components/ecommerce/SalesAreaChart";
 import { PeruInteractiveMap } from "@/components/ecommerce/PeruInteractiveMap";
 import { FinancialEntitiesTable } from "@/components/ecommerce/FinancialEntitiesTable";
+import { licitacionService } from "@/lib/services/licitacionService";
+import { ChevronDown, Filter, RotateCcw } from "lucide-react";
 
 export default function EcommerceDashboardPage() {
     // --- Data States ---
@@ -20,31 +22,93 @@ export default function EcommerceDashboardPage() {
 
     const [provinceRanking, setProvinceRanking] = useState<any[]>([]);
 
-    // --- Filter States (Independent) ---
-    const [yearTrend, setYearTrend] = useState(0);
-    const [yearDist, setYearDist] = useState(0);
-    const [yearFinance, setYearFinance] = useState(0);
+    // --- Filter States (Global) ---
+    // User Requested: Year, Month, Procedure Type (Third Section)
+    const [filterAnio, setFilterAnio] = useState<number>(0); // 0 = All Years
+    const [filterMes, setFilterMes] = useState<number>(0);   // 0 = All Months
+    const [filterTipo, setFilterTipo] = useState("");        // Procedure Type
 
-    // Independent States for KPIs
-    const [yearLic, setYearLic] = useState(0);
-    const [yearMonto, setYearMonto] = useState(0);
+    // We keep a local state for Map Department selection since it's no longer a global filter bar item
+    const [selectedMapDept, setSelectedMapDept] = useState<string>("");
 
-    const [filterDept, setFilterDept] = useState<string | null>(null);
+    // Filter Options
+    const [options, setOptions] = useState({
+        tipos: [],
+        anios: [],
+        meses: [
+            { id: 1, name: "Enero" }, { id: 2, name: "Febrero" }, { id: 3, name: "Marzo" },
+            { id: 4, name: "Abril" }, { id: 5, name: "Mayo" }, { id: 6, name: "Junio" },
+            { id: 7, name: "Julio" }, { id: 8, name: "Agosto" }, { id: 9, name: "Septiembre" },
+            { id: 10, name: "Octubre" }, { id: 11, name: "Noviembre" }, { id: 12, name: "Diciembre" }
+        ]
+    });
 
     // --- Loading States ---
     const [loadingKpis, setLoadingKpis] = useState(true);
     const [loadingMap, setLoadingMap] = useState(false);
 
+    // 0. Load Filter Options
+    useEffect(() => {
+        async function loadOptions() {
+            try {
+                const data = await licitacionService.getFilters();
+                setOptions(prev => ({
+                    ...prev,
+                    tipos: data.tipos_entidad || [], // Procedure Types
+                    // Use backend years if available, else default
+                    anios: data.anios || [2026, 2025, 2024]
+                }));
+            } catch (error) {
+                console.error("Error options:", error);
+            }
+        }
+        loadOptions();
+    }, []);
+
+    // Helper to build query string
+    const getQueryParams = useCallback((extraParams: any = {}) => {
+        const params = new URLSearchParams();
+
+        // Global Filters are always applied
+        if (filterAnio > 0) params.append("year", filterAnio.toString());
+        if (filterMes > 0) params.append("mes", filterMes.toString());
+        if (filterTipo) params.append("tipo_procedimiento", filterTipo);
+
+        // Map Selection (treated as a filter for other widgets if needed, or primarily for Drilldown)
+        // Let's decide: Should selecting a department on map filter everything else?
+        // User request didn't specify, but "Global Dept" filter was removed.
+        // Let's allow map selection to filter "Province Ranking" and maybe "Financial Entities".
+        if (selectedMapDept) params.append("departamento", selectedMapDept);
+
+        // Merge extra params
+        Object.keys(extraParams).forEach(key => {
+            if (extraParams[key] !== undefined && extraParams[key] !== null) {
+                // If the widget overrides year, use widget's year. 
+                // BUT user wants global year filter. So Global wins?
+                // Let's adopt a policy: Global Filter wins unless explicit override is intended to show specific historical context.
+                // However, charts often have their own time axis (Trend). 
+                // If Global Year is selected (e.g. 2024), Trend should show 2024 months.
+                // If Global Year is All (0), Trend should show... all years? Or specific year?
+                // Usually Trend takes a year argument.
+                // We will let the Global Filter drive the 'default'.
+                params.set(key, extraParams[key].toString());
+            }
+        });
+
+        return params.toString();
+    }, [filterAnio, filterMes, filterTipo, selectedMapDept]);
+
     // 1. Initial Load (Static Data + First Fetch)
     useEffect(() => {
         async function fetchStatic() {
             try {
+                const query = getQueryParams();
                 const baseUrl = '/api/dashboard';
                 const [status] = await Promise.all([
-                    fetch(`${baseUrl}/stats-by-status`).then(r => r.json())
+                    fetch(`${baseUrl}/stats-by-status?${query}`).then(r => r.json())
                 ]);
 
-                // Transform Status
+                // Transform Status to be resilient
                 const transformedStatus = (status.data || []).map((item: any) => ({
                     status: item.name,
                     count: item.value
@@ -56,7 +120,7 @@ export default function EcommerceDashboardPage() {
             }
         }
         fetchStatic();
-    }, []);
+    }, [getQueryParams]); // Re-fetch on global filter change
 
 
     // 2a. KPIs - Licitaciones
@@ -64,7 +128,8 @@ export default function EcommerceDashboardPage() {
         async function fetchKpisLic() {
             try {
                 setLoadingKpis(true);
-                const res = await fetch(`/api/dashboard/kpis?year=${yearLic}`).then(r => r.json());
+                const query = getQueryParams();
+                const res = await fetch(`/api/dashboard/kpis?${query}`).then(r => r.json());
                 setKpisLic(res);
             } catch (e) {
                 console.error("KPI Lic error", e);
@@ -73,13 +138,14 @@ export default function EcommerceDashboardPage() {
             }
         }
         fetchKpisLic();
-    }, [yearLic]);
+    }, [getQueryParams]);
 
     // 2b. KPIs - Monto
     useEffect(() => {
         async function fetchKpisMonto() {
             try {
-                const res = await fetch(`/api/dashboard/kpis?year=${yearMonto}`).then(r => r.json());
+                const query = getQueryParams();
+                const res = await fetch(`/api/dashboard/kpis?${query}`).then(r => r.json());
                 setKpisMonto({
                     ...res,
                     monto_total_adjudicado: parseFloat(res?.monto_total_estimado || "0")
@@ -89,15 +155,23 @@ export default function EcommerceDashboardPage() {
             }
         }
         fetchKpisMonto();
-    }, [yearMonto]);
-    // 4a. Map Data - Department Ranking (Initial Load Only)
+    }, [getQueryParams]);
+
+    // 4a. Map Data - Department Ranking
     useEffect(() => {
         async function fetchDepartmentRanking() {
             setLoadingMap(true);
             try {
-                const mapYear = 0; // Hardcoded to All Years
+                // Special Case: If we select a department on the map, we don't want the MAP ITSELF to filter to only that department (it would look empty).
+                // But we DO want it to respect Year/Month/Proc.
+                // So we construct a query WITHOUT 'departamento'.
+                const params = new URLSearchParams();
+                if (filterAnio > 0) params.append("year", filterAnio.toString());
+                if (filterMes > 0) params.append("mes", filterMes.toString());
+                if (filterTipo) params.append("tipo_procedimiento", filterTipo);
+
                 const baseUrl = '/api/dashboard';
-                const deptRes = await fetch(`${baseUrl}/department-ranking?year=${mapYear}`).then(r => r.json());
+                const deptRes = await fetch(`${baseUrl}/department-ranking?${params.toString()}`).then(r => r.json());
                 setDepartmentRanking(deptRes.data || []);
             } catch (error) {
                 console.error("Error dept data:", error);
@@ -106,20 +180,24 @@ export default function EcommerceDashboardPage() {
             }
         }
         fetchDepartmentRanking();
-    }, []);
+    }, [filterAnio, filterMes, filterTipo]); // Depend explicitly on Global Filters
 
-    // 4b. Map Data - Province Ranking (On Selection, Silent Update)
+    // 4b. Map Data - Province Ranking (On Map Selection)
     useEffect(() => {
         async function fetchProvinceRanking() {
-            if (!filterDept) {
+            if (!selectedMapDept) {
                 setProvinceRanking([]);
                 return;
             }
             try {
-                const mapYear = 0;
-                const baseUrl = '/api/dashboard';
-                const cleanDept = filterDept.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
-                const provRes = await fetch(`${baseUrl}/province-ranking?department=${cleanDept}&year=${mapYear}`).then(r => r.json());
+                const cleanDept = selectedMapDept.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+
+                // Use helper but force department (just in case)
+                const query = getQueryParams({
+                    department: cleanDept
+                });
+
+                const provRes = await fetch(`/api/dashboard/province-ranking?${query}`).then(r => r.json());
                 setProvinceRanking(provRes.data || []);
             } catch (error) {
                 console.error("Error prov data:", error);
@@ -127,14 +205,15 @@ export default function EcommerceDashboardPage() {
             }
         }
         fetchProvinceRanking();
-    }, [filterDept]);
+    }, [selectedMapDept, getQueryParams]);
 
 
-    // 3. Monthly Trend (Independent)
+    // 3. Monthly Trend
     useEffect(() => {
         async function fetchTrend() {
             try {
-                const res = await fetch(`/api/dashboard/monthly-trend?year=${yearTrend}`).then(r => r.json());
+                const query = getQueryParams();
+                const res = await fetch(`/api/dashboard/monthly-trend?${query}`).then(r => r.json());
                 const transformed = (res.data || []).map((item: any) => ({
                     month: item.month || item.name,
                     total: item.total || item.count || item.value || 0
@@ -145,13 +224,14 @@ export default function EcommerceDashboardPage() {
             }
         }
         fetchTrend();
-    }, [yearTrend]);
+    }, [getQueryParams]);
 
-    // 4. Distribution (Independent)
+    // 4. Distribution
     useEffect(() => {
         async function fetchDist() {
             try {
-                const res = await fetch(`/api/dashboard/distribution-by-type?year=${yearDist}`).then(r => r.json());
+                const query = getQueryParams();
+                const res = await fetch(`/api/dashboard/distribution-by-type?${query}`).then(r => r.json());
                 const transformed = (res.data || []).map((item: any) => ({
                     type: item.name,
                     total: item.value
@@ -162,15 +242,14 @@ export default function EcommerceDashboardPage() {
             }
         }
         fetchDist();
-    }, [yearDist]);
+    }, [getQueryParams]);
 
-    // 5. Financial Entities (Independent)
-    // 5. Financial Entities (Independent)
+    // 5. Financial Entities
     useEffect(() => {
         async function fetchFinance() {
             try {
-                // Independent: Do NOT filter by Dept
-                const res = await fetch(`/api/dashboard/financial-entities-ranking?year=${yearFinance}`).then(r => r.json());
+                const query = getQueryParams(); // Respects selectedMapDept if set
+                const res = await fetch(`/api/dashboard/financial-entities-ranking?${query}`).then(r => r.json());
 
                 const transformed = (res.data || []).map((item: any) => ({
                     name: item.name,
@@ -185,15 +264,18 @@ export default function EcommerceDashboardPage() {
             }
         }
         fetchFinance();
-    }, [yearFinance]);
+    }, [getQueryParams]);
 
-    // Stable callback references with useCallback (MUST be before any conditional returns)
-    const handleYearLicChange = useCallback((year: number) => setYearLic(year), []);
-    const handleYearMontoChange = useCallback((year: number) => setYearMonto(year), []);
-    const handleYearTrendChange = useCallback((year: number) => setYearTrend(year), []);
-    const handleYearDistChange = useCallback((year: number) => setYearDist(year), []);
-    const handleYearFinanceChange = useCallback((year: number) => setYearFinance(year), []);
-    const handleDepartmentClick = useCallback((dept: string | null) => setFilterDept(dept), []);
+
+    // Map click updates local state
+    const handleDepartmentClick = useCallback((dept: string | null) => setSelectedMapDept(dept || ""), []);
+
+    const handleClearFilters = () => {
+        setFilterAnio(0);
+        setFilterMes(0);
+        setFilterTipo("");
+        setSelectedMapDept("");
+    };
 
     if (loadingKpis && !kpisLic) {
         return (
@@ -212,22 +294,96 @@ export default function EcommerceDashboardPage() {
         percentage: Math.round((item.count / totalMapLicitaciones) * 100)
     }));
 
+    // Dynamic Label Logic
+    // If a specific procedure is selected, use it. Otherwise "Procesos".
+    // We might want to pluralize or format it, but raw string is often okay or we can append "(s)" if needed.
+    // For now, let's use the singular term from the filter or "Procesos" (Plural).
+    const processLabel = filterTipo ? filterTipo : "Procesos";
+
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-[#0b122b] p-4 text-slate-800 dark:text-slate-200 font-sans fade-in transition-colors duration-300">
             <div className="mx-auto max-w-[1600px] space-y-6">
 
+                {/* --- Display User's Request: Year, Month, Procedure count? --- */}
+                {/* --- Filter Bar (Modified) --- */}
+                <div className="bg-white dark:bg-[#111c44] rounded-2xl p-4 shadow-sm border border-slate-200 dark:border-white/5">
+                    <div className="flex flex-col md:flex-row items-center gap-4">
+                        <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 font-bold text-sm min-w-max">
+                            <Filter size={18} />
+                            Filtros:
+                        </div>
+
+                        {/* 1. Procedimiento ("Recuento de cada proceso") - MOVED TO FIRST */}
+                        <div className="relative w-full md:w-auto flex-1">
+                            <select
+                                className="w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-4 pr-10 text-xs font-bold text-slate-700 focus:border-[#4F46E5] focus:ring-4 focus:ring-[#4F46E5]/10 outline-none transition-all dark:bg-[#0b122b] dark:border-slate-700 dark:text-white"
+                                value={filterTipo}
+                                onChange={(e) => setFilterTipo(e.target.value)}
+                            >
+                                <option value="">Todos los Procedimientos</option>
+                                {options.tipos && options.tipos.map((t: string) => (
+                                    <option key={t} value={t}>{t}</option>
+                                ))}
+                            </select>
+                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                        </div>
+
+                        {/* 2. Año - MOVED TO SECOND */}
+                        <div className="relative w-full md:w-40">
+                            <select
+                                className="w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-4 pr-10 text-xs font-bold text-slate-700 focus:border-[#4F46E5] focus:ring-4 focus:ring-[#4F46E5]/10 outline-none transition-all dark:bg-[#0b122b] dark:border-slate-700 dark:text-white"
+                                value={filterAnio}
+                                onChange={(e) => setFilterAnio(Number(e.target.value))}
+                            >
+                                <option value="0">Todos los Años</option>
+                                {options.anios && options.anios.map((y: any) => (
+                                    <option key={y} value={y}>{y}</option>
+                                ))}
+                            </select>
+                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                        </div>
+
+                        {/* 3. Mes - MOVED TO THIRD */}
+                        <div className="relative w-full md:w-40">
+                            <select
+                                className="w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-4 pr-10 text-xs font-bold text-slate-700 focus:border-[#4F46E5] focus:ring-4 focus:ring-[#4F46E5]/10 outline-none transition-all dark:bg-[#0b122b] dark:border-slate-700 dark:text-white"
+                                value={filterMes}
+                                onChange={(e) => setFilterMes(Number(e.target.value))}
+                            >
+                                <option value="0">Todos los Meses</option>
+                                {options.meses.map((m) => (
+                                    <option key={m.id} value={m.id}>{m.name}</option>
+                                ))}
+                            </select>
+                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                        </div>
+
+
+
+                        <button
+                            onClick={handleClearFilters}
+                            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-red-50 text-red-600 border border-red-100 text-xs font-bold hover:bg-red-100 transition-all ml-auto"
+                        >
+                            <RotateCcw className="w-3.5 h-3.5" />
+                            Limpiar
+                        </button>
+                    </div>
+                </div>
+
                 {/* --- Main Dashboard Grid --- */}
                 <div className="space-y-6">
 
-                    {/* ROW 1: Key Metrics (Driven by Main Trend Year) */}
+                    {/* ROW 1: Key Metrics */}
                     <div>
                         <EcommerceMetrics
                             licitaciones={kpisLic?.total_licitaciones}
                             monto={kpisMonto?.monto_total_adjudicado}
-                            yearLic={yearLic}
-                            onYearLicChange={handleYearLicChange}
-                            yearMonto={yearMonto}
-                            onYearMontoChange={handleYearMontoChange}
+                            // Pass Global Filter State (could be overridden by local controls inside component if implemented, but here we just pass props)
+                            yearLic={filterAnio}
+                            onYearLicChange={(y) => setFilterAnio(y)}
+                            yearMonto={filterAnio}
+                            onYearMontoChange={(y) => setFilterAnio(y)}
+                            label={processLabel}
                         />
                     </div>
 
@@ -237,8 +393,9 @@ export default function EcommerceDashboardPage() {
                         <div className="lg:col-span-8 h-[500px]">
                             <SalesAreaChart
                                 data={monthlyTrend}
-                                selectedYear={yearTrend}
-                                onYearChange={handleYearTrendChange}
+                                selectedYear={filterAnio}
+                                onYearChange={(y) => setFilterAnio(y)}
+                                label={processLabel}
                             />
                         </div>
 
@@ -246,8 +403,9 @@ export default function EcommerceDashboardPage() {
                         <div className="lg:col-span-4 h-[500px]">
                             <DistributionRadialChart
                                 data={distribution}
-                                selectedYear={yearDist}
-                                onYearChange={handleYearDistChange}
+                                selectedYear={filterAnio}
+                                onYearChange={(y) => setFilterAnio(y)}
+                                label={processLabel}
                             />
                         </div>
                     </div>
@@ -259,9 +417,10 @@ export default function EcommerceDashboardPage() {
                             <PeruInteractiveMap
                                 departmentRanking={finalDeptRanking}
                                 provinceRanking={provinceRanking}
-                                selectedDepartment={filterDept}
+                                selectedDepartment={selectedMapDept}
                                 onDepartmentClick={handleDepartmentClick}
                                 loading={loadingMap}
+                                label={processLabel}
                             />
                         </div>
 
@@ -269,8 +428,8 @@ export default function EcommerceDashboardPage() {
                         <div className="lg:col-span-7">
                             <FinancialEntitiesTable
                                 data={financialEntities}
-                                selectedYear={yearFinance}
-                                onYearChange={handleYearFinanceChange}
+                                selectedYear={filterAnio}
+                                onYearChange={(y) => setFilterAnio(y)}
                             />
                         </div>
                     </div>

@@ -105,7 +105,7 @@ class NotificationTriggers:
             # Buscar licitaciones nuevas (últimas 24 horas)
             query = text("""
                 SELECT DISTINCT l.id_convocatoria, l.descripcion, l.comprador, 
-                       l.monto_estimado, l.departamento, u.id as user_id
+                       l.monto_estimado, l.departamento, l.tipo_procedimiento, u.id as user_id
                 FROM licitaciones_cabecera l
                 CROSS JOIN usuarios u
                 WHERE l.fecha_publicacion >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
@@ -125,13 +125,38 @@ class NotificationTriggers:
             for row in result:
                 monto_texto = f"S/ {row.monto_estimado:,.2f}" if row.monto_estimado else "No especificado"
                 
+                # Determinar icono y prefijo basado en tipo_procedimiento
+                tipo = (row.tipo_procedimiento or "").upper()
+                if "LICITACIÓN PÚBLICA" in tipo or "CONCURSO PÚBLICO" in tipo:
+                    icon = "📢" 
+                    prefix = "[PRINCIPAL]"
+                    priority = NotificationPriority.HIGH
+                elif "ADJUDICACIÓN SIMPLIFICADA" in tipo:
+                    icon = "🔨"
+                    prefix = "[SIMPLIFICADA]"
+                    priority = NotificationPriority.MEDIUM
+                elif "SUBASTA" in tipo:
+                    icon = "📉"
+                    prefix = "[SUBASTA]"
+                    priority = NotificationPriority.MEDIUM
+                else:
+                    icon = "📋"
+                    prefix = "[PROCESO]"
+                    priority = NotificationPriority.LOW
+
+                # Titulo más descriptivo
+                title = f"{icon} {prefix} {row.comprador}"
+                
+                # Mensaje limpia y precisa
+                msg_body = f"{row.tipo_procedimiento}\n\n{row.descripcion[:120]}...\n\n💰 {monto_texto} | 📍 {row.departamento or 'Nacional'}"
+
                 notification_service.create_notification(
                     db=db,
                     user_id=row.user_id,
                     type=NotificationType.LICITACION,
-                    priority=NotificationPriority.MEDIUM,
-                    title=f"📋 Nueva Licitación: {row.comprador}",
-                    message=f"{row.descripcion[:150]}... Monto estimado: {monto_texto}. Departamento: {row.departamento or 'Nacional'}",
+                    priority=priority,
+                    title=title,
+                    message=msg_body,
                     link=f"/seace/database?id={row.id_convocatoria}",
                     expires_days=30
                 )

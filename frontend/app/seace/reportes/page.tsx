@@ -20,6 +20,35 @@ import { LicitacionCard } from "@/components/search/LicitacionCard";
 import { AutocompleteSearch } from "@/components/search/AutocompleteSearch";
 import type { Licitacion } from "@/types/licitacion";
 
+const DEFAULT_TIPOS_PROCEDIMIENTO = [
+    "Adjudicación Abreviada",
+    "Adjudicación Directa Pública",
+    "Adjudicación Directa Selectiva",
+    "Adjudicación Selectiva",
+    "Adjudicación Simplificada",
+    "Adjudicación Simplificada - Décima Disposición Complementaria Final Reg. Ley 30225",
+    "Adjudicación Simplificada - Decreto Urgencia 012-2023",
+    "Adjudicación Simplificada - Decreto Urgencia 032-2023",
+    "Adjudicación Simplificada - Decreto Urgencia 034-2023",
+    "Adjudicación Simplificada - Ley Nº 26859",
+    "Adjudicación Simplificada - Ley Nº 30556",
+    "Adjudicación Simplificada - Ley N° 31125",
+    "Adjudicación Simplificada - Ley N° 31579",
+    "Adjudicación Simplificada - Ley N° 31589",
+    "Adjudicación Simplificada - Ley N° 31728",
+    "Concurso Público",
+    "Concurso Público de Servicios",
+    "Licitación Pública",
+    "Licitación Pública Abreviada",
+    "Licitación Pública Abreviada - Ley N°26859",
+    "Licitación Pública Abreviada - Ley N°31589",
+    "Licitación Pública Abreviada Emergencia",
+    "Licitación Pública Abreviada Homologación",
+    "Licitación Pública Abreviada Séptima DCF Ley N°32069",
+    "Procedimiento Especial de Selección",
+    "Subasta Inversa Electrónica"
+];
+
 export default function GeneradorReportesPage() {
     // State for Filter Visibility
     const [showFilters, setShowFilters] = useState(true);
@@ -36,6 +65,7 @@ export default function GeneradorReportesPage() {
     const [tipoGarantia, setTipoGarantia] = useState("");
     const [aseguradora, setAseguradora] = useState("");
     const [entidad, setEntidad] = useState("");
+    const [tipoProcedimiento, setTipoProcedimiento] = useState("");
 
     // Dynamic Filter Options
     const [filterOptions, setFilterOptions] = useState<any>({
@@ -139,7 +169,7 @@ export default function GeneradorReportesPage() {
         // Debounce calculation
         const timer = setTimeout(fetchCount, 300);
         return () => clearTimeout(timer);
-    }, [searchTerm, estado, departamento, categoria, anio, mes, provincia, distrito, tipoGarantia, aseguradora, entidad]);
+    }, [searchTerm, estado, departamento, categoria, anio, mes, provincia, distrito, tipoGarantia, aseguradora, entidad, tipoProcedimiento]);
 
     // Fetch Results Handling
     const fetchResultados = async (page = 1) => {
@@ -157,6 +187,7 @@ export default function GeneradorReportesPage() {
             if (tipoGarantia) filters.tipo_garantia = tipoGarantia;
             if (aseguradora) filters.entidad_financiera = aseguradora;
             if (entidad) filters.comprador = entidad;
+            if (tipoProcedimiento) filters.tipo_procedimiento = tipoProcedimiento;
 
             const data = await licitacionService.getAll(page, itemsPerPage, filters);
             setLicitaciones(data.items);
@@ -228,6 +259,7 @@ export default function GeneradorReportesPage() {
         setTipoGarantia("");
         setAseguradora("");
         setEntidad("");
+        setTipoProcedimiento("");
     };
 
     // Selection State
@@ -346,13 +378,30 @@ export default function GeneradorReportesPage() {
                             </div>
                         </div>
 
-                        {/* Search Bar */}
-                        <div className="mb-8">
-                            <AutocompleteSearch
-                                onSearch={setSearchTerm}
-                                initialValue={searchTerm}
-                                placeholder="Buscar por descripción, comprador, nomenclatura, ganador, banco..."
-                            />
+                        {/* Search Bar & Primary Filter */}
+                        <div className="mb-8 flex flex-col md:flex-row gap-4">
+                            <div className="flex-1">
+                                <AutocompleteSearch
+                                    onSearch={setSearchTerm}
+                                    initialValue={searchTerm}
+                                    placeholder="Buscar por descripción, comprador, nomenclatura, ganador, banco..."
+                                />
+                            </div>
+                            <div className="w-full md:w-64 flex-shrink-0">
+                                <div className="relative">
+                                    <select
+                                        className="w-full h-[52px] appearance-none rounded-xl border-2 border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 focus:border-[#4F46E5] focus:ring-4 focus:ring-[#4F46E5]/10 outline-none transition-all dark:bg-[#0b122b] dark:border-slate-700 dark:text-white"
+                                        value={tipoProcedimiento}
+                                        onChange={(e) => setTipoProcedimiento(e.target.value)}
+                                    >
+                                        <option value="">Todos los procedimientos</option>
+                                        {DEFAULT_TIPOS_PROCEDIMIENTO.map((tipo) => (
+                                            <option key={tipo} value={tipo}>{tipo}</option>
+                                        ))}
+                                    </select>
+                                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 pointer-events-none" />
+                                </div>
+                            </div>
                         </div>
 
                         {/* Filters Grid */}

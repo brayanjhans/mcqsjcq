@@ -133,9 +133,9 @@ def procesar_archivo_diciembre(conn):
                 compiled = r.get('compiledRelease', {})
                 tender = compiled.get('tender', {})
                 
-                # 1. FILTRO: SOLO LICITACIÓN PÚBLICA
+                # 1. FILTRO: TODOS LOS TIPOS (USER REQUEST)
                 tipo_proc = tender.get('procurementMethodDetails')
-                if tipo_proc != 'Licitación Pública': continue
+                # if tipo_proc != 'Licitación Pública': continue # Disabled by User Request
                 
                 id_conv = safe_str(tender.get('id'), 100)
                 if not id_conv: continue

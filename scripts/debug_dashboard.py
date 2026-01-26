@@ -1,44 +1,79 @@
 import sys
 import os
+import requests
+import json
 
 # Add project root to path
 sys.path.append(os.getcwd())
 
-from sqlalchemy import create_engine, func, text
-from sqlalchemy.orm import sessionmaker
-from app.models.seace import LicitacionesCabecera, LicitacionesAdjudicaciones
-from app.database import DATABASE_URL
+import sys
+import os
+import requests
+import urllib.parse
 
-# Setup DB connection
-engine = create_engine(DATABASE_URL)
-SessionLocal = sessionmaker(bind=engine)
-db = SessionLocal()
+API_URL = "http://localhost:8000/api/licitaciones"
 
-try:
-    print("Testing Dashboard Query...")
+import sys
+import os
+import requests
+import urllib.parse
+
+API_URL = "http://localhost:8000/api/licitaciones"
+
+import sys
+import os
+import requests
+import urllib.parse
+import unicodedata
+
+API_URL = "http://localhost:8000/api/licitaciones"
+
+def normalize_text(text):
+    return unicodedata.normalize('NFKD', text).encode('ASCII', 'ignore').decode('utf-8')
+
+def test_spacing_mismatch():
+    print("\nTesting Spacing Normalization (N° vs N° )...")
+    # DB has: 'Licitación Pública Abreviada - Ley N°26859' (NO SPACE)
+    # Frontend might send: 'Licitación Pública Abreviada - Ley N° 26859' (WITH SPACE)
     
-    # Test 1: Count Cabecera
-    count = db.query(LicitacionesCabecera).count()
-    print(f"Total Licitaciones: {count}")
+    target = 'Licitación Pública Abreviada - Ley N° 26859' # With Space
+    
+    params = {
+        "tipo_procedimiento": target,
+        "page": 1,
+        "limit": 1
+    }
+    
+    try:
+        response = requests.get(API_URL, params=params)
+        data = response.json()
+        total = data.get("total", 0)
+        
+        print(f"Searching for '{target}' (With Space)...")
+        if total > 0:
+            print(f"[SUCCESS] Found {total} records matches DB (No Space). Normalization Working!")
+        else:
+            print(f"[FAIL] Found 0 records. Normalization failed.")
 
-    # Test 2: Sum Adjudicaciones
-    total_amount = db.query(
-        func.sum(LicitacionesAdjudicaciones.monto_adjudicado)
-    ).scalar()
-    print(f"Total Amount: {total_amount}")
+    except Exception as e:
+        print(f"Error: {e}")
 
-    # Test 3: Join Query (likely culprit)
-    print("Testing Join Query...")
-    query = db.query(LicitacionesAdjudicaciones).join(
-        LicitacionesCabecera,
-        LicitacionesAdjudicaciones.id_convocatoria == LicitacionesCabecera.id_convocatoria
-    ).limit(5)
-    results = query.all()
-    print(f"Join Query Results: {len(results)}")
+if __name__ == "__main__":
+    test_spacing_mismatch()
+            
+def dump_db_types():
+    print("\n\n--- DB ACTUAL PROCEDURE TYPES ---")
+    try:
+        from sqlalchemy import create_engine, text
+        from app.database import DATABASE_URL
+        engine = create_engine(DATABASE_URL)
+        with engine.connect() as conn:
+            result = conn.execute(text("SELECT DISTINCT tipo_procedimiento FROM licitaciones_cabecera ORDER BY 1")).fetchall()
+            for r in result:
+                print(f"DB: '{r[0]}'")
+    except Exception as e:
+        print(f"DB Dump Error: {e}")
 
-except Exception as e:
-    print(f"\nERROR DETECTED:\n{e}")
-    import traceback
-    traceback.print_exc()
-finally:
-    db.close()
+if __name__ == "__main__":
+    test_frontend_types()
+    dump_db_types()

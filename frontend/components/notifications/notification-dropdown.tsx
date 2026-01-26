@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useNotifications, Notification } from '@/hooks/use-notifications';
 import { useNotificationWebSocket } from '@/hooks/use-notification-websocket';
+import { abbreviateProcedureType } from '@/lib/utils/procedure-abbreviations';
 
 
 interface NotificationDropdownProps {
@@ -128,8 +129,25 @@ export default function NotificationDropdown({ isOpen, onToggle, onClose }: Noti
                                         }
                                     }
 
-                                    // Clean Title
-                                    const displayTitle = n.title.replace(/^(Cambio de Estado:|Estado cambiado:)/i, "").trim();
+                                    // Parsing for Procedure Type Tag (e.g. [PRINCIPAL])
+                                    const tagMatch = n.title.match(/^(\S+)\s(\[[^\]]+\])\s(.*)/);
+                                    let icon = "", badge = "", cleanTitle = n.title;
+                                    if (tagMatch) {
+                                        icon = tagMatch[1];
+                                        badge = tagMatch[2].replace('[', '').replace(']', '');
+                                        cleanTitle = tagMatch[3];
+                                    } else {
+                                        // Fallback clean if no badge
+                                        cleanTitle = n.title.replace(/^(Cambio de Estado:|Estado cambiado:)/i, "").trim();
+                                    }
+
+                                    // Badge Color Logic
+                                    const getBadgeColor = (b: string) => {
+                                        if (b === 'PRINCIPAL') return 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300';
+                                        if (b === 'SIMPLIFICADA') return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300';
+                                        if (b === 'SUBASTA') return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300';
+                                        return 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300';
+                                    };
 
                                     return (
                                         <div key={n.id} className="group relative p-4 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors cursor-default">
@@ -140,14 +158,22 @@ export default function NotificationDropdown({ isOpen, onToggle, onClose }: Noti
 
                                             <div className={`pl-4 ${!n.is_read ? '' : 'opacity-70'}`}>
                                                 {/* Header Row */}
-                                                <div className="flex justify-between items-start mb-1">
-                                                    <h4 className="text-sm font-bold text-gray-900 dark:text-white line-clamp-1 pr-4" title={n.title}>
-                                                        {displayTitle || n.title}
-                                                    </h4>
+                                                <div className="flex justify-between items-start mb-1.5 gap-2">
+                                                    <div className="flex flex-col gap-1 w-full">
+                                                        {badge && (
+                                                            <span className={`self-start text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wide ${getBadgeColor(badge)}`}>
+                                                                {icon} {badge}
+                                                            </span>
+                                                        )}
+                                                        <h4 className="text-sm font-bold text-gray-900 dark:text-white line-clamp-2 leading-tight" title={n.title}>
+                                                            {cleanTitle || n.title}
+                                                        </h4>
+                                                    </div>
+
                                                     {!n.is_read && (
                                                         <button
                                                             onClick={(e) => { e.stopPropagation(); markAsRead(n.id); }}
-                                                            className="text-[10px] font-semibold text-blue-600 hover:text-blue-800 dark:text-blue-400 shrink-0"
+                                                            className="text-[10px] font-semibold text-blue-600 hover:text-blue-800 dark:text-blue-400 shrink-0 mt-1"
                                                         >
                                                             Marcar
                                                         </button>
@@ -165,14 +191,38 @@ export default function NotificationDropdown({ isOpen, onToggle, onClose }: Noti
                                                             </span>
                                                         </div>
                                                     ) : (
-                                                        <p className="text-xs text-gray-600 dark:text-gray-300 line-clamp-2">
-                                                            {n.message}
-                                                        </p>
+                                                        <div className="mt-1 space-y-1">
+                                                            {(() => {
+                                                                // Procedure Type Parsing
+                                                                const rawMsg = n.message || "";
+                                                                const parts = rawMsg.split("\n\n");
+                                                                let procType = "", desc = rawMsg;
+
+                                                                // Allow longer types (up to 120 chars) for complex legal names
+                                                                if (parts.length >= 2 && parts[0].length < 120 && !parts[0].includes("...")) {
+                                                                    procType = parts[0];
+                                                                    desc = parts.slice(1).join("\n\n");
+                                                                }
+
+                                                                return (
+                                                                    <>
+                                                                        {procType && (
+                                                                            <span className="inline-block text-[9px] font-bold text-slate-500 uppercase tracking-wider bg-gray-100 dark:bg-slate-800 px-1.5 rounded border border-gray-200 dark:border-slate-700 mb-0.5" title={procType}>
+                                                                                {abbreviateProcedureType(procType)}
+                                                                            </span>
+                                                                        )}
+                                                                        <p className="text-xs text-gray-600 dark:text-gray-300 line-clamp-3 whitespace-pre-wrap">
+                                                                            {desc}
+                                                                        </p>
+                                                                    </>
+                                                                );
+                                                            })()}
+                                                        </div>
                                                     )}
                                                 </div>
 
                                                 {/* Footer Row */}
-                                                <div className="flex items-center justify-between">
+                                                <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-50 dark:border-white/5">
                                                     <span className="text-[10px] text-gray-400 font-medium">
                                                         {formatTimeAgo(n.created_at)}
                                                     </span>
@@ -181,7 +231,7 @@ export default function NotificationDropdown({ isOpen, onToggle, onClose }: Noti
                                                             onClick={() => { onClose(); router.push('/seace/notificaciones?tab=unread'); }}
                                                             className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
                                                         >
-                                                            Ver <i className="fas fa-chevron-right text-[9px]"></i>
+                                                            Ver detalles <i className="fas fa-chevron-right text-[9px]"></i>
                                                         </button>
                                                     )}
                                                 </div>

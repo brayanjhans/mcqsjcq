@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { type Notificacion, type EstadoLicitacion } from "@/types/notificacion";
 import { useNotifications } from "@/hooks/use-notifications"; // Import hook
+import { abbreviateProcedureType } from "@/lib/utils/procedure-abbreviations";
 
 import { useSearchParams } from "next/navigation";
 
@@ -55,6 +56,7 @@ function NotificacionesPageContent() {
         ...n,
         // Map hook 'is_read' to local 'estado' string just for compatibility with existing UI logic below
         estado: n.is_read ? 'LEIDO' : 'NO_LEIDO',
+        fecha: n.created_at, // Map created_at to fecha for UI
         // Extract metadata
         categoria: n.metadata?.categoria || 'GENERAL',
         ubicacion: n.metadata?.ubicacion || 'PERU',
@@ -123,7 +125,7 @@ function NotificacionesPageContent() {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
                         <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Notificaciones</h1>
-                        <p className="text-sm text-slate-500 mt-1 dark:text-slate-400">Historial de cambios en licitaciones</p>
+                        <p className="text-sm text-slate-500 mt-1 dark:text-slate-400">Historial de cambios en procesos</p>
                     </div>
                     <button
                         onClick={markAllAsRead}
@@ -161,7 +163,7 @@ function NotificacionesPageContent() {
 
                     {/* Table Header */}
                     <div className="hidden md:grid grid-cols-12 gap-4 p-4 border-b border-slate-100 text-[11px] font-bold text-slate-400 uppercase tracking-wider dark:border-white/5">
-                        <div className="col-span-5">Licitación</div>
+                        <div className="col-span-5">Proceso</div>
                         <div className="col-span-2">Detalles</div>
                         <div className="col-span-3 text-center">Cambio de Estado</div>
                         <div className="col-span-1 text-center">Fecha</div>
@@ -184,12 +186,69 @@ function NotificacionesPageContent() {
                                             )}
                                         </div>
                                         <div className="space-y-1">
-                                            <h3 className="text-sm font-bold text-slate-800 dark:text-white leading-snug">
-                                                {notif.estadoNuevo ? `Cambio de Estado: ${notif.estadoNuevo}` : notif.titulo}
+                                            <h3 className="text-sm font-bold text-slate-800 dark:text-white leading-snug flex items-start gap-2">
+                                                {(() => {
+                                                    // Parse Badge Logic Inline - SAFE VERSION
+                                                    const rawTitle = notif.title || notif.titulo || "";
+                                                    const tagMatch = rawTitle.match(/^(\S+)\s(\[[^\]]+\])\s(.*)/);
+                                                    let icon = "", badge = "", cleanTitle = rawTitle;
+
+                                                    if (tagMatch) {
+                                                        icon = tagMatch[1];
+                                                        badge = tagMatch[2].replace('[', '').replace(']', '');
+                                                        cleanTitle = tagMatch[3];
+
+                                                        const badgeColor = badge === 'PRINCIPAL' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' :
+                                                            badge === 'SIMPLIFICADA' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' :
+                                                                badge === 'SUBASTA' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' :
+                                                                    'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300';
+
+                                                        return (
+                                                            <div className="flex flex-col gap-1">
+                                                                <span className={`self-start text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wide ${badgeColor} inline-flex items-center gap-1`}>
+                                                                    {icon} {badge}
+                                                                </span>
+                                                                <span>{cleanTitle}</span>
+                                                            </div>
+                                                        );
+                                                    }
+
+                                                    // Standard Title
+                                                    return <span>{notif.estadoNuevo ? `Cambio de Estado: ${notif.estadoNuevo}` : rawTitle}</span>;
+                                                })()}
                                             </h3>
-                                            <p className="text-xs text-slate-500 line-clamp-2 dark:text-slate-400">
-                                                {notif.mensaje || notif.titulo /* Fallback if title was used for header */}
-                                            </p>
+
+                                            {/* Procedure Type & Message Parsing */}
+                                            {(() => {
+                                                const rawMsg = notif.mensaje || notif.message || notif.title || "";
+                                                // Check if message has the new format (Type \n\n Desc)
+                                                // We look for a double newline pattern I added in backend
+                                                const parts = rawMsg.split("\n\n");
+
+                                                let procType = "";
+                                                let desc = rawMsg;
+
+                                                if (parts.length >= 2) {
+                                                    // Heuristic: Allow longer types up to 120 chars for "Adjudicación Simplificada - Ley..." cases
+                                                    if (parts[0].length < 120 && !parts[0].includes("...")) {
+                                                        procType = parts[0];
+                                                        desc = parts.slice(1).join("\n\n");
+                                                    }
+                                                }
+
+                                                return (
+                                                    <div className="mt-1 space-y-1">
+                                                        {procType && (
+                                                            <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider bg-slate-100 dark:bg-slate-800 w-fit px-1.5 rounded border border-slate-200 dark:border-slate-700" title={procType}>
+                                                                {abbreviateProcedureType(procType)}
+                                                            </div>
+                                                        )}
+                                                        <p className="text-xs text-slate-500 line-clamp-2 dark:text-slate-400 whitespace-pre-wrap">
+                                                            {desc}
+                                                        </p>
+                                                    </div>
+                                                );
+                                            })()}
 
                                             {notif.orcid && (
                                                 <div className="mt-1">
@@ -268,7 +327,7 @@ function NotificacionesPageContent() {
                             </div>
                             <h3 className="text-lg font-bold text-slate-900 mb-1 dark:text-white">Sin Notificaciones</h3>
                             <p className="text-sm text-slate-500 max-w-sm mx-auto dark:text-slate-400">
-                                Te avisaremos cuando haya cambios importantes en tus licitaciones seguidas o procesos relevantes.
+                                Te avisaremos cuando haya cambios importantes en tus procesos seguidos o relevantes.
                             </p>
                         </div>
                     )}

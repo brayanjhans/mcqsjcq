@@ -1,7 +1,7 @@
 """
 Notification Model - Sistema de notificaciones
 """
-from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, Enum, ForeignKey
+from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, Enum, ForeignKey, JSON
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from app.database import Base
@@ -39,6 +39,7 @@ class Notification(Base):
     is_read = Column(Boolean, default=False, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
     expires_at = Column(DateTime(timezone=True), nullable=True)
+    extra_data = Column(JSON, nullable=True) # Renamed from metadata to avoid reserved keyword conflict
     
     # Relación con User
     user = relationship("User", back_populates="notifications")

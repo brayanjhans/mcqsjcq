@@ -13,6 +13,35 @@ import {
     RotateCcw
 } from "lucide-react";
 
+const DEFAULT_TIPOS_PROCEDIMIENTO = [
+    "Adjudicación Abreviada",
+    "Adjudicación Directa Pública",
+    "Adjudicación Directa Selectiva",
+    "Adjudicación Selectiva",
+    "Adjudicación Simplificada",
+    "Adjudicación Simplificada - Décima Disposición Complementaria Final Reg. Ley 30225",
+    "Adjudicación Simplificada - Decreto Urgencia 012-2023",
+    "Adjudicación Simplificada - Decreto Urgencia 032-2023",
+    "Adjudicación Simplificada - Decreto Urgencia 034-2023",
+    "Adjudicación Simplificada - Ley Nº 26859",
+    "Adjudicación Simplificada - Ley Nº 30556",
+    "Adjudicación Simplificada - Ley N° 31125",
+    "Adjudicación Simplificada - Ley N° 31579",
+    "Adjudicación Simplificada - Ley N° 31589",
+    "Adjudicación Simplificada - Ley N° 31728",
+    "Concurso Público",
+    "Concurso Público de Servicios",
+    "Licitación Pública",
+    "Licitación Pública Abreviada",
+    "Licitación Pública Abreviada - Ley N°26859",
+    "Licitación Pública Abreviada - Ley N°31589",
+    "Licitación Pública Abreviada Emergencia",
+    "Licitación Pública Abreviada Homologación",
+    "Licitación Pública Abreviada Séptima DCF Ley N°32069",
+    "Procedimiento Especial de Selección",
+    "Subasta Inversa Electrónica"
+];
+
 function BusquedaContent() {
     // Filter State (Matching Gestion Manual & Reportes)
     const [showFilters, setShowFilters] = useState(true);
@@ -29,6 +58,7 @@ function BusquedaContent() {
     const [tipoGarantia, setTipoGarantia] = useState("");
     const [aseguradora, setAseguradora] = useState("");
     const [entidad, setEntidad] = useState("");
+    const [tipoProcedimiento, setTipoProcedimiento] = useState("");
 
     // Select States - Options (Dynamic)
     const [departamentoOptions, setDepartamentoOptions] = useState<string[]>([]);
@@ -38,6 +68,7 @@ function BusquedaContent() {
     const [tipoGarantiaOptions, setTipoGarantiaOptions] = useState<string[]>([]);
     const [aseguradoraOptions, setAseguradoraOptions] = useState<string[]>([]);
     const [entidadOptions, setEntidadOptions] = useState<string[]>([]);
+    const [tipoProcedimientoOptions, setTipoProcedimientoOptions] = useState<string[]>([]);
 
     // Cascading Location Options
     const [provinciaOptions, setProvinciaOptions] = useState<string[]>([]);
@@ -66,6 +97,8 @@ function BusquedaContent() {
                     setAseguradoraOptions(filters.aseguradoras || []);
                     setEntidadOptions(filters.entidades || []);
                     setAnioOptions(filters.anios || []);
+                    // 'tipos_entidad' from backend actually returns procedure types
+                    setTipoProcedimientoOptions(filters.tipos_entidad || []);
                 }
             } catch (error) {
                 console.error("Error loading filters:", error);
@@ -142,6 +175,7 @@ function BusquedaContent() {
             if (tipoGarantia) filters.tipo_garantia = tipoGarantia;
             if (aseguradora) filters.entidad_financiera = aseguradora;
             if (entidad) filters.comprador = entidad;
+            if (tipoProcedimiento) filters.tipo_procedimiento = tipoProcedimiento;
 
             const data = await licitacionService.getAll(currentPage, itemsPerPage, filters);
 
@@ -165,7 +199,7 @@ function BusquedaContent() {
 
     useEffect(() => {
         fetchLicitaciones();
-    }, [currentPage, itemsPerPage, searchTerm, departamento, estado, categoria, anio, mes, provincia, distrito, tipoGarantia, aseguradora, entidad]);
+    }, [currentPage, itemsPerPage, searchTerm, departamento, estado, categoria, anio, mes, provincia, distrito, tipoGarantia, aseguradora, entidad, tipoProcedimiento]);
 
     const handleClear = () => {
         setSearchTerm("");
@@ -179,6 +213,7 @@ function BusquedaContent() {
         setTipoGarantia("");
         setAseguradora("");
         setEntidad("");
+        setTipoProcedimiento("");
         setProvinciaOptions([]);
         setDistritoOptions([]);
         setCurrentPage(1);
@@ -222,12 +257,28 @@ function BusquedaContent() {
                         </div>
 
                         {/* Search Bar - Replaced with AutocompleteSearch */}
-                        <div className="relative mb-8 group z-50">
-                            <AutocompleteSearch
-                                onSearch={(term) => setSearchTerm(term)}
-                                placeholder="Buscar por descripción, comprador, nomenclatura, ganador, banco..."
-                                initialValue={searchTerm}
-                            />
+                        {/* Search Bar & Tipo Procedimiento Row */}
+                        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-8 relative z-50">
+                            <div className="lg:col-span-3">
+                                <AutocompleteSearch
+                                    onSearch={(term) => setSearchTerm(term)}
+                                    placeholder="Buscar por descripción, comprador, nomenclatura, ganador, banco..."
+                                    initialValue={searchTerm}
+                                />
+                            </div>
+                            <div className="relative">
+                                <select
+                                    className="w-full h-full appearance-none rounded-xl border border-slate-200 bg-white py-3 pl-4 pr-10 text-sm font-semibold text-slate-700 focus:border-indigo-500 focus:ring-0 outline-none dark:bg-[#111c44] dark:border-slate-700 dark:text-slate-300"
+                                    value={tipoProcedimiento} onChange={(e) => setTipoProcedimiento(e.target.value)}
+                                >
+                                    <option value="">Todos los procedimientos</option>
+                                    {/* Merge Defaults + Dynamic, Deduplicate, Sort */}
+                                    {Array.from(new Set([...DEFAULT_TIPOS_PROCEDIMIENTO, ...tipoProcedimientoOptions])).sort().map((proc) => (
+                                        <option key={proc} value={proc}>{proc}</option>
+                                    ))}
+                                </select>
+                                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                            </div>
                         </div>
 
                         {/* Filters Grid */}
@@ -391,6 +442,7 @@ function BusquedaContent() {
                                             <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
                                         </div>
                                     </div>
+
                                 </>
                             )}
                         </div>
@@ -419,7 +471,7 @@ function BusquedaContent() {
                 ) : licitaciones.length > 0 ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
                         {licitaciones.map((lic) => (
-                            <LicitacionCard key={lic.id_convocatoria} licitacion={lic} />
+                            <LicitacionCard key={lic.id_convocatoria} licitacion={lic} searchTerm={searchTerm} />
                         ))}
                     </div>
                 ) : (
@@ -466,7 +518,7 @@ function BusquedaContent() {
                 )}
 
             </div>
-        </div>
+        </div >
     );
 }
 

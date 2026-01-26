@@ -20,6 +20,7 @@ class NotificationService:
         title: str,
         message: str,
         link: Optional[str] = None,
+        metadata: Optional[dict] = None,
         expires_days: Optional[int] = 30
     ) -> Notification:
         """Crear una nueva notificación"""
@@ -34,6 +35,7 @@ class NotificationService:
             title=title,
             message=message,
             link=link,
+            extra_data=metadata, # Pass payload to new column
             expires_at=expires_at
         )
         

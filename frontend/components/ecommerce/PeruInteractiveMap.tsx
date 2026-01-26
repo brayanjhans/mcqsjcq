@@ -28,6 +28,7 @@ interface PeruInteractiveMapProps {
     selectedDepartment: string | null;
     onDepartmentClick: (deptName: string | null) => void;
     loading: boolean;
+    label?: string; // Dynamic
 }
 
 export const PeruInteractiveMap: React.FC<PeruInteractiveMapProps> = ({
@@ -35,7 +36,8 @@ export const PeruInteractiveMap: React.FC<PeruInteractiveMapProps> = ({
     provinceRanking,
     selectedDepartment,
     onDepartmentClick,
-    loading
+    loading,
+    label = "Licitaciones"
 }) => {
     const [hoveredDept, setHoveredDept] = useState<string | null>(null);
     const [selectedDept, setSelectedDept] = useState<string | null>(null);
@@ -96,7 +98,7 @@ export const PeruInteractiveMap: React.FC<PeruInteractiveMapProps> = ({
             <div className="flex flex-row justify-between items-start mb-2 relative">
                 <div>
                     <h3 className="text-sm font-bold text-slate-800 dark:text-white uppercase tracking-wide">
-                        {hoveredDept || selectedDept || "LICITACIONES POR DEPARTAMENTO"}
+                        {hoveredDept || selectedDept || "DISTRIBUCIÓN GEOGRÁFICA"}
                     </h3>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                         {(hoveredDept || selectedDept) ? (
@@ -105,10 +107,10 @@ export const PeruInteractiveMap: React.FC<PeruInteractiveMapProps> = ({
                                     {new Intl.NumberFormat('es-PE').format(
                                         departmentRanking.find(d => d.name === (hoveredDept || selectedDept))?.count || 0
                                     )}
-                                </span> Licitaciones
+                                </span> {label}
                             </>
                         ) : (
-                            "Distribución nacional de licitaciones"
+                            `Distribución nacional de ${label.toLowerCase()}`
                         )}
                     </p>
                 </div>
@@ -254,7 +256,7 @@ export const PeruInteractiveMap: React.FC<PeruInteractiveMapProps> = ({
                                                 {item.name}
                                             </p>
                                             <p className="text-[10px] text-slate-500 dark:text-slate-400">
-                                                {new Intl.NumberFormat('es-PE').format(item.count)} Licitaciones
+                                                {new Intl.NumberFormat('es-PE').format(item.count)} {label}
                                             </p>
                                         </div>
                                     </div>

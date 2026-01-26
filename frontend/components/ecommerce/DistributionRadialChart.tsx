@@ -4,7 +4,7 @@ import React from "react";
 import dynamic from "next/dynamic";
 import { ApexOptions } from "apexcharts";
 import { TrendingUp } from "lucide-react";
-import { YearSelector } from "@/components/dashboard/YearSelector";
+
 
 const ReactApexChart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
@@ -12,19 +12,21 @@ interface DistributionRadialChartProps {
     data: Array<{ type: string, total: number }>;
     selectedYear?: number;
     onYearChange?: (year: number) => void;
+    label?: string; // Dynamic
 }
 
 export const DistributionRadialChart: React.FC<DistributionRadialChartProps> = ({
     data = [],
     selectedYear = 2024,
-    onYearChange = () => { }
+    onYearChange = () => { },
+    label = "Licitaciones"
 }) => {
     const totalAmount = data.reduce((sum, item) => sum + item.total, 0);
 
     const categories = [
         { key: "BIENES", label: "Bien", color: "#3B82F6", textColor: "text-blue-600" },
-        { key: "SERVICIOS", label: "Servicio", color: "#10B981", textColor: "text-emerald-600" },
-        { key: "OBRAS", label: "Obra", color: "#F59E0B", textColor: "text-amber-600" }
+        { key: "SERVICIOS", label: "Servicio", color: "#EAB308", textColor: "text-yellow-600" },
+        { key: "OBRAS", label: "Obra", color: "#10B981", textColor: "text-emerald-600" }
     ];
 
     const stats = categories.map(cat => {
@@ -102,15 +104,9 @@ export const DistributionRadialChart: React.FC<DistributionRadialChartProps> = (
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
                 <div>
                     <h3 className="text-lg font-bold text-slate-900 dark:text-white">Distribución por Tipo</h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Licitaciones por categoría</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">{label} por categoría</p>
                 </div>
-                <div className="flex bg-slate-50 dark:bg-slate-800 rounded-lg p-1 shrink-0">
-                    <YearSelector
-                        selectedYear={selectedYear}
-                        onYearChange={onYearChange}
-                        allowAll={true}
-                    />
-                </div>
+                {/* YearSelector removed */}
             </div>
 
             {/* Chart */}
@@ -127,7 +123,7 @@ export const DistributionRadialChart: React.FC<DistributionRadialChartProps> = (
             {/* Footer Summary */}
             <div className="text-center mb-8">
                 <p className="text-[13px] text-slate-500 dark:text-slate-400 max-w-[80%] mx-auto leading-relaxed">
-                    <span className="font-bold text-slate-700 dark:text-slate-200">{new Intl.NumberFormat('es-PE').format(totalAmount)}</span> licitaciones distribuidas:
+                    <span className="font-bold text-slate-700 dark:text-slate-200">{new Intl.NumberFormat('es-PE').format(totalAmount)}</span> {label.toLowerCase()} distribuidas:
                     {stats.map((stat, idx) => (
                         <span key={idx}>
                             {' '}<span className={`${stat.textColor} font-semibold`}>{stat.label.toUpperCase()}</span> ({stat.percent}%)

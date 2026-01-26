@@ -3,7 +3,7 @@
 import React from "react";
 import dynamic from "next/dynamic";
 import { ApexOptions } from "apexcharts";
-import { YearSelector } from "@/components/dashboard/YearSelector";
+
 
 const ReactApexChart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
@@ -11,9 +11,10 @@ interface SalesAreaChartProps {
     data: Array<{ month: string; total: number }>;
     selectedYear: number;
     onYearChange: (year: number) => void;
+    label?: string; // Dynamic
 }
 
-export const SalesAreaChart: React.FC<SalesAreaChartProps> = ({ data = [], selectedYear, onYearChange }) => {
+export const SalesAreaChart: React.FC<SalesAreaChartProps> = ({ data = [], selectedYear, onYearChange, label = "Licitaciones" }) => {
     // Normalize data to ensure 12 months always exist (fixes undefined errors and empty charts)
     const allMonths = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 
@@ -92,14 +93,14 @@ export const SalesAreaChart: React.FC<SalesAreaChartProps> = ({ data = [], selec
                         <div class="text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-bold mb-1">${month}</div>
                         <div class="flex items-center gap-2">
                             <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
-                            <span class="text-sm font-bold text-slate-900 dark:text-white">${value} Licitaciones</span>
+                            <span class="text-sm font-bold text-slate-900 dark:text-white">${value} ${label}</span>
                         </div>
                     </div>
                 `;
             },
             y: {
                 formatter: function (val) {
-                    return val + " Licitaciones"
+                    return val + " " + label
                 }
             },
             marker: { show: false },
@@ -108,7 +109,7 @@ export const SalesAreaChart: React.FC<SalesAreaChartProps> = ({ data = [], selec
     };
 
     const series = [
-        { name: "Licitaciones", data: seriesData },
+        { name: label, data: seriesData },
     ];
 
     const years = [2024, 2025, 2026];
@@ -118,15 +119,9 @@ export const SalesAreaChart: React.FC<SalesAreaChartProps> = ({ data = [], selec
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 shrink-0">
                 <div>
                     <h3 className="text-lg font-bold text-slate-900 dark:text-white">Estadísticas</h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">Total de licitaciones por mes</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">Total de {label.toLowerCase()} por mes</p>
                 </div>
-                <div className="flex bg-slate-50 dark:bg-slate-800 rounded-lg p-1">
-                    <YearSelector
-                        selectedYear={selectedYear}
-                        onYearChange={onYearChange}
-                        allowAll={true}
-                    />
-                </div>
+                {/* YearSelector removed */}
             </div>
             <div className="flex-1 w-full -ml-2 min-h-0 relative">
                 <ReactApexChart options={options} series={series} type="area" height="100%" />

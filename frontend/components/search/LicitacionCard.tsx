@@ -27,6 +27,7 @@ interface Props {
     selectable?: boolean;
     isSelected?: boolean;
     onToggleSelect?: (id: string) => void;
+    searchTerm?: string; // For highlighting
 }
 
 export const LicitacionCard: React.FC<Props> = ({
@@ -37,7 +38,8 @@ export const LicitacionCard: React.FC<Props> = ({
     basePath = "/seace/busqueda",
     selectable = false,
     isSelected = false,
-    onToggleSelect
+    onToggleSelect,
+    searchTerm
 }) => {
     // FORMATTERS
     const formatDate = (dateString?: string) => {
@@ -71,6 +73,66 @@ export const LicitacionCard: React.FC<Props> = ({
             currency: currency || "PEN",
         }).format(amount);
     };
+
+    // --- Highlight Logic ---
+    // Safely highlights text without breaking layout match
+    const getHighlightedText = (text: string | null | undefined, highlight: string | undefined): React.ReactNode => {
+        if (!text) return "";
+        if (!highlight || highlight.length < 2) return text;
+
+        try {
+            // Escape special regex chars
+            const safeHighlight = highlight.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const parts = text.split(new RegExp(`(${safeHighlight})`, 'gi'));
+
+            return (
+                <span>
+                    {parts.map((part, i) =>
+                        part.toLowerCase() === highlight.toLowerCase() ?
+                            <span key={i} className="bg-yellow-200 text-slate-900 px-0.5 rounded-sm dark:bg-yellow-500/30 dark:text-yellow-100 font-bold">{part}</span> : part
+                    )}
+                </span>
+            );
+        } catch (e) {
+            return text;
+        }
+    };
+
+    // --- Hidden Match Detection ---
+    // returns { type: 'Consorcio' | 'Ganador', text: string } if match found in hidden fields
+    const getHiddenMatch = () => {
+        if (!searchTerm || searchTerm.length < 3) return null;
+
+        const term = searchTerm.toLowerCase();
+        // Ignore if match is already visible
+        const visibleContent = ((licitacion.nomenclatura || "") + (licitacion.descripcion || "") + (licitacion.comprador || "")).toLowerCase();
+        if (visibleContent.includes(term)) return null;
+
+        // Check Consortiums first (most common hidden cause)
+        if (licitacion.miembros_consorcio) {
+            for (const m of licitacion.miembros_consorcio) {
+                if (m.nombre_miembro && m.nombre_miembro.toLowerCase().includes(term)) {
+                    return { type: 'Consorcio', text: m.nombre_miembro };
+                }
+                if (m.ruc_miembro && m.ruc_miembro.includes(term)) {
+                    return { type: 'RUC Consorcio', text: `${m.ruc_miembro} (${m.nombre_miembro})` };
+                }
+            }
+        }
+
+        // Check Winners (if not extended view where they are visible)
+        // Actually, check them anyway to be safe, highlighters in body handle visible ones
+        if (licitacion.ganador_nombre && licitacion.ganador_nombre.toLowerCase().includes(term)) {
+            return { type: 'Ganador', text: licitacion.ganador_nombre };
+        }
+        if (licitacion.ganador_ruc && licitacion.ganador_ruc.includes(term)) {
+            return { type: 'RUC Ganador', text: licitacion.ganador_ruc };
+        }
+
+        return null;
+    };
+
+    const hiddenMatch = getHiddenMatch();
 
     // LOGIC
     const statusUpper = licitacion.estado_proceso?.toUpperCase() || "PENDIENTE";
@@ -123,7 +185,7 @@ export const LicitacionCard: React.FC<Props> = ({
                 {guarantees.map((g, i) => (
                     <span key={i} className="flex items-center gap-1 bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded font-bold">
                         <Building2 className="w-3 h-3" />
-                        {g.trim().replace(/_/g, " ")}
+                        {getHighlightedText(g.trim().replace(/_/g, " "), searchTerm)}
                     </span>
                 ))}
             </div>
@@ -134,7 +196,7 @@ export const LicitacionCard: React.FC<Props> = ({
         if (!licitacion.entidad_financiera) return null;
         return (
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded bg-slate-100 text-slate-600 border border-slate-200 text-[10px] font-bold uppercase">
-                {licitacion.entidad_financiera}
+                {getHighlightedText(licitacion.entidad_financiera, searchTerm)}
             </span>
         );
     };
@@ -145,6 +207,19 @@ export const LicitacionCard: React.FC<Props> = ({
                 ${isSelected ? 'border-2 border-blue-600' : 'border border-slate-200 hover:border-indigo-300'}
             `}
         >
+            {/* Hidden Match Badge - Shows why this card appeared if term is hidden */}
+            {hiddenMatch && (
+                <div className="mb-3 -mt-2 -mx-2 bg-indigo-50 border border-indigo-100 rounded-lg px-3 py-2 flex items-center gap-2 animate-pulse dark:bg-indigo-900/20 dark:border-indigo-500/30">
+                    <div className="flex items-center justify-center w-5 h-5 rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-800 dark:text-indigo-300">
+                        <Users className="w-3 h-3" />
+                    </div>
+                    <span className="text-xs font-semibold text-indigo-700 dark:text-indigo-300">
+                        Coincidencia en {hiddenMatch.type}:
+                        <span className="ml-1 font-bold">{getHighlightedText(hiddenMatch.text, searchTerm)}</span>
+                    </span>
+                </div>
+            )}
+
             {/* Selection Checkbox - Absolute Top Right */}
             {selectable && (
                 <div className="absolute top-4 right-4 z-20">
@@ -175,10 +250,10 @@ export const LicitacionCard: React.FC<Props> = ({
                         </div>
                         <div className="min-w-0">
                             <h4 className="font-bold text-slate-900 text-sm dark:text-white line-clamp-2 leading-tight">
-                                {licitacion.nomenclatura || "SIN NOMENCLATURA"}
+                                {licitacion.nomenclatura ? getHighlightedText(licitacion.nomenclatura, searchTerm) : "SIN NOMENCLATURA"}
                             </h4>
                             <p className="text-[10px] text-slate-400 font-medium mt-1">
-                                {licitacion.ocid || `ocds-id-${licitacion.id_convocatoria}`}
+                                {getHighlightedText(licitacion.ocid || `ocds-id-${licitacion.id_convocatoria}`, searchTerm)}
                             </p>
                         </div>
                     </div>
@@ -197,7 +272,7 @@ export const LicitacionCard: React.FC<Props> = ({
             {/* Description */}
             <div className="relative px-5 pb-3">
                 <h3 className="text-xs font-bold text-slate-900 uppercase leading-relaxed line-clamp-3 dark:text-slate-100">
-                    {licitacion.descripcion}
+                    {getHighlightedText(licitacion.descripcion, searchTerm)}
                 </h3>
             </div>
 
@@ -212,7 +287,7 @@ export const LicitacionCard: React.FC<Props> = ({
                     <div className="flex-1 min-w-0">
                         <p className="text-[10px] text-slate-500 font-medium uppercase mb-0.5">Comprador</p>
                         <p className="text-[11px] font-bold text-slate-800 uppercase leading-tight line-clamp-2 dark:text-slate-200">
-                            {licitacion.comprador}
+                            {getHighlightedText(licitacion.comprador, searchTerm)}
                         </p>
                     </div>
                 </div>

@@ -15,6 +15,7 @@ interface FilterOptions {
     tipos_entidad: string[];
     objetos: string[];
     departamentos: string[];
+    tipos_procedimiento: string[];
 }
 
 export const SearchFiltersComponent: React.FC<Props> = ({
@@ -32,6 +33,34 @@ export const SearchFiltersComponent: React.FC<Props> = ({
     const DEFAULT_ESTADOS = ["CONVOCADO", "ADJUDICADO", "DESIERTO", "CANCELADO", "SUSPENDIDO"];
     const DEFAULT_CATEGORIAS = ["BIENES", "SERVICIOS", "OBRAS", "CONSULTORIA DE OBRAS"];
     const DEFAULT_ASEGURADORAS = ["SECREX", "AVLA", "INSUR", "MAPFRE", "CRECER", "LIBERTY", "MUNDIAL"];
+    const DEFAULT_TIPOS_PROCEDIMIENTO = [
+        "Adjudicación Abreviada",
+        "Adjudicación Directa Pública",
+        "Adjudicación Directa Selectiva",
+        "Adjudicación Selectiva",
+        "Adjudicación Simplificada",
+        "Adjudicación Simplificada - Décima Disposición Complementaria Final Reg. Ley 30225",
+        "Adjudicación Simplificada - Decreto Urgencia 012-2023",
+        "Adjudicación Simplificada - Decreto Urgencia 032-2023",
+        "Adjudicación Simplificada - Decreto Urgencia 034-2023",
+        "Adjudicación Simplificada - Ley Nº 26859",
+        "Adjudicación Simplificada - Ley Nº 30556",
+        "Adjudicación Simplificada - Ley N° 31125",
+        "Adjudicación Simplificada - Ley N° 31579",
+        "Adjudicación Simplificada - Ley N° 31589",
+        "Adjudicación Simplificada - Ley N° 31728",
+        "Concurso Público",
+        "Concurso Público de Servicios",
+        "Licitación Pública",
+        "Licitación Pública Abreviada",
+        "Licitación Pública Abreviada - Ley N°26859",
+        "Licitación Pública Abreviada - Ley N°31589",
+        "Licitación Pública Abreviada Emergencia",
+        "Licitación Pública Abreviada Homologación",
+        "Licitación Pública Abreviada Séptima DCF Ley N°32069",
+        "Procedimiento Especial de Selección",
+        "Subasta Inversa Electrónica"
+    ];
 
     const [localFilters, setLocalFilters] = useState<SearchFilters>(initialFilters);
     const [options, setOptions] = useState<FilterOptions>({
@@ -39,7 +68,8 @@ export const SearchFiltersComponent: React.FC<Props> = ({
         aseguradoras: DEFAULT_ASEGURADORAS,
         tipos_entidad: [],
         objetos: DEFAULT_CATEGORIAS,
-        departamentos: DEFAULT_DEPARTAMENTOS
+        departamentos: DEFAULT_DEPARTAMENTOS,
+        tipos_procedimiento: DEFAULT_TIPOS_PROCEDIMIENTO
     });
 
     const [showAdvanced, setShowAdvanced] = useState(false);
@@ -59,7 +89,8 @@ export const SearchFiltersComponent: React.FC<Props> = ({
                     aseguradoras: data.aseguradoras?.length ? data.aseguradoras : [],
                     tipos_entidad: data.tipos_entidad || [], // Backend might not return this yet?
                     objetos: data.categorias?.length ? data.categorias : [], // Map categorias to objetos
-                    departamentos: data.departamentos?.length ? data.departamentos : []
+                    departamentos: data.departamentos?.length ? data.departamentos : [],
+                    tipos_procedimiento: DEFAULT_TIPOS_PROCEDIMIENTO // Keep static for now or fetch if API supports
                 }));
             } catch (error) {
                 console.error("Error fetching filter options:", error);
@@ -227,80 +258,99 @@ export const SearchFiltersComponent: React.FC<Props> = ({
                         </div>
                     </div>
                 </div>
+            </div>
 
-                {/* Filters Row 2: Avanzados (Expandible) */}
-                {showAdvanced && (
-                    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 animate-in fade-in slide-in-from-top-2 duration-300">
+            {/* Filters Row 2: Procedimiento & Avanzados */}
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                {/* Tipo de Procedimiento (NUEVO REQUERIMIENTO) */}
+                <div className="lg:col-span-2">
+                    <label className={labelClasses}>Tipo de Procedimiento</label>
+                    <select
+                        className={inputClasses}
+                        value={localFilters.tipo_procedimiento || ""}
+                        onChange={(e) => handleChange("tipo_procedimiento", e.target.value)}
+                    >
+                        <option value="">Todos los procedimientos</option>
+                        {options.tipos_procedimiento.map((proc) => (
+                            <option key={proc} value={proc}>{proc}</option>
+                        ))}
+                    </select>
+                </div>
+            </div>
 
-                        {/* Ubicación Detallada */}
-                        <div className="flex gap-2">
-                            <div className="flex-1 hidden sm:block">
-                                <label className={labelClasses}>Ubicación Detallada</label>
-                                <input
-                                    type="text"
-                                    placeholder="Provincia"
-                                    className={inputClasses}
-                                    value={localFilters.provincia || ""}
-                                    onChange={(e) => handleChange("provincia", e.target.value)}
-                                />
-                            </div>
-                            <div className="flex-1">
-                                <label className={`${labelClasses} sm:invisible`}>Distrito</label>
-                                <input
-                                    type="text"
-                                    placeholder="Distrito"
-                                    className={inputClasses}
-                                    value={localFilters.distrito || ""}
-                                    onChange={(e) => handleChange("distrito", e.target.value)}
-                                />
-                            </div>
-                        </div>
+            {/* Filters Row 3: Avanzados (Expandible) */}
+            {showAdvanced && (
+                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 animate-in fade-in slide-in-from-top-2 duration-300">
 
-                        {/* Tipo de Garantía */}
-                        <div>
-                            <label className={labelClasses}>Tipo de Garantía</label>
-                            <select
-                                className={inputClasses}
-                                value={localFilters.tipo_garantia || ""}
-                                onChange={(e) => handleChange("tipo_garantia", e.target.value)}
-                            >
-                                <option value="">Todos los tipos</option>
-                                <option value="CARTA_FIANZA">Carta Fianza</option>
-                                <option value="POLIZA_CAUCION">Póliza de Caución</option>
-                                <option value="FIDEICOMISO">Fideicomiso</option>
-                            </select>
-                        </div>
-
-                        {/* Aseguradora */}
-                        <div>
-                            <label className={labelClasses}>Aseguradora</label>
-                            <select
-                                className={inputClasses}
-                                value={localFilters.aseguradora || ""}
-                                onChange={(e) => handleChange("aseguradora", e.target.value)}
-                            >
-                                <option value="">Todas las aseguradoras</option>
-                                {options.aseguradoras.map((seg) => (
-                                    <option key={seg} value={seg}>{seg}</option>
-                                ))}
-                            </select>
-                        </div>
-
-                        {/* Entidad o Consorcio */}
-                        <div>
-                            <label className={labelClasses}>Entidad o Consorcio</label>
+                    {/* Ubicación Detallada */}
+                    <div className="flex gap-2">
+                        <div className="flex-1 hidden sm:block">
+                            <label className={labelClasses}>Ubicación Detallada</label>
                             <input
                                 type="text"
-                                placeholder="Todas las entidades"
+                                placeholder="Provincia"
                                 className={inputClasses}
-                                value={localFilters.entidad || ""}
-                                onChange={(e) => handleChange("entidad", e.target.value)}
+                                value={localFilters.provincia || ""}
+                                onChange={(e) => handleChange("provincia", e.target.value)}
                             />
                         </div>
-
+                        <div className="flex-1">
+                            <label className={`${labelClasses} sm:invisible`}>Distrito</label>
+                            <input
+                                type="text"
+                                placeholder="Distrito"
+                                className={inputClasses}
+                                value={localFilters.distrito || ""}
+                                onChange={(e) => handleChange("distrito", e.target.value)}
+                            />
+                        </div>
                     </div>
-                )}
-            </div>
+
+                    {/* Tipo de Garantía */}
+                    <div>
+                        <label className={labelClasses}>Tipo de Garantía</label>
+                        <select
+                            className={inputClasses}
+                            value={localFilters.tipo_garantia || ""}
+                            onChange={(e) => handleChange("tipo_garantia", e.target.value)}
+                        >
+                            <option value="">Todos los tipos</option>
+                            <option value="CARTA_FIANZA">Carta Fianza</option>
+                            <option value="POLIZA_CAUCION">Póliza de Caución</option>
+                            <option value="FIDEICOMISO">Fideicomiso</option>
+                        </select>
+                    </div>
+
+                    {/* Aseguradora */}
+                    <div>
+                        <label className={labelClasses}>Aseguradora</label>
+                        <select
+                            className={inputClasses}
+                            value={localFilters.aseguradora || ""}
+                            onChange={(e) => handleChange("aseguradora", e.target.value)}
+                        >
+                            <option value="">Todas las aseguradoras</option>
+                            {options.aseguradoras.map((seg) => (
+                                <option key={seg} value={seg}>{seg}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    {/* Entidad o Consorcio */}
+                    <div>
+                        <label className={labelClasses}>Entidad o Consorcio</label>
+                        <input
+                            type="text"
+                            placeholder="Todas las entidades"
+                            className={inputClasses}
+                            value={localFilters.entidad || ""}
+                            onChange={(e) => handleChange("entidad", e.target.value)}
+                        />
+                    </div>
+
+                </div>
+            )}
         </div>
+        </div >
     );
 };

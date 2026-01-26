@@ -15,6 +15,7 @@ router = APIRouter(prefix="/api/dashboard", tags=["Dashboard"])
 @router.get("/kpis")
 def get_dashboard_kpis(
     year: Optional[int] = Query(None, description="Filter by year. 0 or None for All."),
+    mes: Optional[int] = Query(None, description="Filter by month 1-12"),
     estado: Optional[str] = Query(None, description="Filter by estado_proceso"),
     tipo_procedimiento: Optional[str] = Query(None, description="Filter by tipo_procedimiento"),
     categoria: Optional[str] = Query(None, description="Filter by categoria"),
@@ -24,7 +25,6 @@ def get_dashboard_kpis(
     """
     Get dashboard KPIs using data from licitaciones_cabecera.
     """
-    
     try:
         # Build WHERE clause for filters
         where_clauses = []
@@ -33,6 +33,9 @@ def get_dashboard_kpis(
         if year and year > 0:
             where_clauses.append("YEAR(fecha_publicacion) = :year")
             params['year'] = year
+        if mes and mes > 0:
+            where_clauses.append("MONTH(fecha_publicacion) = :mes")
+            params['mes'] = mes
         if estado:
             where_clauses.append("estado_proceso = :estado")
             params['estado'] = estado
@@ -146,103 +149,183 @@ def get_dashboard_kpis(
             "distribucion_estados": []
         }
 
-
-@router.get("/filter-options")
-def get_filter_options(db: Session = Depends(get_db)):
-    """
-    Get all available filter options for dropdowns (Raw SQL version).
-    """
-    try:
-        # Estados
-        estados = db.execute(text("SELECT DISTINCT estado_proceso FROM licitaciones_cabecera WHERE estado_proceso IS NOT NULL AND estado_proceso != '' ORDER BY estado_proceso")).fetchall()
-        
-        # Categorias
-        categorias = db.execute(text("SELECT DISTINCT categoria FROM licitaciones_cabecera WHERE categoria IS NOT NULL AND categoria != '' ORDER BY categoria")).fetchall()
-        
-        # Departamentos
-        deptos = db.execute(text("SELECT DISTINCT departamento FROM licitaciones_cabecera WHERE departamento IS NOT NULL AND departamento != '' ORDER BY departamento")).fetchall()
-        
-        # Tipos Entidad
-        tipos = db.execute(text("SELECT DISTINCT tipo_procedimiento FROM licitaciones_cabecera WHERE tipo_procedimiento IS NOT NULL AND tipo_procedimiento != '' ORDER BY tipo_procedimiento")).fetchall()
-        
-        # Aseguradoras (check if table exists or has data)
-        aseguradoras_list = []
-        try:
-            raw_aseguradoras = db.execute(text("SELECT DISTINCT entidad_financiera FROM licitaciones_adjudicaciones WHERE entidad_financiera IS NOT NULL AND entidad_financiera != ''")).fetchall()
-            
-            # Normalize list
-            from app.utils.normalization import normalize_insurer_name
-            norm_set = set()
-            for r in raw_aseguradoras:
-                norm_set.add(normalize_insurer_name(r[0]))
-            
-            aseguradoras_list = sorted(list(norm_set))
-        except:
-            aseguradoras_list = []
-
-        return {
-            "estados": [r[0] for r in estados],
-            "objetos": [r[0] for r in categorias],
-            "departamentos": [r[0] for r in deptos],
-            "tipos_entidad": [r[0] for r in tipos],
-            "aseguradoras": aseguradoras_list
-        }
-    except Exception as e:
-        print(f"Error getting filter options: {e}")
-        return {
-            "estados": [],
-            "objetos": [],
-            "departamentos": [],
-            "tipos_entidad": [],
-            "aseguradoras": []
-        }
-
 @router.get("/distribution-by-type")
-def get_distribution_by_type(year: int = 2024, db: Session = Depends(get_db)):
+def get_distribution_by_type(
+    year: int = 0,
+    mes: Optional[int] = Query(None),
+    estado: Optional[str] = Query(None),
+    tipo_procedimiento: Optional[str] = Query(None),
+    categoria: Optional[str] = Query(None),
+    departamento: Optional[str] = Query(None),
+    db: Session = Depends(get_db)
+):
     try:
-        year_filter = "AND YEAR(fecha_publicacion) = :year" if year > 0 else ""
+        # Build filters
+        where_clauses = ["categoria IS NOT NULL", "categoria != ''"]
+        params = {}
+        
+        if year > 0:
+            where_clauses.append("YEAR(fecha_publicacion) = :year")
+            params['year'] = year
+        if mes and mes > 0:
+            where_clauses.append("MONTH(fecha_publicacion) = :mes")
+            params['mes'] = mes
+        if estado:
+            where_clauses.append("estado_proceso = :estado")
+            params['estado'] = estado
+        if tipo_procedimiento:
+            where_clauses.append("tipo_procedimiento = :tipo_proc")
+            params['tipo_proc'] = tipo_procedimiento
+        if categoria:
+            where_clauses.append("categoria = :categoria")
+            params['categoria'] = categoria
+        if departamento:
+            where_clauses.append("departamento = :departamento")
+            params['departamento'] = departamento
+            
+        where_sql = "AND " + " AND ".join(where_clauses)
+        
         sql = text(f"""
             SELECT 
                 categoria as name,
                 COUNT(*) as value,
                 COALESCE(SUM(monto_estimado), 0) as amount
             FROM licitaciones_cabecera
-            WHERE categoria IS NOT NULL AND categoria != ''
-            {year_filter}
+            WHERE 1=1 {where_sql}
             GROUP BY categoria
             ORDER BY value DESC
         """)
-        params = {"year": year} if year > 0 else {}
+        
         result = db.execute(sql, params).fetchall()
-        data = [{"name": row[0], "value": row[1], "amount": float(row[2])} for row in result]
+        
+        # Normalize and Aggregate Data (Merge English/Spanish)
+        # DB has mixed: 'goods', 'services', 'works' AND 'BIENES', 'OBRAS', 'SERVICIOS'
+        normalization_map = {
+            'GOODS': 'BIENES',
+            'BIENES': 'BIENES',
+            'SERVICES': 'SERVICIOS',
+            'SERVICIOS': 'SERVICIOS',
+            'WORKS': 'OBRAS',
+            'OBRAS': 'OBRAS',
+            'CONSULTING SERVICES': 'CONSULTORIA DE OBRAS',
+            'CONSULTORIA DE OBRAS': 'CONSULTORIA DE OBRAS'
+        }
+        
+        aggregated = {}
+        
+        for row in result:
+            raw_name = row[0]
+            if not raw_name: continue
+            
+            clean_name = raw_name.upper().strip()
+            # Default to original if not in map, or map it
+            final_name = normalization_map.get(clean_name, clean_name)
+            
+            if final_name not in aggregated:
+                aggregated[final_name] = {"value": 0, "amount": 0.0}
+            
+            aggregated[final_name]["value"] += int(row[1])
+            aggregated[final_name]["amount"] += float(row[2])
+            
+        # Convert to list
+        data = [
+            {"name": k, "value": v["value"], "amount": v["amount"]} 
+            for k, v in aggregated.items()
+        ]
+        
+        # Sort by value DESC
+        data.sort(key=lambda x: x["value"], reverse=True)
+        
         return {"data": data}
     except Exception as e:
         return {"data": [], "error": str(e)}
 
 @router.get("/stats-by-status")
-def get_stats_by_status(db: Session = Depends(get_db)):
+def get_stats_by_status(
+    year: int = 0,
+    mes: Optional[int] = Query(None),
+    estado: Optional[str] = Query(None),
+    tipo_procedimiento: Optional[str] = Query(None),
+    categoria: Optional[str] = Query(None),
+    departamento: Optional[str] = Query(None),
+    db: Session = Depends(get_db)
+):
     try:
-        sql = text("""
+        # Build filters
+        where_clauses = ["estado_proceso IS NOT NULL", "estado_proceso != ''"]
+        params = {}
+        
+        if year > 0:
+            where_clauses.append("YEAR(fecha_publicacion) = :year")
+            params['year'] = year
+        if mes and mes > 0:
+            where_clauses.append("MONTH(fecha_publicacion) = :mes")
+            params['mes'] = mes
+        if estado:
+            where_clauses.append("estado_proceso = :estado")
+            params['estado'] = estado
+        if tipo_procedimiento:
+            where_clauses.append("tipo_procedimiento = :tipo_proc")
+            params['tipo_proc'] = tipo_procedimiento
+        if categoria:
+            where_clauses.append("categoria = :categoria")
+            params['categoria'] = categoria
+        if departamento:
+            where_clauses.append("departamento = :departamento")
+            params['departamento'] = departamento
+
+        where_sql = "AND " + " AND ".join(where_clauses)
+
+        sql = text(f"""
             SELECT 
                 estado_proceso as name,
                 COUNT(*) as value
             FROM licitaciones_cabecera
-            WHERE estado_proceso IS NOT NULL AND estado_proceso != ''
+            WHERE 1=1 {where_sql}
             GROUP BY estado_proceso
             ORDER BY value DESC
         """)
-        result = db.execute(sql).fetchall()
+        result = db.execute(sql, params).fetchall()
         data = [{"name": row[0], "value": row[1]} for row in result]
         return {"data": data}
     except Exception as e:
         return {"data": [], "error": str(e)}
 
 @router.get("/monthly-trend")
-def get_monthly_trend(year: int = 2024, db: Session = Depends(get_db)):
+def get_monthly_trend(
+    year: int = 0,
+    mes: Optional[int] = Query(None),
+    estado: Optional[str] = Query(None),
+    tipo_procedimiento: Optional[str] = Query(None),
+    categoria: Optional[str] = Query(None),
+    departamento: Optional[str] = Query(None),
+    db: Session = Depends(get_db)
+):
     try:
-        # If year > 0, filter by specific year. If 0 (All), average or sum by month across years?
-        # Requirement says "All" shows total. So likely sum of all Januaries, all Februaries, etc.
-        year_filter = "WHERE YEAR(fecha_publicacion) = :year" if year > 0 else ""
+        # Build filters
+        where_clauses = []
+        params = {}
+        
+        if year > 0:
+            where_clauses.append("YEAR(fecha_publicacion) = :year")
+            params['year'] = year
+        if mes and mes > 0:
+            where_clauses.append("MONTH(fecha_publicacion) = :mes")
+            params['mes'] = mes
+        if estado:
+            where_clauses.append("estado_proceso = :estado")
+            params['estado'] = estado
+        if tipo_procedimiento:
+            where_clauses.append("tipo_procedimiento = :tipo_proc")
+            params['tipo_proc'] = tipo_procedimiento
+        if categoria:
+            where_clauses.append("categoria = :categoria")
+            params['categoria'] = categoria
+        if departamento:
+            where_clauses.append("departamento = :departamento")
+            params['departamento'] = departamento
+            
+        where_sql = "WHERE " + " AND ".join(where_clauses) if where_clauses else ""
         
         sql = text(f"""
             SELECT 
@@ -250,12 +333,11 @@ def get_monthly_trend(year: int = 2024, db: Session = Depends(get_db)):
                 COUNT(*) as count,
                 COALESCE(SUM(monto_estimado), 0) as amount
             FROM licitaciones_cabecera
-            {year_filter}
+            {where_sql}
             GROUP BY MONTH(fecha_publicacion)
             ORDER BY mes
         """)
         
-        params = {"year": year} if year > 0 else {}
         result = db.execute(sql, params).fetchall()
         
         months = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
@@ -274,25 +356,48 @@ def get_monthly_trend(year: int = 2024, db: Session = Depends(get_db)):
         return {"data": [], "error": str(e)}
 
 @router.get("/department-ranking")
-def get_department_ranking(year: int = 2024, db: Session = Depends(get_db)):
+def get_department_ranking(
+    year: int = 0,
+    mes: Optional[int] = Query(None),
+    estado: Optional[str] = Query(None),
+    tipo_procedimiento: Optional[str] = Query(None),
+    categoria: Optional[str] = Query(None),
+    db: Session = Depends(get_db)
+):
     try:
-        print(f"DEBUG: get_department_ranking called with year={year}")
-        where_year = "AND EXTRACT(YEAR FROM fecha_publicacion) = :year" if year > 0 else ""
-        print(f"DEBUG: where_year clause: {where_year}")
+        # Build filters
+        where_clauses = ["departamento IS NOT NULL", "departamento != ''"]
+        params = {}
         
+        if year > 0:
+            where_clauses.append("YEAR(fecha_publicacion) = :year")
+            params['year'] = year
+        if mes and mes > 0:
+            where_clauses.append("MONTH(fecha_publicacion) = :mes")
+            params['mes'] = mes
+        if estado:
+            where_clauses.append("estado_proceso = :estado")
+            params['estado'] = estado
+        if tipo_procedimiento:
+            where_clauses.append("tipo_procedimiento = :tipo_proc")
+            params['tipo_proc'] = tipo_procedimiento
+        if categoria:
+            where_clauses.append("categoria = :categoria")
+            params['categoria'] = categoria
+            
+        where_sql = "AND " + " AND ".join(where_clauses)
+
         sql = text(f"""
             SELECT 
                 departamento as name,
                 COUNT(*) as count,
                 COALESCE(SUM(monto_estimado), 0) as amount
             FROM licitaciones_cabecera
-            WHERE departamento IS NOT NULL AND departamento != ''
-            {where_year}
+            WHERE 1=1 {where_sql}
             GROUP BY departamento
             ORDER BY count DESC
         """)
         
-        params = {"year": year} if year > 0 else {}
         result = db.execute(sql, params).fetchall()
         data = [{"name": row[0], "count": row[1], "amount": float(row[2])} for row in result]
         return {"data": data}
@@ -301,27 +406,41 @@ def get_department_ranking(year: int = 2024, db: Session = Depends(get_db)):
 
 @router.get("/financial-entities-ranking")
 def get_financial_entities_ranking(
-    year: int = 2024,
+    year: int = 0,
+    mes: Optional[int] = Query(None),
     department: Optional[str] = Query(None, description="Filter by department"),
+    estado: Optional[str] = Query(None),
+    tipo_procedimiento: Optional[str] = Query(None),
+    categoria: Optional[str] = Query(None),
     db: Session = Depends(get_db)
 ):
     try:
-        # Build SQL with filters
+        # Build SQL with filters - targeted at 'c' (cabecera)
         where_clauses = []
         params = {}
         
         if year > 0:
-            where_clauses.append("EXTRACT(YEAR FROM c.fecha_publicacion) = :year")
+            where_clauses.append("YEAR(c.fecha_publicacion) = :year")
             params["year"] = year
-            
+        if mes and mes > 0:
+            where_clauses.append("MONTH(c.fecha_publicacion) = :mes")
+            params["mes"] = mes
         if department:
             where_clauses.append("c.departamento = :department")
             params["department"] = department
+        if estado:
+            where_clauses.append("c.estado_proceso = :estado")
+            params['estado'] = estado
+        if tipo_procedimiento:
+            where_clauses.append("c.tipo_procedimiento = :tipo_proc")
+            params['tipo_proc'] = tipo_procedimiento
+        if categoria:
+            where_clauses.append("c.categoria = :categoria")
+            params['categoria'] = categoria
 
         where_sql = " AND ".join(where_clauses) if where_clauses else "1=1"
 
         # Primary Query: Entidad Financiera (Insurers) from Adjudicaciones
-        # Note: We rely on the fact that licitaciones_adjudicaciones has id_convocatoria matching cabecera
         sql = text(f"""
             SELECT 
                 a.entidad_financiera as name,
@@ -337,12 +456,12 @@ def get_financial_entities_ranking(
               AND {where_sql}
             GROUP BY a.entidad_financiera, c.departamento
             ORDER BY amount DESC
-            LIMIT 500
+            LIMIT 1000
         """)
         
         result = db.execute(sql, params).fetchall()
         
-        # Apply Normalization to match Search Filters
+        # Apply Normalization
         from app.utils.normalization import normalize_insurer_name
 
         # Aggregate counts by normalized name
@@ -381,8 +500,8 @@ def get_financial_entities_ranking(
             for k, v in aggregated.items()
         ]
         data.sort(key=lambda x: x["count"], reverse=True)
-        # Removed data[:10] slice to allow frontend to control view limit
-
+        
+        # Safety check for empty results
         if not data:
             data = []
 
@@ -393,11 +512,35 @@ def get_financial_entities_ranking(
 @router.get("/province-ranking")
 def get_province_ranking(
     department: str = Query(..., description="Department name"), 
-    year: int = 2024,
+    year: int = 0,
+    mes: Optional[int] = Query(None),
+    estado: Optional[str] = Query(None),
+    tipo_procedimiento: Optional[str] = Query(None),
+    categoria: Optional[str] = Query(None),
     db: Session = Depends(get_db)
 ):
     try:
-        where_year = "AND YEAR(fecha_publicacion) = :year" if year > 0 else ""
+        # Build filters
+        where_clauses = ["departamento = :department", "provincia IS NOT NULL", "provincia != ''"]
+        params = {"department": department}
+        
+        if year > 0:
+            where_clauses.append("YEAR(fecha_publicacion) = :year")
+            params["year"] = year
+        if mes and mes > 0:
+            where_clauses.append("MONTH(fecha_publicacion) = :mes")
+            params['mes'] = mes
+        if estado:
+            where_clauses.append("estado_proceso = :estado")
+            params['estado'] = estado
+        if tipo_procedimiento:
+            where_clauses.append("tipo_procedimiento = :tipo_proc")
+            params['tipo_proc'] = tipo_procedimiento
+        if categoria:
+            where_clauses.append("categoria = :categoria")
+            params['categoria'] = categoria
+
+        where_sql = "AND " + " AND ".join(where_clauses)
         
         sql = text(f"""
             SELECT 
@@ -405,18 +548,11 @@ def get_province_ranking(
                 COUNT(*) as count,
                 COALESCE(SUM(monto_estimado), 0) as amount
             FROM licitaciones_cabecera
-            WHERE departamento = :department 
-              AND provincia IS NOT NULL 
-              AND provincia != ''
-              {where_year}
+            WHERE 1=1 {where_sql}
             GROUP BY provincia
             ORDER BY count DESC
         """)
         
-        params = {"department": department}
-        if year > 0:
-            params["year"] = year
-            
         result = db.execute(sql, params).fetchall()
         data = [{"name": row[0], "count": row[1], "amount": float(row[2])} for row in result]
         return {"data": data}

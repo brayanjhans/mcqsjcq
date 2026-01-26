@@ -121,8 +121,26 @@ def get_all_filters(db: Session = Depends(get_db)):
         if not departamentos: departamentos = DEFAULTS["departamentos"]
 
         # 2. Categorias
-        cats = db.execute(text("SELECT DISTINCT UPPER(TRIM(categoria)) FROM licitaciones_cabecera WHERE categoria IS NOT NULL AND TRIM(categoria) != '' ORDER BY 1")).fetchall()
-        categorias = [r[0] for r in cats if r[0]]
+        cats_raw = db.execute(text("SELECT DISTINCT UPPER(TRIM(categoria)) FROM licitaciones_cabecera WHERE categoria IS NOT NULL AND TRIM(categoria) != '' ORDER BY 1")).fetchall()
+        
+        # Normalization Map
+        CAT_MAP = {
+            'GOODS': 'BIENES',
+            'WORKS': 'OBRAS',
+            'SERVICES': 'SERVICIOS',
+            'CONSULTING SERVICES': 'CONSULTORIA DE OBRAS',
+            'CONSULTORIA': 'CONSULTORIA DE OBRAS'
+        }
+        
+        normalized_cats = set()
+        for r in cats_raw:
+            val = r[0]
+            if val:
+                # Normalize if in map, otherwise keep original
+                norm_val = CAT_MAP.get(val, val)
+                normalized_cats.add(norm_val)
+                
+        categorias = sorted(list(normalized_cats))
         if not categorias: categorias = DEFAULTS["categorias"]
 
         # 3. Estados
@@ -156,10 +174,8 @@ def get_all_filters(db: Session = Depends(get_db)):
         if not aseguradoras: aseguradoras = DEFAULTS["aseguradoras"]
 
         # NEW: 5. Periodos (Años)
-        anio_sql = text("SELECT DISTINCT EXTRACT(YEAR FROM fecha_publicacion) FROM licitaciones_cabecera WHERE fecha_publicacion IS NOT NULL")
-        db_anios = {int(r[0]) for r in db.execute(anio_sql).fetchall() if r[0]}
-        standard_anios = {2026, 2025, 2024}
-        anios = sorted(list(db_anios.union(standard_anios)), reverse=True)
+        # User requested to strictly define years as 2024, 2025, 2026
+        anios = [2026, 2025, 2024]
 
         # NEW: 6. Entidades (Comprador)
         entidad_sql = text("SELECT DISTINCT UPPER(TRIM(comprador)) FROM licitaciones_cabecera WHERE comprador IS NOT NULL AND TRIM(comprador) != '' ORDER BY 1")
@@ -173,6 +189,10 @@ def get_all_filters(db: Session = Depends(get_db)):
             parts = [p.strip() for p in g.split('|')]
             garantias_set.update(parts)
         tipos_garantia = sorted(list(garantias_set))
+
+        # NEW: 8. Tipos de Procedimiento (For Dashboard)
+        proc_sql = text("SELECT DISTINCT UPPER(TRIM(tipo_procedimiento)) FROM licitaciones_cabecera WHERE tipo_procedimiento IS NOT NULL AND TRIM(tipo_procedimiento) != '' ORDER BY 1")
+        tipos_entidad = [r[0] for r in db.execute(proc_sql).fetchall() if r[0]]
         
         return {
             "departamentos": departamentos,
@@ -181,7 +201,8 @@ def get_all_filters(db: Session = Depends(get_db)):
             "aseguradoras": aseguradoras,
             "anios": anios,
             "entidades": entidades,
-            "tipos_garantia": tipos_garantia
+            "tipos_garantia": tipos_garantia,
+            "tipos_entidad": tipos_entidad
         }
     except Exception as e:
         print(f"Error getting filters: {e}")
@@ -202,6 +223,7 @@ def get_licitaciones(
     tipo_garantia: Optional[str] = Query(None),
     entidad_financiera: Optional[str] = Query(None),
     comprador: Optional[str] = Query(None),
+    tipo_procedimiento: Optional[str] = Query(None), # Manual/User requested filter
     origen: Optional[str] = Query(None), # New parameter
     db: Session = Depends(get_db)
 ):
@@ -220,6 +242,7 @@ def get_licitaciones(
             search_term = f"%{search.upper()}%"
             where_clauses.append("""
                 (
+                    UPPER(id_convocatoria) LIKE :search OR
                     UPPER(nomenclatura) LIKE :search OR 
                     UPPER(comprador) LIKE :search OR 
                     UPPER(descripcion) LIKE :search OR
@@ -231,6 +254,12 @@ def get_licitaciones(
                     UPPER(categoria) LIKE :search OR
                     UPPER(tipo_procedimiento) LIKE :search OR
                     UPPER(estado_proceso) LIKE :search OR
+                    CAST(monto_estimado AS CHAR) LIKE :search OR
+                    UPPER(moneda) LIKE :search OR
+                    CAST(fecha_publicacion AS CHAR) LIKE :search OR
+                    CAST(fecha_adjudicacion AS CHAR) LIKE :search OR
+                    UPPER(archivo_origen) LIKE :search OR
+                    CAST(last_update AS CHAR) LIKE :search OR
                     EXISTS (
                         SELECT 1 FROM licitaciones_adjudicaciones la 
                         WHERE la.id_convocatoria = licitaciones_cabecera.id_convocatoria 
@@ -240,7 +269,11 @@ def get_licitaciones(
                             UPPER(la.entidad_financiera) LIKE :search OR
                             UPPER(la.tipo_garantia) LIKE :search OR
                             UPPER(la.id_contrato) LIKE :search OR
-                            UPPER(la.estado_item) LIKE :search
+                            UPPER(la.estado_item) LIKE :search OR
+                            CAST(la.id_adjudicacion AS CHAR) LIKE :search OR
+                            CAST(la.monto_adjudicado AS CHAR) LIKE :search OR
+                            CAST(la.fecha_adjudicacion AS CHAR) LIKE :search OR
+                            CAST(la.fecha_registro AS CHAR) LIKE :search
                         )
                     )
                 )
@@ -250,8 +283,20 @@ def get_licitaciones(
             where_clauses.append("UPPER(TRIM(estado_proceso)) = :estado")
             params['estado'] = estado
         if categoria:
-            where_clauses.append("UPPER(TRIM(categoria)) = :categoria")
-            params['categoria'] = categoria
+            # Reverse Normalization for Search (Handle English/Spanish mix)
+            cat_search = [categoria]
+            if categoria == 'BIENES': cat_search.append('GOODS')
+            elif categoria == 'OBRAS': cat_search.append('WORKS')
+            elif categoria == 'SERVICIOS': cat_search.append('SERVICES')
+            elif categoria == 'CONSULTORIA DE OBRAS': 
+                cat_search.extend(['CONSULTING SERVICES', 'CONSULTORIA'])
+            
+            if len(cat_search) > 1:
+                where_clauses.append("UPPER(TRIM(categoria)) IN :categoria_list")
+                params['categoria_list'] = tuple(cat_search)
+            else:
+                where_clauses.append("UPPER(TRIM(categoria)) = :categoria")
+                params['categoria'] = categoria
         if departamento:
             where_clauses.append("UPPER(TRIM(departamento)) = :departamento")
             params['departamento'] = departamento
@@ -267,15 +312,27 @@ def get_licitaciones(
         if comprador:
             where_clauses.append("UPPER(TRIM(comprador)) = :comprador")
             params['comprador'] = comprador
+        if tipo_procedimiento:
+            # 1. Symbol Normalization (Ordinal 'º' -> Degree '°')
+            normalized_proc = tipo_procedimiento.upper().replace('º', '°').replace('Nº', 'N°')
             
-        # Origin Filter (Manual vs Automatic)
+            # 2. Spacing Normalization (Handle "N° 123" vs "N°123")
+            # We compare both sides with 'N° ' replaced by 'N°' to ignore that specific space.
+            where_clauses.append("""
+                REPLACE(UPPER(TRIM(tipo_procedimiento)), 'N° ', 'N°') = REPLACE(:tipo_procedimiento, 'N° ', 'N°')
+            """)
+            params['tipo_procedimiento'] = normalized_proc
+            
+        # Origin Filter (Manual vs Automatic) - Robust Implementation
         if origen and origen != "Todos":
-            if origen == "Manuales":
-                # Manual IDs are UUIDs (36 chars)
-                where_clauses.append("LENGTH(id_convocatoria) > 20")
-            elif origen == "Automático":
-                # Automatic IDs are shorter SEACE IDs
-                where_clauses.append("LENGTH(id_convocatoria) <= 20")
+            origen_norm = origen.lower().strip()
+            
+            if origen_norm == "manuales":
+                # Manual tenders do not have an origin file (ETL sets this)
+                where_clauses.append("archivo_origen IS NULL")
+            elif origen_norm in ["automático", "automatico"]:
+                # Automatic tenders come from JSON files
+                where_clauses.append("archivo_origen IS NOT NULL")
 
         if mes:
             # Handle month filtering (1-12)
@@ -446,44 +503,42 @@ def get_locations(
     db: Session = Depends(get_db)
 ):
     """
-    Get cascading location options (Raw Repo Version)
+    Get cascading location options (Static Data Version)
+    Uses app/data/ubigeo_data.py to ensure full coverage of Peru's geography.
     """
     try:
+        from app.data.ubigeo_data import UBIGEO_PERU
+        
         provincias = []
         distritos = []
 
         if departamento:
-            # Normalize input
-            dept_normalized = departamento.upper().strip()
-            
-            # Get Provincias
-            prov_sql = text("""
-                SELECT DISTINCT UPPER(TRIM(provincia)) 
-                FROM licitaciones_cabecera 
-                WHERE UPPER(TRIM(departamento)) = :dept AND provincia IS NOT NULL AND TRIM(provincia) != '' 
-                ORDER BY 1
-            """)
-            provincias = [row[0] for row in db.execute(prov_sql, {"dept": dept_normalized}).fetchall() if row[0]]
-
-            if provincia:
-                # Normalize input
-                prov_normalized = provincia.upper().strip()
+            deploy_norm = departamento.upper().strip()
+            # If dept exists in our static map, get its provinces
+            if deploy_norm in UBIGEO_PERU:
+                provincias = sorted(list(UBIGEO_PERU[deploy_norm].keys()))
                 
-                # Get Distritos
-                dist_sql = text("""
-                    SELECT DISTINCT UPPER(TRIM(distrito)) 
-                    FROM licitaciones_cabecera 
-                    WHERE UPPER(TRIM(departamento)) = :dept AND UPPER(TRIM(provincia)) = :prov AND distrito IS NOT NULL AND TRIM(distrito) != '' 
-                    ORDER BY 1
-                """)
-                distritos = [row[0] for row in db.execute(dist_sql, {"dept": dept_normalized, "prov": prov_normalized}).fetchall() if row[0]]
-
+                if provincia:
+                    prov_norm = provincia.upper().strip()
+                    # If prov exists in that dept, get its districts
+                    if prov_norm in UBIGEO_PERU[deploy_norm]:
+                        distritos = sorted(UBIGEO_PERU[deploy_norm][prov_norm])
+        
         return {
+            "departamentos": sorted(list(UBIGEO_PERU.keys())),
             "provincias": provincias,
             "distritos": distritos
         }
+
     except Exception as e:
-        return {"error": str(e)}
+        import traceback
+        traceback.print_exc()
+        return {
+            "error": str(e),
+            "departamentos": [],
+            "provincias": [],
+            "distritos": []
+        }
 
 
 @router.get("/{id_convocatoria}")
@@ -572,8 +627,8 @@ def get_licitacion_detail(
 
 
 
-@router.get("/locations")
-def get_locations(
+@router.get("/locations_old")
+def get_locations_old(
     departamento: Optional[str] = Query(None),
     provincia: Optional[str] = Query(None),
     db: Session = Depends(get_db)
@@ -840,10 +895,14 @@ def update_licitacion(id: str, licitacion: LicitacionCreate, db: Session = Depen
             if old_state and new_state and old_state != new_state:
                 from app.routers.notifications import create_notification_internal
                 
-                # Fetch additional details for metadata
+                # Fetch additional details for metadata AND readable text
                 meta = {}
+                proc_type_notif = licitacion.tipo_procedimiento or "Licitación" # Default or from payload
+                title_ref = licitacion.nomenclatura or id
+                
                 try:
-                    res = db.execute(text("SELECT categoria, ubicacion_completa, monto_estimado, ocid, departamento FROM licitaciones_cabecera WHERE id_convocatoria = :id"), {"id": id}).fetchone()
+                    # Fetch extra info from DB to be sure (in case payload didn't have it)
+                    res = db.execute(text("SELECT categoria, ubicacion_completa, monto_estimado, ocid, departamento, tipo_procedimiento, descripcion, nomenclatura FROM licitaciones_cabecera WHERE id_convocatoria = :id"), {"id": id}).fetchone()
                     if res:
                         meta = {
                             "categoria": res[0] or "GENERAL",
@@ -854,17 +913,26 @@ def update_licitacion(id: str, licitacion: LicitacionCreate, db: Session = Depen
                             "estadoNuevo": new_state,
                             "licitacionId": id
                         }
+                        # Prefer DB values if not in payload
+                        if not licitacion.tipo_procedimiento and res[5]:
+                            proc_type_notif = res[5]
+                        
+                        # Calculate best readable title: Nomenclatura > Description (short) > ID
+                        db_nom = res[7]
+                        db_desc = res[6]
+                        if db_nom: title_ref = db_nom
+                        elif db_desc: title_ref = (db_desc[:60] + "...") if len(db_desc) > 60 else db_desc
+                        else: title_ref = id
+                        
                 except:
                     pass
 
-                # Format specific string for frontend parsing: "Estado cambiado: OLD -> NEW"
-                msg = f"Estado cambiado: {old_state} -> {new_state}"
-                
-                # Use Nomenclatura if available, else ID
-                ref_text = licitacion.nomenclatura or id
+                # Format specific string for frontend parsing: "TYPE \n\n BODY"
+                # This triggers the gray capsule tag / abbreviation in UI
+                msg = f"{proc_type_notif}\n\nEstado actualizado de {old_state} a {new_state}."
                 
                 create_notification_internal(
-                    title=f"Cambio de Estado: {ref_text}",
+                    title=f"Cambio de Estado: {title_ref}",
                     message=msg,
                     type="licitacion",
                     priority="medium",
