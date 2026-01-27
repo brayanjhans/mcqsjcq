@@ -334,6 +334,8 @@ def get_licitaciones(
                 # Automatic tenders come from JSON files
                 where_clauses.append("archivo_origen IS NOT NULL")
 
+
+
         if mes:
             # Handle month filtering (1-12)
             try:

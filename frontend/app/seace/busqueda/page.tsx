@@ -179,15 +179,9 @@ function BusquedaContent() {
 
             const data = await licitacionService.getAll(currentPage, itemsPerPage, filters);
 
-            if (data.items.length === 0 && currentPage === 1 && !searchTerm) {
-                setLicitaciones([]);
-                setTotalItems(0);
-                setTotalPages(0);
-            } else {
-                setLicitaciones(data.items);
-                setTotalPages(data.total_pages);
-                setTotalItems(data.total);
-            }
+            setLicitaciones(data.items);
+            setTotalPages(data.total_pages);
+            setTotalItems(data.total);
 
         } catch (error) {
             console.error("Error cargando licitaciones:", error);
@@ -261,7 +255,7 @@ function BusquedaContent() {
                         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-8 relative z-50">
                             <div className="lg:col-span-3">
                                 <AutocompleteSearch
-                                    onSearch={(term) => setSearchTerm(term)}
+                                    onSearch={(term) => { setSearchTerm(term); setCurrentPage(1); }}
                                     placeholder="Buscar por descripción, comprador, nomenclatura, ganador, banco..."
                                     initialValue={searchTerm}
                                 />
@@ -269,11 +263,10 @@ function BusquedaContent() {
                             <div className="relative">
                                 <select
                                     className="w-full h-full appearance-none rounded-xl border border-slate-200 bg-white py-3 pl-4 pr-10 text-sm font-semibold text-slate-700 focus:border-indigo-500 focus:ring-0 outline-none dark:bg-[#111c44] dark:border-slate-700 dark:text-slate-300"
-                                    value={tipoProcedimiento} onChange={(e) => setTipoProcedimiento(e.target.value)}
+                                    value={tipoProcedimiento} onChange={(e) => { setTipoProcedimiento(e.target.value); setCurrentPage(1); }}
                                 >
                                     <option value="">Todos los procedimientos</option>
-                                    {/* Merge Defaults + Dynamic, Deduplicate, Sort */}
-                                    {Array.from(new Set([...DEFAULT_TIPOS_PROCEDIMIENTO, ...tipoProcedimientoOptions])).sort().map((proc) => (
+                                    {DEFAULT_TIPOS_PROCEDIMIENTO.map((proc) => (
                                         <option key={proc} value={proc}>{proc}</option>
                                     ))}
                                 </select>
@@ -290,7 +283,7 @@ function BusquedaContent() {
                                 <div className="relative">
                                     <select
                                         className="w-full appearance-none rounded-xl border border-slate-200 bg-white py-3 pl-4 pr-10 text-sm font-semibold text-slate-700 focus:border-indigo-500 focus:ring-0 outline-none dark:bg-[#111c44] dark:border-slate-700 dark:text-slate-300"
-                                        value={departamento} onChange={handleDepartamentoChange}
+                                        value={departamento} onChange={(e) => { handleDepartamentoChange(e); setCurrentPage(1); }}
                                     >
                                         <option value="">Todos los departamentos</option>
                                         {departamentoOptions.map(opt => (
@@ -305,7 +298,7 @@ function BusquedaContent() {
                                 <div className="relative">
                                     <select
                                         className="w-full appearance-none rounded-xl border border-slate-200 bg-white py-3 pl-4 pr-10 text-sm font-semibold text-slate-700 focus:border-indigo-500 focus:ring-0 outline-none dark:bg-[#111c44] dark:border-slate-700 dark:text-slate-300"
-                                        value={estado} onChange={(e) => setEstado(e.target.value)}
+                                        value={estado} onChange={(e) => { setEstado(e.target.value); setCurrentPage(1); }}
                                     >
                                         <option value="">Todos los estados</option>
                                         {estadoOptions.map(opt => (
@@ -320,7 +313,7 @@ function BusquedaContent() {
                                 <div className="relative">
                                     <select
                                         className="w-full appearance-none rounded-xl border border-slate-200 bg-white py-3 pl-4 pr-10 text-sm font-semibold text-slate-700 focus:border-indigo-500 focus:ring-0 outline-none dark:bg-[#111c44] dark:border-slate-700 dark:text-slate-300"
-                                        value={categoria} onChange={(e) => setCategoria(e.target.value)}
+                                        value={categoria} onChange={(e) => { setCategoria(e.target.value); setCurrentPage(1); }}
                                     >
                                         <option value="">Todas las categorías</option>
                                         {categoriaOptions.map(opt => (
@@ -336,7 +329,7 @@ function BusquedaContent() {
                                     <div className="relative">
                                         <select
                                             className="w-full appearance-none rounded-xl border border-slate-200 bg-white py-3 pl-4 pr-8 text-sm font-semibold text-slate-700 focus:border-indigo-500 focus:ring-0 outline-none dark:bg-[#111c44] dark:border-slate-700 dark:text-slate-300"
-                                            value={anio} onChange={(e) => setAnio(e.target.value)}
+                                            value={anio} onChange={(e) => { setAnio(e.target.value); setCurrentPage(1); }}
                                         >
                                             <option value="">Año</option>
                                             {anioOptions.map(opt => (
@@ -348,7 +341,7 @@ function BusquedaContent() {
                                     <div className="relative">
                                         <select
                                             className="w-full appearance-none rounded-xl border border-slate-200 bg-white py-3 pl-4 pr-8 text-sm font-semibold text-slate-700 focus:border-indigo-500 focus:ring-0 outline-none dark:bg-[#111c44] dark:border-slate-700 dark:text-slate-300"
-                                            value={mes} onChange={(e) => setMes(e.target.value)}
+                                            value={mes} onChange={(e) => { setMes(e.target.value); setCurrentPage(1); }}
                                         >
                                             <option value="">Mes</option>
                                             {/* Static months for now */}
@@ -371,7 +364,7 @@ function BusquedaContent() {
                                                 <select
                                                     className="w-full appearance-none rounded-xl border border-slate-200 bg-white py-3 pl-4 pr-8 text-sm font-semibold text-slate-700 focus:border-indigo-500 focus:ring-0 outline-none dark:bg-[#111c44] dark:border-slate-700 dark:text-slate-300 disabled:opacity-50 disabled:cursor-not-allowed"
                                                     value={provincia}
-                                                    onChange={handleProvinciaChange}
+                                                    onChange={(e) => { handleProvinciaChange(e); setCurrentPage(1); }}
                                                     disabled={!departamento}
                                                 >
                                                     <option value="">Provincia</option>
@@ -385,7 +378,7 @@ function BusquedaContent() {
                                                 <select
                                                     className="w-full appearance-none rounded-xl border border-slate-200 bg-white py-3 pl-4 pr-8 text-sm font-semibold text-slate-700 focus:border-indigo-500 focus:ring-0 outline-none dark:bg-[#111c44] dark:border-slate-700 dark:text-slate-300 disabled:opacity-50 disabled:cursor-not-allowed"
                                                     value={distrito}
-                                                    onChange={(e) => setDistrito(e.target.value)}
+                                                    onChange={(e) => { setDistrito(e.target.value); setCurrentPage(1); }}
                                                     disabled={!provincia}
                                                 >
                                                     <option value="">Distrito</option>
@@ -402,7 +395,7 @@ function BusquedaContent() {
                                         <div className="relative">
                                             <select
                                                 className="w-full appearance-none rounded-xl border border-slate-200 bg-white py-3 pl-4 pr-10 text-sm font-semibold text-slate-700 focus:border-indigo-500 focus:ring-0 outline-none dark:bg-[#111c44] dark:border-slate-700 dark:text-slate-300"
-                                                value={tipoGarantia} onChange={(e) => setTipoGarantia(e.target.value)}
+                                                value={tipoGarantia} onChange={(e) => { setTipoGarantia(e.target.value); setCurrentPage(1); }}
                                             >
                                                 <option value="">Todos los tipos</option>
                                                 {tipoGarantiaOptions.map(opt => (
@@ -417,7 +410,7 @@ function BusquedaContent() {
                                         <div className="relative">
                                             <select
                                                 className="w-full appearance-none rounded-xl border border-slate-200 bg-white py-3 pl-4 pr-10 text-sm font-semibold text-slate-700 focus:border-indigo-500 focus:ring-0 outline-none dark:bg-[#111c44] dark:border-slate-700 dark:text-slate-300"
-                                                value={aseguradora} onChange={(e) => setAseguradora(e.target.value)}
+                                                value={aseguradora} onChange={(e) => { setAseguradora(e.target.value); setCurrentPage(1); }}
                                             >
                                                 <option value="">Todas las aseguradoras</option>
                                                 {aseguradoraOptions.map(opt => (
@@ -432,7 +425,7 @@ function BusquedaContent() {
                                         <div className="relative">
                                             <select
                                                 className="w-full appearance-none rounded-xl border border-slate-200 bg-white py-3 pl-4 pr-10 text-sm font-semibold text-slate-700 focus:border-indigo-500 focus:ring-0 outline-none dark:bg-[#111c44] dark:border-slate-700 dark:text-slate-300"
-                                                value={entidad} onChange={(e) => setEntidad(e.target.value)}
+                                                value={entidad} onChange={(e) => { setEntidad(e.target.value); setCurrentPage(1); }}
                                             >
                                                 <option value="">Todas las entidades</option>
                                                 {entidadOptions.map(opt => (

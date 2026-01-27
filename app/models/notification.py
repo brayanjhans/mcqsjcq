@@ -31,8 +31,9 @@ class Notification(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("usuarios.id"), nullable=False, index=True)
-    type = Column(Enum(NotificationType), nullable=False)
-    priority = Column(Enum(NotificationPriority), default=NotificationPriority.LOW)
+    # Relaxed to String to avoid SQLAlchemy Enum lookup errors
+    type = Column(String(50), nullable=False)
+    priority = Column(String(20), default="low")
     title = Column(String(255), nullable=False)
     message = Column(Text, nullable=False)
     link = Column(String(500), nullable=True)  # URL para navegar

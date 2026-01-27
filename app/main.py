@@ -3,6 +3,14 @@ FastAPI main application for MQS Garantías - SEACE monitoring system.
 """
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
+import os
+
+# Load environment variables explicitly with absolute path
+load_dotenv("/home/admin/repositories/garantias_seacee/.env")
+print(f"DEBUG_STARTUP: GROQ_API_KEY present? {'Yes' if os.getenv('GROQ_API_KEY') else 'No'}")
+print(f"DEBUG_STARTUP: DATABASE_URL present? {'Yes' if os.getenv('DATABASE_URL') else 'No'}")
+
 import app.models # Ensure all models are registered
 from app.routers import auth, mqs, admin, scraping, tendencias, etl, formatos, users, support, test, notifications, reportes, chatbot, exports
 from app.routers import dashboard_raw as dashboard
