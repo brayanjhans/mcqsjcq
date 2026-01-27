@@ -31,6 +31,9 @@ deploy_package.zip
 data/
 *.db
 *.sqlite
+*.sql
+*.gz
+*.sql.gz
 
 # Debug scripts
 test_*.py
