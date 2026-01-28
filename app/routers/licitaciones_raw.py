@@ -776,6 +776,7 @@ def create_licitacion(licitacion: LicitacionCreate, db: Session = Depends(get_db
         # 3. Insert Adjudicaciones
         if licitacion.adjudicaciones:
             sql_adj = text("""
+                INSERT INTO licitaciones_adjudicaciones (
                     id_adjudicacion, id_convocatoria, ganador_nombre, ganador_ruc,
                     monto_adjudicado, fecha_adjudicacion, estado_item, 
                     entidad_financiera, tipo_garantia, id_contrato, moneda
