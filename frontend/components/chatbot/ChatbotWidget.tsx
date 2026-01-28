@@ -350,13 +350,10 @@ export default function ChatbotWidget() {
                         onClick={() => setIsOpen(true)}
                         className="relative z-10 w-16 h-16 p-0 rounded-full shadow-xl hover:shadow-2xl hover:scale-110 hover:rotate-3 transition-all duration-300 flex items-center justify-center overflow-hidden border-2 border-white dark:border-zinc-700 bg-white"
                     >
-                        <video
-                            src="/avatar.mp4"
-                            autoPlay
-                            loop
-                            muted
-                            playsInline
-                            className="w-full h-full object-cover mix-blend-multiply dark:mix-blend-normal"
+                        <img
+                            src="/chatbot-avatar.png"
+                            alt="AURA Avatar"
+                            className="w-full h-full object-cover"
                         />
                     </button>
 

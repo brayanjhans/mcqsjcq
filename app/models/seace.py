@@ -16,11 +16,13 @@ class LicitacionesCabecera(Base):
     nomenclatura = Column(String(4000), index=True)
     descripcion = Column(Text)
     comprador = Column(String(500), index=True)  # Entidad compradora
+    entidad_ruc = Column(String(11), index=True)  # RUC de la entidad
     categoria = Column(String(50), index=True)  # Obra/Bien/Servicio
     tipo_procedimiento = Column(String(100), index=True)
     monto_estimado = Column(Numeric(15, 2))
     moneda = Column(String(10))
     fecha_publicacion = Column(Date)
+    fecha_adjudicacion = Column(Date)  # Fecha adjudicación a nivel cabecera
     estado_proceso = Column(String(50), index=True)
     ubicacion_completa = Column(String(500))
     departamento = Column(String(100), index=True)
@@ -49,8 +51,14 @@ class LicitacionesAdjudicaciones(Base):
     fecha_adjudicacion = Column(Date, index=True)
     estado_item = Column(String(50))
     entidad_financiera = Column(String(255), index=True)  # Banco garantía
-    fecha_registro = Column(DateTime)
     tipo_garantia = Column(String(50))
+    url_documento_contrato = Column(String(500))  # URL del documento de contrato
+    url_documento_consorcio = Column(String(500))  # URL del documento de consorcio
+    ubicacion_completa = Column(String(500))  # Ubicación específica del item
+    departamento = Column(String(100))  # Departamento del item
+    provincia = Column(String(100))  # Provincia del item
+    distrito = Column(String(100))  # Distrito del item
+    fecha_registro = Column(DateTime)
     
     # Relationship back to licitacion
     licitacion = relationship("LicitacionesCabecera", back_populates="adjudicaciones")

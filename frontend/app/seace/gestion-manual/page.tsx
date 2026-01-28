@@ -26,35 +26,8 @@ import DeleteLicitacionModal from "@/components/search/DeleteLicitacionModal";
 import { AutocompleteSearch } from "@/components/search/AutocompleteSearch";
 import type { Licitacion } from "@/types/licitacion";
 import { licitacionService } from "@/lib/services/licitacionService";
+import { DEFAULT_TIPOS_PROCEDIMIENTO } from "@/lib/constants/procedimientos";
 
-const DEFAULT_TIPOS_PROCEDIMIENTO = [
-    "Adjudicación Abreviada",
-    "Adjudicación Directa Pública",
-    "Adjudicación Directa Selectiva",
-    "Adjudicación Selectiva",
-    "Adjudicación Simplificada",
-    "Adjudicación Simplificada - Décima Disposición Complementaria Final Reg. Ley 30225",
-    "Adjudicación Simplificada - Decreto Urgencia 012-2023",
-    "Adjudicación Simplificada - Decreto Urgencia 032-2023",
-    "Adjudicación Simplificada - Decreto Urgencia 034-2023",
-    "Adjudicación Simplificada - Ley Nº 26859",
-    "Adjudicación Simplificada - Ley Nº 30556",
-    "Adjudicación Simplificada - Ley N° 31125",
-    "Adjudicación Simplificada - Ley N° 31579",
-    "Adjudicación Simplificada - Ley N° 31589",
-    "Adjudicación Simplificada - Ley N° 31728",
-    "Concurso Público",
-    "Concurso Público de Servicios",
-    "Licitación Pública",
-    "Licitación Pública Abreviada",
-    "Licitación Pública Abreviada - Ley N°26859",
-    "Licitación Pública Abreviada - Ley N°31589",
-    "Licitación Pública Abreviada Emergencia",
-    "Licitación Pública Abreviada Homologación",
-    "Licitación Pública Abreviada Séptima DCF Ley N°32069",
-    "Procedimiento Especial de Selección",
-    "Subasta Inversa Electrónica"
-];
 
 export default function GestionManualPage() {
     // Filter States

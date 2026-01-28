@@ -25,12 +25,20 @@ class AdjudicacionSchema(BaseModel):
     id_adjudicacion: str
     id_contrato: Optional[str] = None
     id_convocatoria: str
+    ocid: Optional[str] = None
     ganador_nombre: Optional[str] = None
     ganador_ruc: Optional[str] = None
     monto_adjudicado: Optional[Decimal] = None
     fecha_adjudicacion: Optional[date] = None
     estado_item: Optional[str] = None
     entidad_financiera: Optional[str] = None
+    tipo_garantia: Optional[str] = None
+    url_documento_contrato: Optional[str] = None
+    url_documento_consorcio: Optional[str] = None
+    ubicacion_completa: Optional[str] = None
+    departamento: Optional[str] = None
+    provincia: Optional[str] = None
+    distrito: Optional[str] = None
     consorcios: List[DetalleConsorcioSchema] = []
 
     model_config = ConfigDict(from_attributes=True)
@@ -44,11 +52,13 @@ class LicitacionCabeceraSchema(BaseModel):
     nomenclatura: Optional[str] = None
     descripcion: Optional[str] = None
     comprador: Optional[str] = None  # entidad_publica
+    entidad_ruc: Optional[str] = None  # RUC de la entidad
     categoria: Optional[str] = None
     tipo_procedimiento: Optional[str] = None
     monto_estimado: Optional[Decimal] = None
     moneda: Optional[str] = None
     fecha_publicacion: Optional[date] = None
+    fecha_adjudicacion: Optional[date] = None  # Fecha adjudicación cabecera
     estado_proceso: Optional[str] = None
     ubicacion_completa: Optional[str] = None
     departamento: Optional[str] = None
@@ -64,29 +74,41 @@ class LicitacionCabeceraSchema(BaseModel):
 
 class AdjudicacionCreate(BaseModel):
     """Schema for creating an adjudication."""
+    id_adjudicacion: Optional[str] = None  # Permitir ID manual
     id_contrato: Optional[str] = None
+    ocid: Optional[str] = None
     ganador_nombre: str
     ganador_ruc: str
     monto_adjudicado: Decimal
     fecha_adjudicacion: date
-    estado_item: str = 'Adjudicado'
+    estado_item: str = 'ADJUDICADO'
     tipo_garantia: Optional[str] = None
     entidad_financiera: Optional[str] = None
+    url_documento_contrato: Optional[str] = None
+    url_documento_consorcio: Optional[str] = None
+    ubicacion_completa: Optional[str] = None
+    departamento: Optional[str] = None
+    provincia: Optional[str] = None
+    distrito: Optional[str] = None
     consorcios: List[Dict[str, Any]] = []
 
 
 class LicitacionCreate(BaseModel):
     """Schema for creating a new tender."""
+    id_convocatoria: Optional[str] = None  # Permitir ID manual
     nomenclatura: str
     ocid: Optional[str] = None
     descripcion: str
     comprador: str
+    entidad_ruc: Optional[str] = None
     categoria: str
-    tipo_procedimiento: str = 'Pública'
+    tipo_procedimiento: str = 'Licitación Pública'
     monto_estimado: Decimal
     moneda: str = 'PEN'
     fecha_publicacion: date
+    fecha_adjudicacion: Optional[date] = None
     estado_proceso: str = 'CONVOCADO'
+    ubicacion_completa: Optional[str] = None
     departamento: Optional[str] = None
     provincia: Optional[str] = None
     distrito: Optional[str] = None
@@ -99,16 +121,18 @@ class LicitacionUpdate(BaseModel):
     nomenclatura: Optional[str] = None
     descripcion: Optional[str] = None
     comprador: Optional[str] = None
+    entidad_ruc: Optional[str] = None
     categoria: Optional[str] = None
     tipo_procedimiento: Optional[str] = None
     monto_estimado: Optional[Decimal] = None
     moneda: Optional[str] = None
     fecha_publicacion: Optional[date] = None
+    fecha_adjudicacion: Optional[date] = None
     estado_proceso: Optional[str] = None
+    ubicacion_completa: Optional[str] = None
     departamento: Optional[str] = None
     provincia: Optional[str] = None
     distrito: Optional[str] = None
-    ubicacion_completa: Optional[str] = None
     adjudicaciones: Optional[List[AdjudicacionCreate]] = None
 
 
