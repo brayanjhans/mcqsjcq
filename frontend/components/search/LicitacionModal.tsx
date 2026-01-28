@@ -40,6 +40,9 @@ export default function LicitacionModal({
     const [provinciaOptions, setProvinciaOptions] = useState<string[]>([]);
     const [distritoOptions, setDistritoOptions] = useState<string[]>([]);
 
+    // Adjudicaciones specific options (Keyed by row index or unique ID)
+    const [adjLocationOptions, setAdjLocationOptions] = useState<Record<string, { provincias: string[], distritos: string[] }>>({});
+
     // Ensure we're on the client side
     useEffect(() => {
         setIsMounted(true);
@@ -152,6 +155,111 @@ export default function LicitacionModal({
             setFormData({ ...formData, adjudicaciones: newAdj });
         }
     };
+
+    // --- HELPER FUNCTIONS FOR CASCADING LOCATIONS IN ADJUDICACIONES ---
+
+    const handleAdjDeptChange = async (index: number, dept: string) => {
+        const newAdj = [...(formData.adjudicaciones || [])];
+        const currentAdj = newAdj[index];
+        const adjId = currentAdj.id || index; // Use ID if available, else index (logic safer with ID)
+
+        // Update Dept, Clear Prov/Dist
+        currentAdj.departamento = dept;
+        currentAdj.provincia = '';
+        currentAdj.distrito = '';
+        setFormData({ ...formData, adjudicaciones: newAdj });
+
+        // Fetch Provincias
+        if (dept) {
+            try {
+                const data = await licitacionService.getLocations(dept);
+                setAdjLocationOptions(prev => ({
+                    ...prev,
+                    [adjId]: {
+                        provincias: data.provincias || [],
+                        distritos: [] // Reset districts
+                    }
+                }));
+            } catch (error) {
+                console.error("Error fetching provinces for row", index, error);
+            }
+        } else {
+            setAdjLocationOptions(prev => ({
+                ...prev,
+                [adjId]: { provincias: [], distritos: [] }
+            }));
+        }
+    };
+
+    const handleAdjProvChange = async (index: number, prov: string) => {
+        const newAdj = [...(formData.adjudicaciones || [])];
+        const currentAdj = newAdj[index];
+        const adjId = currentAdj.id || index;
+        const dept = currentAdj.departamento;
+
+        // Update Prov, Clear Dist
+        currentAdj.provincia = prov;
+        currentAdj.distrito = '';
+        setFormData({ ...formData, adjudicaciones: newAdj });
+
+        // Fetch Distritos
+        if (dept && prov) {
+            try {
+                const data = await licitacionService.getLocations(dept, prov);
+                setAdjLocationOptions(prev => ({
+                    ...prev,
+                    [adjId]: {
+                        ...prev[adjId], // Keep existing provinces
+                        distritos: data.distritos || []
+                    }
+                }));
+            } catch (error) {
+                console.error("Error fetching districts for row", index, error);
+            }
+        }
+    };
+
+    // Load initial options for existing adjudications (Edit Mode)
+    useEffect(() => {
+        const loadInitialAdjOptions = async () => {
+            if (activeTab === 'adjudicaciones' && formData.adjudicaciones && formData.adjudicaciones.length > 0) {
+                const newOptions: Record<string, { provincias: string[], distritos: string[] }> = {};
+
+                for (let i = 0; i < formData.adjudicaciones.length; i++) {
+                    const adj = formData.adjudicaciones[i];
+                    const adjId = adj.id || i;
+
+                    // Don't reload if already loaded to avoid spamming API
+                    if (adjLocationOptions[adjId]) continue;
+
+                    let provs: string[] = [];
+                    let dists: string[] = [];
+
+                    if (adj.departamento) {
+                        try {
+                            const res = await licitacionService.getLocations(adj.departamento);
+                            provs = res.provincias || [];
+
+                            if (adj.provincia) {
+                                const res2 = await licitacionService.getLocations(adj.departamento, adj.provincia);
+                                dists = res2.distritos || [];
+                            }
+                        } catch (e) {
+                            console.error("Error pre-loading options for adj", i, e);
+                        }
+                    }
+
+                    newOptions[adjId] = { provincias: provs, distritos: dists };
+                }
+
+                if (Object.keys(newOptions).length > 0) {
+                    setAdjLocationOptions(prev => ({ ...prev, ...newOptions }));
+                }
+            }
+        };
+
+        loadInitialAdjOptions();
+    }, [activeTab, formData.adjudicaciones?.length]); // Run when tab active or count changes
 
     // Prevent body scroll when modal is open
     useEffect(() => {
@@ -523,7 +631,7 @@ export default function LicitacionModal({
                                                 <div className="space-y-1.5">
                                                     <label className="text-[10px] font-bold text-slate-500 uppercase">ID Adjudicación</label>
                                                     <input
-                                                        placeholder="Ej: ADJ-2024-001"
+                                                        placeholder="Ej: 12345678"
                                                         className="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800/50 text-sm focus:ring-2 focus:ring-blue-500 outline-none font-mono text-xs"
                                                         value={adj.id_adjudicacion || ''}
                                                         onChange={(e) => {
@@ -536,7 +644,7 @@ export default function LicitacionModal({
                                                 <div className="space-y-1.5">
                                                     <label className="text-[10px] font-bold text-slate-500 uppercase">ID Contrato</label>
                                                     <input
-                                                        placeholder="Ej: CTR-001-2024"
+                                                        placeholder="Ej: 98765432"
                                                         className="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800/50 text-sm focus:ring-2 focus:ring-blue-500 outline-none font-mono text-xs"
                                                         value={adj.id_contrato || ''}
                                                         onChange={(e) => {
@@ -549,7 +657,7 @@ export default function LicitacionModal({
                                                 <div className="space-y-1.5">
                                                     <label className="text-[10px] font-bold text-slate-500 uppercase">OCID Item</label>
                                                     <input
-                                                        placeholder="ocds-..."
+                                                        placeholder="Ej: ocds-0k50v2-..."
                                                         className="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800/50 text-sm focus:ring-2 focus:ring-blue-500 outline-none font-mono text-xs"
                                                         value={adj.ocid || ''}
                                                         onChange={(e) => {
@@ -598,17 +706,31 @@ export default function LicitacionModal({
                                                 </div>
                                                 <div className="space-y-1.5">
                                                     <label className="text-[10px] font-bold text-slate-500 uppercase">Monto Adjudicado</label>
-                                                    <input
-                                                        type="number"
-                                                        className="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800/50 text-sm focus:ring-2 focus:ring-blue-500 outline-none font-mono"
-                                                        value={adj.monto_adjudicado || 0}
-                                                        step="0.01"
-                                                        onChange={(e) => {
-                                                            const newAdj = [...(formData.adjudicaciones || [])];
-                                                            newAdj[index].monto_adjudicado = Number(e.target.value);
-                                                            setFormData({ ...formData, adjudicaciones: newAdj });
-                                                        }}
-                                                    />
+                                                    <div className="flex rounded-lg shadow-sm">
+                                                        <select
+                                                            className="px-3 py-2.5 rounded-l-lg border border-r-0 border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-bold focus:ring-0 outline-none"
+                                                            value={adj.moneda || 'PEN'}
+                                                            onChange={(e) => {
+                                                                const newAdj = [...(formData.adjudicaciones || [])];
+                                                                newAdj[index].moneda = e.target.value;
+                                                                setFormData({ ...formData, adjudicaciones: newAdj });
+                                                            }}
+                                                        >
+                                                            <option value="PEN">S/</option>
+                                                            <option value="USD">$</option>
+                                                        </select>
+                                                        <input
+                                                            type="number"
+                                                            className="flex-1 p-2.5 rounded-r-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800/50 text-sm focus:ring-2 focus:ring-blue-500 outline-none font-mono"
+                                                            value={adj.monto_adjudicado || 0}
+                                                            step="0.01"
+                                                            onChange={(e) => {
+                                                                const newAdj = [...(formData.adjudicaciones || [])];
+                                                                newAdj[index].monto_adjudicado = Number(e.target.value);
+                                                                setFormData({ ...formData, adjudicaciones: newAdj });
+                                                            }}
+                                                        />
+                                                    </div>
                                                 </div>
                                                 <div className="space-y-1.5">
                                                     <label className="text-[10px] font-bold text-slate-500 uppercase">Fecha Adjudicación</label>
@@ -669,8 +791,7 @@ export default function LicitacionModal({
                                                 </div>
                                                 <div className="space-y-1.5">
                                                     <label className="text-[10px] font-bold text-slate-500 uppercase">Entidad Financiera / Banco</label>
-                                                    <input
-                                                        placeholder="Ej: BCP, BBVA, etc."
+                                                    <select
                                                         className="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800/50 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                                                         value={adj.entidad_financiera || ''}
                                                         onChange={(e) => {
@@ -678,7 +799,13 @@ export default function LicitacionModal({
                                                             newAdj[index].entidad_financiera = e.target.value;
                                                             setFormData({ ...formData, adjudicaciones: newAdj });
                                                         }}
-                                                    />
+                                                    >
+                                                        <option value="">Seleccionar...</option>
+                                                        {aseguradorasOptions.map((ent, i) => (
+                                                            <option key={i} value={ent}>{ent}</option>
+                                                        ))}
+                                                        <option value="OTRO">OTRO</option>
+                                                    </select>
                                                 </div>
                                             </div>
                                         </div>
@@ -744,42 +871,48 @@ export default function LicitacionModal({
                                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                                                     <div className="space-y-1.5">
                                                         <label className="text-[10px] font-bold text-slate-500 uppercase">Departamento</label>
-                                                        <input
-                                                            placeholder="Ej: LIMA"
+                                                        <select
                                                             className="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800/50 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                                                             value={adj.departamento || ''}
-                                                            onChange={(e) => {
-                                                                const newAdj = [...(formData.adjudicaciones || [])];
-                                                                newAdj[index].departamento = e.target.value.toUpperCase();
-                                                                setFormData({ ...formData, adjudicaciones: newAdj });
-                                                            }}
-                                                        />
+                                                            onChange={(e) => handleAdjDeptChange(index, e.target.value)}
+                                                        >
+                                                            <option value="">Seleccionar...</option>
+                                                            {departamentos.map((dept, i) => (
+                                                                <option key={i} value={dept}>{dept}</option>
+                                                            ))}
+                                                        </select>
                                                     </div>
                                                     <div className="space-y-1.5">
                                                         <label className="text-[10px] font-bold text-slate-500 uppercase">Provincia</label>
-                                                        <input
-                                                            placeholder="Ej: LIMA"
-                                                            className="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800/50 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                                                        <select
+                                                            className="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800/50 text-sm focus:ring-2 focus:ring-blue-500 outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                                                             value={adj.provincia || ''}
-                                                            onChange={(e) => {
-                                                                const newAdj = [...(formData.adjudicaciones || [])];
-                                                                newAdj[index].provincia = e.target.value.toUpperCase();
-                                                                setFormData({ ...formData, adjudicaciones: newAdj });
-                                                            }}
-                                                        />
+                                                            onChange={(e) => handleAdjProvChange(index, e.target.value)}
+                                                            disabled={!adj.departamento || !adjLocationOptions[adj.id || index]?.provincias?.length}
+                                                        >
+                                                            <option value="">Seleccionar...</option>
+                                                            {(adjLocationOptions[adj.id || index]?.provincias || []).map((prov, i) => (
+                                                                <option key={i} value={prov}>{prov}</option>
+                                                            ))}
+                                                        </select>
                                                     </div>
                                                     <div className="space-y-1.5">
                                                         <label className="text-[10px] font-bold text-slate-500 uppercase">Distrito</label>
-                                                        <input
-                                                            placeholder="Ej: MIRAFLORES"
-                                                            className="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800/50 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                                                        <select
+                                                            className="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800/50 text-sm focus:ring-2 focus:ring-blue-500 outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                                                             value={adj.distrito || ''}
                                                             onChange={(e) => {
                                                                 const newAdj = [...(formData.adjudicaciones || [])];
-                                                                newAdj[index].distrito = e.target.value.toUpperCase();
+                                                                newAdj[index].distrito = e.target.value;
                                                                 setFormData({ ...formData, adjudicaciones: newAdj });
                                                             }}
-                                                        />
+                                                            disabled={!adj.provincia || !adjLocationOptions[adj.id || index]?.distritos?.length}
+                                                        >
+                                                            <option value="">Seleccionar...</option>
+                                                            {(adjLocationOptions[adj.id || index]?.distritos || []).map((dist, i) => (
+                                                                <option key={i} value={dist}>{dist}</option>
+                                                            ))}
+                                                        </select>
                                                     </div>
                                                 </div>
                                             </div>

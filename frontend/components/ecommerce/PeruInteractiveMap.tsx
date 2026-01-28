@@ -145,12 +145,12 @@ export const PeruInteractiveMap: React.FC<PeruInteractiveMapProps> = ({
             </div>
 
             {/* Map Container */}
-            <div className="flex-1 relative flex items-center justify-center rounded-xl min-h-[360px]">
+            <div className="relative flex items-center justify-center rounded-xl h-[380px]">
                 <ComposableMap
                     projection="geoMercator"
                     projectionConfig={{
                         center: [-75, -9.5],
-                        scale: 1800
+                        scale: 1750
                     }}
                     width={460}
                     height={580}

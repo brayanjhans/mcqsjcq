@@ -47,6 +47,7 @@ export interface Adjudicacion {
     entidad_financiera?: string;
     tipo_garantia?: string;
     estado?: string;
+    moneda?: string;
 }
 
 export interface SearchFilters {

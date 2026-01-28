@@ -152,17 +152,23 @@ def get_all_filters(db: Session = Depends(get_db)):
         asegs_raw = db.execute(text("SELECT DISTINCT UPPER(TRIM(entidad_financiera)) FROM licitaciones_adjudicaciones WHERE entidad_financiera IS NOT NULL AND TRIM(entidad_financiera) != ''")).fetchall()
         
         aseguradoras_set = set()
+        
+        # 1. Add DB values
         for r in asegs_raw:
             val = r[0]
             if val:
-                # Split by '|' to handle consortiums like "AVLA | CESCE"
                 parts = val.split('|')
                 for p in parts:
                     clean_p = p.strip()
                     if clean_p:
                         aseguradoras_set.add(clean_p)
         
-        # Normalization Logic using Shared Utility
+        # 2. Add Standardized Values
+        from app.data.financial_entities import ENTIDADES_FINANCIERAS
+        for ent in ENTIDADES_FINANCIERAS:
+             aseguradoras_set.add(ent)
+
+        # Normalization and Sorting
         from app.utils.normalization import normalize_insurer_name
         
         normalized_set = set()
@@ -593,7 +599,7 @@ def get_licitacion_detail(
             SELECT 
                 id_adjudicacion, ganador_nombre, ganador_ruc,
                 monto_adjudicado, fecha_adjudicacion,
-                estado_item, entidad_financiera
+                estado_item, entidad_financiera, moneda
             FROM licitaciones_adjudicaciones
             WHERE id_convocatoria = :id
         """)
@@ -609,7 +615,8 @@ def get_licitacion_detail(
                 "monto_adjudicado": float(adj_row[3]) if adj_row[3] else 0,
                 "fecha_adjudicacion": adj_row[4].isoformat() if adj_row[4] else None,
                 "estado_item": adj_row[5],
-                "entidad_financiera": adj_row[6]
+                "entidad_financiera": adj_row[6],
+                "moneda": adj_row[7]
             })
         
         licitacion["adjudicaciones"] = adjudicaciones
@@ -694,6 +701,7 @@ class AdjudicacionItem(BaseModel):
     entidad_financiera: Optional[str] = None
     tipo_garantia: Optional[str] = None
     id_contrato: Optional[str] = None
+    moneda: Optional[str] = 'PEN'
     consorcios: Optional[List[ConsorcioItem]] = []
 
 class LicitacionCreate(BaseModel):
@@ -762,14 +770,13 @@ def create_licitacion(licitacion: LicitacionCreate, db: Session = Depends(get_db
         # 3. Insert Adjudicaciones
         if licitacion.adjudicaciones:
             sql_adj = text("""
-                INSERT INTO licitaciones_adjudicaciones (
                     id_adjudicacion, id_convocatoria, ganador_nombre, ganador_ruc,
                     monto_adjudicado, fecha_adjudicacion, estado_item, 
-                    entidad_financiera, tipo_garantia, id_contrato
+                    entidad_financiera, tipo_garantia, id_contrato, moneda
                 ) VALUES (
                     :id_adj, :id_conv, :nombre, :ruc, 
                     :monto, :fecha, :estado, 
-                    :banco, :garantia, :contrato
+                    :banco, :garantia, :contrato, :moneda
                 )
             """)
             
@@ -785,7 +792,8 @@ def create_licitacion(licitacion: LicitacionCreate, db: Session = Depends(get_db
                     "estado": adj.estado_item,
                     "banco": adj.entidad_financiera,
                     "garantia": adj.tipo_garantia,
-                    "contrato": adj.id_contrato
+                    "contrato": adj.id_contrato,
+                    "moneda": adj.moneda
                 })
         
         db.commit()
@@ -865,11 +873,11 @@ def update_licitacion(id: str, licitacion: LicitacionCreate, db: Session = Depen
                 INSERT INTO licitaciones_adjudicaciones (
                     id_adjudicacion, id_convocatoria, ganador_nombre, ganador_ruc,
                     monto_adjudicado, fecha_adjudicacion, estado_item, 
-                    entidad_financiera, tipo_garantia, id_contrato
+                    entidad_financiera, tipo_garantia, id_contrato, moneda
                 ) VALUES (
                     :id_adj, :id_conv, :nombre, :ruc, 
                     :monto, :fecha, :estado, 
-                    :banco, :garantia, :contrato
+                    :banco, :garantia, :contrato, :moneda
                 )
             """)
             
@@ -886,7 +894,8 @@ def update_licitacion(id: str, licitacion: LicitacionCreate, db: Session = Depen
                     "estado": adj.estado_item,
                     "banco": adj.entidad_financiera,
                     "garantia": adj.tipo_garantia,
-                    "contrato": adj.id_contrato
+                    "contrato": adj.id_contrato,
+                    "moneda": adj.moneda
                 })
         
         db.commit()

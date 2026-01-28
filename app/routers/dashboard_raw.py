@@ -408,7 +408,7 @@ def get_department_ranking(
 def get_financial_entities_ranking(
     year: int = 0,
     mes: Optional[int] = Query(None),
-    department: Optional[str] = Query(None, description="Filter by department"),
+    departamento: Optional[str] = Query(None, description="Filter by department"),
     estado: Optional[str] = Query(None),
     tipo_procedimiento: Optional[str] = Query(None),
     categoria: Optional[str] = Query(None),
@@ -425,9 +425,9 @@ def get_financial_entities_ranking(
         if mes and mes > 0:
             where_clauses.append("MONTH(c.fecha_publicacion) = :mes")
             params["mes"] = mes
-        if department:
+        if departamento:
             where_clauses.append("c.departamento = :department")
-            params["department"] = department
+            params["department"] = departamento
         if estado:
             where_clauses.append("c.estado_proceso = :estado")
             params['estado'] = estado
