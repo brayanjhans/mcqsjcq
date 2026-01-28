@@ -111,7 +111,11 @@ def get_all_filters(db: Session = Depends(get_db)):
                          "SAN MARTIN", "TACNA", "TUMBES", "UCAYALI"],
         "estados": ["CONVOCADO", "ADJUDICADO", "CONTRATADO", "NULO", "DESIERTO", "CANCELADO", "SUSPENDIDO"],
         "categorias": ["BIENES", "SERVICIOS", "OBRAS", "CONSULTORIA DE OBRAS"],
-        "aseguradoras": ["SECREX", "AVLA", "INSUR", "MAPFRE", "CRECER", "LIBERTY", "MUNDIAL"]
+        "aseguradoras": ["SECREX", "AVLA", "INSUR", "MAPFRE", "CRECER", "LIBERTY", "MUNDIAL"],
+        "anios": [2026, 2025, 2024],
+        "entidades": [],
+        "tipos_garantia": [],
+        "tipos_entidad": []
     }
 
     try:
@@ -212,6 +216,8 @@ def get_all_filters(db: Session = Depends(get_db)):
         }
     except Exception as e:
         print(f"Error getting filters: {e}")
+        import traceback
+        traceback.print_exc()
         return DEFAULTS
 
 @router.get("")
