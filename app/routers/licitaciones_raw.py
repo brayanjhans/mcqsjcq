@@ -802,6 +802,28 @@ def create_licitacion(licitacion: LicitacionCreate, db: Session = Depends(get_db
                     "contrato": adj.id_contrato,
                     "moneda": adj.moneda
                 })
+
+                # 4. Insert Consorcios (if any)
+                if adj.consorcios:
+                    cons_sql = text("""
+                        INSERT INTO detalle_consorcios (
+                            id_contrato, ruc_miembro, nombre_miembro, 
+                            porcentaje_participacion, fecha_registro
+                        ) VALUES (
+                            :contrato, :ruc, :nombre, :pct, NOW()
+                        )
+                    """)
+                    
+                    # Use provided contract ID or fallback
+                    c_id = adj.id_contrato if adj.id_contrato else f"GEN-{adj_id[:8]}"
+
+                    for cons in adj.consorcios:
+                        db.execute(cons_sql, {
+                            "contrato": c_id,
+                            "ruc": cons.ruc,
+                            "nombre": cons.nombre,
+                            "pct": cons.porcentaje
+                        })
         
         db.commit()
         
@@ -870,9 +892,24 @@ def update_licitacion(id: str, licitacion: LicitacionCreate, db: Session = Depen
             "dist": licitacion.distrito
         })
         
-        # 2. Handle Adjudicaciones (Simple Strategy: Delete All for this ID and Re-insert)
+        # 2. Cleanup Old Adjudicaciones & Consorcios
+        try:
+             # Find contracts linked to this licitacion
+             linked_contracts = db.execute(text("SELECT id_contrato FROM licitaciones_adjudicaciones WHERE id_convocatoria = :id"), {"id": id}).fetchall()
+             linked_ids = [r[0] for r in linked_contracts if r[0]]
+             
+             if linked_ids:
+                 # Delete consorcios linked to these contracts
+                 # Construct safe IN clause
+                 s_ids = ",".join([f"'{str(x)}'" for x in linked_ids])
+                 if s_ids:
+                    db.execute(text(f"DELETE FROM detalle_consorcios WHERE id_contrato IN ({s_ids})"))
+        except Exception as e:
+            print(f"Warning cleanup consorcios: {e}")
+
         del_adj = text("DELETE FROM licitaciones_adjudicaciones WHERE id_convocatoria = :id")
         db.execute(del_adj, {"id": id})
+
         
         # Re-insert
         if licitacion.adjudicaciones:
@@ -904,6 +941,26 @@ def update_licitacion(id: str, licitacion: LicitacionCreate, db: Session = Depen
                     "contrato": adj.id_contrato,
                     "moneda": adj.moneda
                 })
+
+                if adj.consorcios:
+                    cons_sql = text("""
+                        INSERT INTO detalle_consorcios (
+                            id_contrato, ruc_miembro, nombre_miembro, 
+                            porcentaje_participacion, fecha_registro
+                        ) VALUES (
+                            :contrato, :ruc, :nombre, :pct, NOW()
+                        )
+                    """)
+                    
+                    c_id = adj.id_contrato if adj.id_contrato else f"UPD-{adj_id[:8]}"
+
+                    for cons in adj.consorcios:
+                        db.execute(cons_sql, {
+                            "contrato": c_id,
+                            "ruc": cons.ruc,
+                            "nombre": cons.nombre,
+                            "pct": cons.porcentaje
+                        })
         
         db.commit()
         
