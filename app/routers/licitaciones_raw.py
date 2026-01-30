@@ -468,6 +468,7 @@ def get_licitaciones(
                 lc.departamento,
                 lc.provincia,
                 lc.distrito,
+                lc.entidad_ruc,
                 (SELECT GROUP_CONCAT(DISTINCT la.ganador_nombre SEPARATOR ' | ') FROM licitaciones_adjudicaciones la WHERE la.id_convocatoria = lc.id_convocatoria) as ganador_nombre,
                 (SELECT GROUP_CONCAT(DISTINCT la.ganador_ruc SEPARATOR ' | ') FROM licitaciones_adjudicaciones la WHERE la.id_convocatoria = lc.id_convocatoria) as ganador_ruc,
                 (SELECT GROUP_CONCAT(DISTINCT la.entidad_financiera SEPARATOR ' | ') FROM licitaciones_adjudicaciones la WHERE la.id_convocatoria = lc.id_convocatoria) as entidad_financiera,
@@ -506,15 +507,16 @@ def get_licitaciones(
                 "departamento": row[12],
                 "provincia": row[13],
                 "distrito": row[14],
+                "entidad_ruc": row[15],
                 # New fields from subqueries
-                "ganador_nombre": row[15],
-                "ganador_ruc": row[16],
-                "entidad_financiera": row[17],
-                "tipo_garantia": row[18],
-                "monto_total_adjudicado": float(row[19]) if row[19] else 0,
-                "total_adjudicaciones": int(row[20]) if row[20] else 0,
-                "fecha_adjudicacion": row[21].isoformat() if row[21] else None,
-                "id_contrato": row[22]
+                "ganador_nombre": row[16],
+                "ganador_ruc": row[17],
+                "entidad_financiera": row[18],
+                "tipo_garantia": row[19],
+                "monto_total_adjudicado": float(row[20]) if row[20] else 0,
+                "total_adjudicaciones": int(row[21]) if row[21] else 0,
+                "fecha_adjudicacion": row[22].isoformat() if row[22] else None,
+                "id_contrato": row[23]
             })
         
         # Calculate pagination
@@ -603,7 +605,8 @@ def get_licitacion_detail(
                 comprador, categoria, tipo_procedimiento,
                 monto_estimado, moneda, fecha_publicacion,
                 estado_proceso, ubicacion_completa,
-                departamento, provincia, distrito
+                departamento, provincia, distrito,
+                entidad_ruc
             FROM licitaciones_cabecera
             WHERE id_convocatoria = :id
         """)
@@ -628,7 +631,8 @@ def get_licitacion_detail(
             "ubicacion_completa": row[11],
             "departamento": row[12],
             "provincia": row[13],
-            "distrito": row[14]
+            "distrito": row[14],
+            "entidad_ruc": row[15]
         }
         
         # Get adjudicaciones
@@ -829,6 +833,14 @@ def create_licitacion(licitacion: LicitacionCreate, db: Session = Depends(get_db
         
         ubicacion = f"{licitacion.departamento or ''} - {licitacion.provincia or ''} - {licitacion.distrito or ''}"
         
+        # Sanitize Dates (Remove ISO T/Z)
+        def clean_date(d):
+            if d and isinstance(d, str):
+                return d.replace('T', ' ').replace('Z', '').split('.')[0]
+            return d
+
+        fecha_pub = clean_date(licitacion.fecha_publicacion)
+
         db.execute(sql_header, {
             "id": new_id,
             "ocid": licitacion.ocid,
@@ -840,7 +852,7 @@ def create_licitacion(licitacion: LicitacionCreate, db: Session = Depends(get_db
             "proc": licitacion.tipo_procedimiento,
             "monto": licitacion.monto_estimado,
             "mon": licitacion.moneda,
-            "fecha": licitacion.fecha_publicacion,
+            "fecha": fecha_pub,
             "estado": licitacion.estado_proceso,
             "ubic": ubicacion,
             "dept": licitacion.departamento,
@@ -864,13 +876,15 @@ def create_licitacion(licitacion: LicitacionCreate, db: Session = Depends(get_db
             
             for adj in licitacion.adjudicaciones:
                 adj_id = str(uuid.uuid4())
+                fecha_adj = clean_date(adj.fecha_adjudicacion)
+
                 db.execute(sql_adj, {
                     "id_adj": adj_id,
                     "id_conv": new_id,
                     "nombre": adj.ganador_nombre,
                     "ruc": adj.ganador_ruc,
                     "monto": adj.monto_adjudicado,
-                    "fecha": adj.fecha_adjudicacion,
+                    "fecha": fecha_adj,
                     "estado": adj.estado_item,
                     "banco": adj.entidad_financiera,
                     "garantia": adj.tipo_garantia,
@@ -949,6 +963,14 @@ def update_licitacion(id: str, licitacion: LicitacionCreate, db: Session = Depen
         
         ubicacion = f"{licitacion.departamento or ''} - {licitacion.provincia or ''} - {licitacion.distrito or ''}"
         
+        # Sanitize Dates
+        def clean_date(d):
+            if d and isinstance(d, str):
+                return d.replace('T', ' ').replace('Z', '').split('.')[0]
+            return d
+
+        fecha_pub = clean_date(licitacion.fecha_publicacion)
+
         result = db.execute(sql_header, {
             "id": id,
             "ocid": licitacion.ocid,
@@ -960,7 +982,7 @@ def update_licitacion(id: str, licitacion: LicitacionCreate, db: Session = Depen
             "proc": licitacion.tipo_procedimiento,
             "monto": licitacion.monto_estimado,
             "mon": licitacion.moneda,
-            "fecha": licitacion.fecha_publicacion,
+            "fecha": fecha_pub,
             "estado": licitacion.estado_proceso,
             "ubic": ubicacion,
             "dept": licitacion.departamento,
@@ -1004,13 +1026,15 @@ def update_licitacion(id: str, licitacion: LicitacionCreate, db: Session = Depen
             import uuid
             for adj in licitacion.adjudicaciones:
                 adj_id = str(uuid.uuid4()) # New ID for re-inserted items
+                fecha_adj = clean_date(adj.fecha_adjudicacion)
+                
                 db.execute(sql_adj, {
                     "id_adj": adj_id,
                     "id_conv": id,
                     "nombre": adj.ganador_nombre,
                     "ruc": adj.ganador_ruc,
                     "monto": adj.monto_adjudicado,
-                    "fecha": adj.fecha_adjudicacion,
+                    "fecha": fecha_adj,
                     "estado": adj.estado_item,
                     "banco": adj.entidad_financiera,
                     "garantia": adj.tipo_garantia,
