@@ -119,6 +119,7 @@ export default function LicitacionModal({
                 categoria: 'BIENES',
                 moneda: 'PEN',
                 monto_estimado: 0,
+                fecha_publicacion: new Date().toISOString(), // Default to Today
                 adjudicaciones: [] // Start empty for new, could populate for edit
             });
             setActiveTab('general');

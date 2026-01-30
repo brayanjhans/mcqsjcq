@@ -794,6 +794,7 @@ class LicitacionCreate(BaseModel):
     moneda: Optional[str] = 'PEN'
     fecha_publicacion: Optional[str] = None
     estado_proceso: Optional[str] = None
+    entidad_ruc: Optional[str] = None
     departamento: Optional[str] = None
     provincia: Optional[str] = None
     distrito: Optional[str] = None
