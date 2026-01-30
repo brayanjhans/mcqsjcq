@@ -113,6 +113,8 @@ export default function LicitacionModal({
                 descripcion: '',
                 comprador: '',
                 nomenclatura: '',
+                id_convocatoria: '',
+                ocid: '',
                 estado_proceso: 'CONVOCADO', // Default per screenshot
                 categoria: 'BIENES',
                 moneda: 'PEN',
@@ -292,7 +294,7 @@ export default function LicitacionModal({
                     <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-200 dark:border-white/10 flex items-center justify-between">
                         <div>
                             <h2 className="text-base sm:text-lg font-bold text-slate-800 dark:text-white">
-                                {licitacion ? 'Editar Licitación' : 'Nueva Licitación'}
+                                {licitacion ? 'Editar Procedimiento' : 'Nuevo Procedimiento'}
                             </h2>
                             <p className="text-xs text-slate-500 dark:text-slate-400 hidden sm:block">
                                 {licitacion ? 'Modifique los detalles y adjudicaciones.' : 'Complete la información.'}
@@ -351,6 +353,7 @@ export default function LicitacionModal({
                                             <label className="text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase">ID Convocatoria</label>
                                             <input
                                                 type="text"
+                                                autoComplete="off"
                                                 className="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800/50 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all placeholder:text-slate-300 font-mono text-xs"
                                                 value={formData.id_convocatoria || ''}
                                                 onChange={(e) => setFormData({ ...formData, id_convocatoria: e.target.value })}
@@ -361,6 +364,7 @@ export default function LicitacionModal({
                                             <label className="text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase">OCID</label>
                                             <input
                                                 type="text"
+                                                autoComplete="off"
                                                 className="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800/50 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all placeholder:text-slate-300 font-mono text-xs"
                                                 value={formData.ocid || ''}
                                                 onChange={(e) => setFormData({ ...formData, ocid: e.target.value })}
@@ -373,6 +377,7 @@ export default function LicitacionModal({
                                         <label className="text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase">Nomenclatura</label>
                                         <input
                                             type="text"
+                                            autoComplete="off"
                                             className="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800/50 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all placeholder:text-slate-300"
                                             value={formData.nomenclatura || ''}
                                             onChange={(e) => setFormData({ ...formData, nomenclatura: e.target.value })}
@@ -395,6 +400,7 @@ export default function LicitacionModal({
                                             <label className="text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase">Comprador / Entidad *</label>
                                             <input
                                                 type="text"
+                                                autoComplete="off"
                                                 className="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800/50 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all placeholder:text-slate-300"
                                                 value={formData.comprador || ''}
                                                 onChange={(e) => setFormData({ ...formData, comprador: e.target.value })}
@@ -405,6 +411,7 @@ export default function LicitacionModal({
                                             <label className="text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase">RUC Entidad</label>
                                             <input
                                                 type="text"
+                                                autoComplete="off"
                                                 className="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800/50 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all placeholder:text-slate-300 font-mono"
                                                 value={formData.entidad_ruc || ''}
                                                 onChange={(e) => setFormData({ ...formData, entidad_ruc: e.target.value })}
@@ -632,6 +639,7 @@ export default function LicitacionModal({
                                                     <label className="text-[10px] font-bold text-slate-500 uppercase">ID Adjudicación</label>
                                                     <input
                                                         placeholder="Ej: 12345678"
+                                                        autoComplete="off"
                                                         className="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800/50 text-sm focus:ring-2 focus:ring-blue-500 outline-none font-mono text-xs"
                                                         value={adj.id_adjudicacion || ''}
                                                         onChange={(e) => {
@@ -645,6 +653,7 @@ export default function LicitacionModal({
                                                     <label className="text-[10px] font-bold text-slate-500 uppercase">ID Contrato</label>
                                                     <input
                                                         placeholder="Ej: 98765432"
+                                                        autoComplete="off"
                                                         className="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800/50 text-sm focus:ring-2 focus:ring-blue-500 outline-none font-mono text-xs"
                                                         value={adj.id_contrato || ''}
                                                         onChange={(e) => {
@@ -658,6 +667,7 @@ export default function LicitacionModal({
                                                     <label className="text-[10px] font-bold text-slate-500 uppercase">OCID Item</label>
                                                     <input
                                                         placeholder="Ej: ocds-0k50v2-..."
+                                                        autoComplete="off"
                                                         className="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800/50 text-sm focus:ring-2 focus:ring-blue-500 outline-none font-mono text-xs"
                                                         value={adj.ocid || ''}
                                                         onChange={(e) => {
@@ -681,6 +691,7 @@ export default function LicitacionModal({
                                                     <label className="text-[10px] font-bold text-slate-500 uppercase">Nombre del Ganador</label>
                                                     <input
                                                         placeholder="Ej: CONSTRUCTORA DEL SUR S.A.C."
+                                                        autoComplete="off"
                                                         className="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800/50 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                                                         value={adj.ganador_nombre || ''}
                                                         onChange={(e) => {
@@ -694,6 +705,7 @@ export default function LicitacionModal({
                                                     <label className="text-[10px] font-bold text-slate-500 uppercase">RUC</label>
                                                     <input
                                                         placeholder="Ej: 20601234567"
+                                                        autoComplete="off"
                                                         className="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800/50 text-sm focus:ring-2 focus:ring-blue-500 outline-none font-mono"
                                                         value={adj.ganador_ruc || ''}
                                                         maxLength={11}
@@ -804,7 +816,6 @@ export default function LicitacionModal({
                                                         {aseguradorasOptions.map((ent, i) => (
                                                             <option key={i} value={ent}>{ent}</option>
                                                         ))}
-                                                        <option value="OTRO">OTRO</option>
                                                     </select>
                                                 </div>
                                             </div>

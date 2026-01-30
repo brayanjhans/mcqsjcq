@@ -25,6 +25,12 @@ deploy_package.zip
 *.tar.gz
 *.rar
 
+# Documents and Temp Files (Added by Agent)
+*.pdf
+*.docx
+*.xlsx
+*.doc
+
 # Data - EXCLUDE LARGE FILES
 1_database/*.json
 1_database/*.csv
@@ -48,3 +54,9 @@ fix_*.py
 rebuild_*.py
 force_*.py
 get_crash_*.py
+analyze_*.py
+cat_*.py
+get_*.py
+read_*.py
+run_*.py
+upload_*.py

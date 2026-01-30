@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from app.database import get_db
+from app.data.financial_entities import ENTIDADES_FINANCIERAS
 from typing import Optional
 from datetime import date
 
@@ -104,14 +105,17 @@ def get_all_filters(db: Session = Depends(get_db)):
     """
     Get all available filter options. Returns defaults if DB is empty to prevent empty UI.
     """
+    # Fix UnboundLocalError by explicitly referencing global or assigning local
+    from app.data.financial_entities import ENTIDADES_FINANCIERAS as ALL_ENTITIES
+
     DEFAULTS = {
         "departamentos": ["AMAZONAS", "ANCASH", "APURIMAC", "AREQUIPA", "AYACUCHO", "CAJAMARCA", "CALLAO", 
-                         "CUSCO", "HUANCAVELICA", "HUANUCO", "ICA", "JUNIN", "LA LIBERTAD", "LAMBAYEQUE", 
+                         "CUSCO", "HUANCAVELICA", "HUANUCO", "ICA", "JUNIN", "LA LIBERTAD", "LAMBAYEQUE",  
                          "LIMA", "LORETO", "MADRE DE DIOS", "MOQUEGUA", "PASCO", "PIURA", "PUNO", 
                          "SAN MARTIN", "TACNA", "TUMBES", "UCAYALI"],
         "estados": ["CONVOCADO", "ADJUDICADO", "CONTRATADO", "NULO", "DESIERTO", "CANCELADO", "SUSPENDIDO"],
         "categorias": ["BIENES", "SERVICIOS", "OBRAS", "CONSULTORIA DE OBRAS"],
-        "aseguradoras": ["SECREX", "AVLA", "INSUR", "MAPFRE", "CRECER", "LIBERTY", "MUNDIAL"],
+        "aseguradoras": ALL_ENTITIES, # Dynamic from app/data/financial_entities.py
         "anios": [2026, 2025, 2024],
         "entidades": [],
         "tipos_garantia": [],
@@ -153,34 +157,9 @@ def get_all_filters(db: Session = Depends(get_db)):
         if not estados: estados = DEFAULTS["estados"]
 
         # 4. Aseguradoras in adjudicaciones
-        asegs_raw = db.execute(text("SELECT DISTINCT UPPER(TRIM(entidad_financiera)) FROM licitaciones_adjudicaciones WHERE entidad_financiera IS NOT NULL AND TRIM(entidad_financiera) != ''")).fetchall()
-        
-        aseguradoras_set = set()
-        
-        # 1. Add DB values
-        for r in asegs_raw:
-            val = r[0]
-            if val:
-                parts = val.split('|')
-                for p in parts:
-                    clean_p = p.strip()
-                    if clean_p:
-                        aseguradoras_set.add(clean_p)
-        
-        # 2. Add Standardized Values
-        from app.data.financial_entities import ENTIDADES_FINANCIERAS
-        for ent in ENTIDADES_FINANCIERAS:
-             aseguradoras_set.add(ent)
-
-        # Normalization and Sorting
-        from app.utils.normalization import normalize_insurer_name
-        
-        normalized_set = set()
-        for name in aseguradoras_set:
-            mapped_name = normalize_insurer_name(name)
-            normalized_set.add(mapped_name)
-
-        aseguradoras = sorted(list(normalized_set))
+        # FORCE STATIC CLEAN LIST: We do not query the DB for this to avoid dirty data.
+        # The normalization logic handles the search mapping.
+        aseguradoras = ALL_ENTITIES
         if not aseguradoras: aseguradoras = DEFAULTS["aseguradoras"]
 
         # NEW: 5. Periodos (Años)
@@ -372,13 +351,17 @@ def get_licitaciones(
             # Handle Aliases
             search_entidad = entidad_financiera.upper().strip()
             
-            # Special BCP Hybrid Match
+            # Special BCP Hybrid Match (Includes "MI" / "BPC")
             if "BANCO DE CREDITO" in search_entidad or search_entidad == "BCP":
                 where_clauses.append("""
                     EXISTS (
                         SELECT 1 FROM licitaciones_adjudicaciones la 
                         WHERE la.id_convocatoria = licitaciones_cabecera.id_convocatoria 
-                        AND (UPPER(la.entidad_financiera) LIKE '%CREDITO%' OR UPPER(la.entidad_financiera) LIKE '%BCP%')
+                        AND (UPPER(la.entidad_financiera) LIKE '%CREDITO%' 
+                             OR UPPER(la.entidad_financiera) LIKE '%BCP%'
+                             OR UPPER(la.entidad_financiera) = 'MI'
+                             OR UPPER(la.entidad_financiera) LIKE '%| MI'
+                             OR UPPER(la.entidad_financiera) LIKE '%MI |%')
                     )
                 """)
             elif search_entidad == "BBVA":
@@ -386,7 +369,7 @@ def get_licitaciones(
                     EXISTS (
                         SELECT 1 FROM licitaciones_adjudicaciones la 
                         WHERE la.id_convocatoria = licitaciones_cabecera.id_convocatoria 
-                        AND UPPER(la.entidad_financiera) LIKE '%BBVA%'
+                        AND (UPPER(la.entidad_financiera) LIKE '%BBVA%' OR UPPER(la.entidad_financiera) LIKE '%CONTINENTAL%')
                     )
                 """)
             elif search_entidad == "INTERBANK":
@@ -395,6 +378,54 @@ def get_licitaciones(
                         SELECT 1 FROM licitaciones_adjudicaciones la 
                         WHERE la.id_convocatoria = licitaciones_cabecera.id_convocatoria 
                         AND (UPPER(la.entidad_financiera) LIKE '%INTERBANK%' OR UPPER(la.entidad_financiera) LIKE '%INTERNACIONAL%')
+                    )
+                """)
+            elif search_entidad == "CESCE":
+                where_clauses.append("""
+                    EXISTS (
+                        SELECT 1 FROM licitaciones_adjudicaciones la 
+                        WHERE la.id_convocatoria = licitaciones_cabecera.id_convocatoria 
+                        AND (UPPER(la.entidad_financiera) LIKE '%CESCE%' OR UPPER(la.entidad_financiera) LIKE '%SECREX%')
+                    )
+                """)
+            elif search_entidad == "BANCOM":
+                 where_clauses.append("""
+                    EXISTS (
+                        SELECT 1 FROM licitaciones_adjudicaciones la 
+                        WHERE la.id_convocatoria = licitaciones_cabecera.id_convocatoria 
+                        AND (UPPER(la.entidad_financiera) LIKE '%BANCOM%' OR UPPER(la.entidad_financiera) = 'M')
+                    )
+                """)
+            elif "PICHINCHA" in search_entidad:
+                where_clauses.append("""
+                    EXISTS (
+                        SELECT 1 FROM licitaciones_adjudicaciones la 
+                        WHERE la.id_convocatoria = licitaciones_cabecera.id_convocatoria 
+                        AND (UPPER(la.entidad_financiera) LIKE '%PICHINCHA%' OR UPPER(la.entidad_financiera) LIKE '%FINANCIERO%')
+                    )
+                """)
+            elif "SCOTIABANK" in search_entidad:
+                 where_clauses.append("""
+                    EXISTS (
+                        SELECT 1 FROM licitaciones_adjudicaciones la 
+                        WHERE la.id_convocatoria = licitaciones_cabecera.id_convocatoria 
+                        AND (UPPER(la.entidad_financiera) LIKE '%SCOTIABANK%' OR UPPER(la.entidad_financiera) LIKE '%SCOTIA%')
+                    )
+                """)
+            elif "GNB" in search_entidad:
+                 where_clauses.append("""
+                    EXISTS (
+                        SELECT 1 FROM licitaciones_adjudicaciones la 
+                        WHERE la.id_convocatoria = licitaciones_cabecera.id_convocatoria 
+                        AND (UPPER(la.entidad_financiera) LIKE '%GNB%')
+                    )
+                """)
+            elif "COMERCIO" in search_entidad:
+                 where_clauses.append("""
+                    EXISTS (
+                        SELECT 1 FROM licitaciones_adjudicaciones la 
+                        WHERE la.id_convocatoria = licitaciones_cabecera.id_convocatoria 
+                        AND (UPPER(la.entidad_financiera) LIKE '%COMERCIO%')
                     )
                 """)
             else:
@@ -626,7 +657,49 @@ def get_licitacion_detail(
             })
         
         licitacion["adjudicaciones"] = adjudicaciones
+
+        # --- NEW: Fetch Consorcios ---
+        # Collect contract IDs to fetch consorcios in batch
+        contrato_ids = [adj["id_contrato"] for adj in adjudicaciones if adj.get("id_contrato")]
         
+        if contrato_ids:
+            # SQL to fetch consorcios
+            cons_sql = text("""
+                SELECT 
+                    id_contrato, ruc_miembro, nombre_miembro, 
+                    porcentaje_participacion 
+                FROM detalle_consorcios
+                WHERE id_contrato IN :ids
+            """)
+            
+            # Execute with tuple of IDs
+            cons_rows = db.execute(cons_sql, {"ids": tuple(contrato_ids)}).fetchall()
+            
+            # Group by id_contrato
+            consorcios_map = {}
+            for row in cons_rows:
+                c_id = row[0]
+                if c_id not in consorcios_map:
+                    consorcios_map[c_id] = []
+                
+                consorcios_map[c_id].append({
+                    "ruc": row[1],
+                    "nombre": row[2],
+                    "porcentaje": float(row[3]) if row[3] else 0
+                })
+            
+            # Attach to adjudicaciones
+            for adj in licitacion["adjudicaciones"]:
+                c_id = adj.get("id_contrato")
+                if c_id and c_id in consorcios_map:
+                    adj["consorcios"] = consorcios_map[c_id]
+                else:
+                    adj["consorcios"] = []
+        else:
+            # Initialize empty list if no contracts
+            for adj in licitacion["adjudicaciones"]:
+                adj["consorcios"] = []
+
         return licitacion
         
     except Exception as e:
@@ -742,12 +815,12 @@ def create_licitacion(licitacion: LicitacionCreate, db: Session = Depends(get_db
         sql_header = text("""
             INSERT INTO licitaciones_cabecera (
                 id_convocatoria, ocid, nomenclatura, descripcion, comprador, 
-                categoria, tipo_procedimiento, monto_estimado, moneda, 
+                entidad_ruc, categoria, tipo_procedimiento, monto_estimado, moneda, 
                 fecha_publicacion, estado_proceso, ubicacion_completa, 
                 departamento, provincia, distrito
             ) VALUES (
                 :id, :ocid, :nom, :desc, :comp, 
-                :cat, :proc, :monto, :mon, 
+                :ruc, :cat, :proc, :monto, :mon, 
                 :fecha, :estado, :ubic, 
                 :dept, :prov, :dist
             )
@@ -761,6 +834,7 @@ def create_licitacion(licitacion: LicitacionCreate, db: Session = Depends(get_db
             "nom": licitacion.nomenclatura,
             "desc": licitacion.descripcion,
             "comp": licitacion.comprador,
+            "ruc": licitacion.entidad_ruc,
             "cat": licitacion.categoria,
             "proc": licitacion.tipo_procedimiento,
             "monto": licitacion.monto_estimado,
@@ -865,7 +939,7 @@ def update_licitacion(id: str, licitacion: LicitacionCreate, db: Session = Depen
         sql_header = text("""
             UPDATE licitaciones_cabecera SET
                 ocid = :ocid, nomenclatura = :nom, descripcion = :desc, 
-                comprador = :comp, categoria = :cat, tipo_procedimiento = :proc, 
+                comprador = :comp, entidad_ruc = :ruc, categoria = :cat, tipo_procedimiento = :proc, 
                 monto_estimado = :monto, moneda = :mon, fecha_publicacion = :fecha, 
                 estado_proceso = :estado, ubicacion_completa = :ubic, 
                 departamento = :dept, provincia = :prov, distrito = :dist
@@ -880,6 +954,7 @@ def update_licitacion(id: str, licitacion: LicitacionCreate, db: Session = Depen
             "nom": licitacion.nomenclatura,
             "desc": licitacion.descripcion,
             "comp": licitacion.comprador,
+            "ruc": licitacion.entidad_ruc,
             "cat": licitacion.categoria,
             "proc": licitacion.tipo_procedimiento,
             "monto": licitacion.monto_estimado,

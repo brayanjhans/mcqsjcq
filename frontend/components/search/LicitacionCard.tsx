@@ -148,6 +148,7 @@ export const LicitacionCard: React.FC<Props> = ({
     const getStatusBadge = () => {
         let styles = "bg-slate-100 text-slate-700 border-slate-200";
         if (isConvocado) styles = "bg-[#FFF9C4] text-[#8D6E1F] border-[#FDE047]"; // Yellow
+        else if (statusUpper === "ACTIVO") styles = "bg-blue-50 text-blue-700 border-blue-200"; // Blue for Active
         else if (isContratado) styles = "bg-slate-100 text-slate-600 border-slate-200"; // Light Gray
         else if (isCancelado) styles = "bg-red-50 text-red-700 border-red-200"; // Red
 
@@ -169,8 +170,8 @@ export const LicitacionCard: React.FC<Props> = ({
                 <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${styles}`}>
                     {cat}
                 </span>
-                <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px] font-medium">
-                    Licitación Pública
+                <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px] font-medium truncate max-w-[150px]" title={licitacion.tipo_procedimiento || "Procedimiento"}>
+                    {licitacion.tipo_procedimiento || "Procedimiento"}
                 </span>
             </div>
         );
@@ -288,6 +289,11 @@ export const LicitacionCard: React.FC<Props> = ({
                         <p className="text-[10px] text-slate-500 font-medium uppercase mb-0.5">Comprador</p>
                         <p className="text-[11px] font-bold text-slate-800 uppercase leading-tight line-clamp-2 dark:text-slate-200">
                             {getHighlightedText(licitacion.comprador, searchTerm)}
+                            {licitacion.entidad_ruc && (
+                                <span className="ml-1.5 text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded border border-slate-200 font-mono">
+                                    RUC: {getHighlightedText(licitacion.entidad_ruc, searchTerm)}
+                                </span>
+                            )}
                         </p>
                     </div>
                 </div>

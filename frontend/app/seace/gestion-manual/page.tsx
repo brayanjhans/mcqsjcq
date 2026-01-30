@@ -491,7 +491,7 @@ export default function GestionManualPage() {
                             className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-emerald-500 text-white text-sm font-bold shadow-lg shadow-emerald-500/30 hover:bg-emerald-600 hover:shadow-emerald-500/50 transition-all"
                         >
                             <Plus className="w-5 h-5" />
-                            Nueva Licitación
+                            Nuevo Procedimiento
                         </button>
 
                         <div className="relative group">

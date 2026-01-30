@@ -4,6 +4,7 @@ export interface Licitacion {
     nomenclatura?: string;
     descripcion: string;
     comprador: string;
+    entidad_ruc?: string;
     categoria?: string;
     tipo_procedimiento?: string;
     monto_estimado?: number;
