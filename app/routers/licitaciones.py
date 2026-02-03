@@ -29,8 +29,12 @@ def get_licitaciones(
     limit: int = Query(20, ge=1, le=1000, description="Items per page (max 1000)"),
     search: Optional[str] = Query(None, description="Search in nomenclatura, comprador, descripcion"),
     estado: Optional[str] = Query(None, description="Filter by estado_proceso"),
+    # Alias for frontend consistency
+    estado_proceso: Optional[str] = Query(None, description="Alias for estado"),
     ruc_ganador: Optional[str] = Query(None, description="Filter by winner RUC"),
     entidad_financiera: Optional[str] = Query(None, description="Filter by bank/financial entity"),
+    # Alias for frontend
+    aseguradora: Optional[str] = Query(None, description="Alias for entidad_financiera"),
     # New filters
     departamento: Optional[str] = Query(None, description="Filter by department"),
     provincia: Optional[str] = Query(None, description="Filter by province"),
@@ -39,6 +43,7 @@ def get_licitaciones(
     mes: Optional[int] = Query(None, description="Filter by publication month"),
     categoria: Optional[str] = Query(None, description="Filter by category"),
     tipo_garantia: Optional[str] = Query(None, description="Filter by guarantee type"),
+    tipo_procedimiento: Optional[str] = Query(None, description="Filter by procedure type"), # NEW
     fecha_desde: Optional[date] = Query(None, description="Filter from date (ISO format)"),
     fecha_hasta: Optional[date] = Query(None, description="Filter to date (ISO format)"),
     origen: Optional[str] = Query(None, description="Filter by origin (Manuales/Automático)"),
@@ -116,7 +121,13 @@ def get_licitaciones(
             )
         )
     
-    # Simple filters
+    # Alias Mapping
+    if estado_proceso and not estado:
+        estado = estado_proceso
+    if aseguradora and not entidad_financiera:
+        entidad_financiera = aseguradora
+
+    # Simple filters (Case Insensitive Support)
     if estado:
         query = query.filter(LicitacionesCabecera.estado_proceso == estado)
     if departamento:
@@ -127,6 +138,10 @@ def get_licitaciones(
         query = query.filter(LicitacionesCabecera.distrito == distrito)
     if categoria:
         query = query.filter(LicitacionesCabecera.categoria == categoria)
+    
+    # Procedure Type Filter
+    if tipo_procedimiento:
+        query = query.filter(LicitacionesCabecera.tipo_procedimiento == tipo_procedimiento)
 
     # Origin Filter
     if origen:
