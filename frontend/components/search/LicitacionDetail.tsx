@@ -11,10 +11,19 @@ import {
     Calendar,
     MapPin,
     Tag,
-    ShieldCheck
+    ShieldCheck,
+    Users
 } from "lucide-react";
 import type { Licitacion, Adjudicacion } from "@/types/licitacion";
 import { licitacionService } from "@/lib/services/licitacionService";
+
+const PdfIcon = ({ className }: { className?: string }) => (
+    <img
+        src="/pdf-icon.png"
+        alt="PDF"
+        className={className}
+    />
+);
 
 interface Props {
     id: string;
@@ -238,38 +247,43 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                                 <table className="w-full text-left">
                                     <thead>
                                         <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
-                                            <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500">Ganador / Proveedor</th>
-                                            <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500">Monto Adjudicado</th>
-                                            <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500">Garantía / Emitido Por</th>
-                                            <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500">Fecha</th>
-                                            <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500 text-right">Estado</th>
+                                            <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">Ganador / Proveedor</th>
+                                            <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">Monto Adjudicado</th>
+                                            <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">Garantía / Emitido Por</th>
+                                            <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">Fecha</th>
+                                            <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">Estado</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
                                         {adjudicaciones.map((adj) => (
                                             <tr key={adj.id_adjudicacion} className="group hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors">
-                                                <td className="py-4 px-4">
-                                                    <div className="flex flex-col">
+                                                <td className="py-4 px-4 text-center">
+                                                    <div className="flex flex-col items-center">
                                                         <span className="text-xs font-bold text-slate-800 dark:text-white uppercase">{adj.ganador_nombre}</span>
                                                         <span className="text-[10px] text-slate-400 font-mono mt-0.5">RUC: {adj.ganador_ruc}</span>
                                                     </div>
                                                 </td>
-                                                <td className="py-4 px-4">
+                                                <td className="py-4 px-4 text-center">
                                                     <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">
                                                         {formatCurrency(adj.monto_adjudicado, licitacion.moneda)}
                                                     </span>
                                                 </td>
-                                                <td className="py-4 px-4">
-                                                    <div className="flex flex-col gap-1">
-                                                        {adj.tipo_garantia && adj.tipo_garantia !== "SIN_GARANTIA" ? (
+                                                <td className="py-4 px-4 text-center">
+                                                    <div className="flex flex-col gap-1 items-center">
+                                                        {((adj.tipo_garantia && adj.tipo_garantia !== "SIN_GARANTIA") ||
+                                                            (licitacion.tipo_garantia && licitacion.tipo_garantia !== "SIN_GARANTIA") ||
+                                                            (adj.entidad_financiera || licitacion.entidades_financieras)) ? (
                                                             <>
-                                                                <span className="inline-flex items-center w-fit rounded bg-emerald-50 px-2 py-0.5 text-[10px] font-bold uppercase text-emerald-700 border border-emerald-100">
-                                                                    {adj.tipo_garantia.replace(/_/g, " ")}
-                                                                </span>
-                                                                {adj.entidad_financiera && (
+                                                                {((adj.tipo_garantia && adj.tipo_garantia !== "SIN_GARANTIA") ||
+                                                                    (licitacion.tipo_garantia && licitacion.tipo_garantia !== "SIN_GARANTIA")) && (
+                                                                        <span className="inline-flex items-center w-fit rounded bg-emerald-50 px-2 py-0.5 text-[10px] font-bold uppercase text-emerald-700 border border-emerald-100">
+                                                                            {(adj.tipo_garantia && adj.tipo_garantia !== "SIN_GARANTIA" ? adj.tipo_garantia : licitacion.tipo_garantia || "").replace(/_/g, " ")}
+                                                                        </span>
+                                                                    )}
+                                                                {(adj.entidad_financiera || licitacion.entidades_financieras) && (
                                                                     <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 uppercase">
                                                                         <Landmark className="w-3 h-3" />
-                                                                        {adj.entidad_financiera}
+                                                                        {adj.entidad_financiera || licitacion.entidades_financieras}
                                                                     </div>
                                                                 )}
                                                             </>
@@ -278,10 +292,10 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                                                         )}
                                                     </div>
                                                 </td>
-                                                <td className="py-4 px-4 text-xs font-medium text-slate-600 dark:text-slate-400">
+                                                <td className="py-4 px-4 text-xs font-medium text-slate-600 dark:text-slate-400 text-center">
                                                     {formatDate(adj.fecha_adjudicacion)}
                                                 </td>
-                                                <td className="py-4 px-4 text-right">
+                                                <td className="py-4 px-4 text-center">
                                                     <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-[10px] font-bold uppercase text-slate-600">
                                                         {adj.estado_item || "VIGENTE"}
                                                     </span>
@@ -298,6 +312,110 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                         <ShieldCheck className="w-10 h-10 text-slate-200 mx-auto mb-3" />
                         <h3 className="text-sm font-bold text-slate-900 dark:text-white">Sin Adjudicaciones</h3>
                         <p className="text-xs text-slate-500 mt-1">Este proceso aún no reporta ganadores o items adjudicados.</p>
+                    </div>
+                )}
+
+
+                {/* Documentación y Consorcios Section (New Table) */}
+                {adjudicaciones.length > 0 && (
+                    <div className="rounded-2xl border border-slate-200 bg-white p-6 md:p-8 shadow-sm dark:border-white/5 dark:bg-[#111c44] animate-in fade-in slide-in-from-bottom-5 duration-500 delay-200 mt-6">
+                        <div className="flex items-center gap-3 mb-6">
+                            <FileText className="w-5 h-5 text-indigo-500" />
+                            <h3 className="text-lg font-bold text-slate-900 dark:text-white">Documentación Contractual y Consorcios</h3>
+                        </div>
+
+                        <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left">
+                                    <thead>
+                                        <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
+                                            <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">Adjudicación / Ganador</th>
+                                            <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">Integrantes del Consorcio</th>
+                                            <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">Contrato Consorcio</th>
+                                            <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">Carta Fianza</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
+                                        {adjudicaciones.map((adj) => (
+                                            <tr key={adj.id_adjudicacion} className="group hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors">
+                                                <td className="py-4 px-4 align-top text-center">
+                                                    <div className="flex flex-col items-center">
+                                                        <span className="text-xs font-bold text-slate-800 dark:text-white uppercase line-clamp-2">{adj.ganador_nombre}</span>
+                                                        <span className="text-[10px] text-slate-400 font-mono mt-0.5">RUC: {adj.ganador_ruc}</span>
+                                                        <span className="text-[10px] text-indigo-500 font-bold mt-1.5 flex items-center gap-1">
+                                                            <Tag className="w-3 h-3" />
+                                                            {formatCurrency(adj.monto_adjudicado, licitacion.moneda)}
+                                                        </span>
+                                                    </div>
+                                                </td>
+                                                <td className="py-4 px-4 align-top text-center">
+                                                    {adj.consorcios && adj.consorcios.length > 0 ? (
+                                                        <div className="flex flex-col gap-2 items-center">
+                                                            {adj.consorcios.map((miembro, idx) => (
+                                                                <div key={idx} className="flex flex-col items-center text-center">
+                                                                    <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 uppercase leading-snug">
+                                                                        {miembro.nombre_miembro}
+                                                                    </span>
+                                                                    <span className="text-[9px] text-slate-400">
+                                                                        RUC: {miembro.ruc_miembro} {miembro.porcentaje_participacion ? `(${Number(miembro.porcentaje_participacion)}%)` : ''}
+                                                                    </span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    ) : (
+                                                        <span className="text-[10px] text-slate-400 italic">No es consorcio</span>
+                                                    )}
+                                                </td>
+                                                <td className="py-4 px-4 align-middle text-center w-[120px]">
+                                                    {adj.url_documento_consorcio ? (
+                                                        <a
+                                                            href={adj.url_documento_consorcio}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="group inline-flex flex-col items-center justify-center gap-1"
+                                                        >
+                                                            <PdfIcon className="w-8 h-8 transition-transform group-hover:-translate-y-1" />
+                                                            <span className="bg-slate-900 text-white text-[9px] py-1 px-2 rounded font-bold whitespace-nowrap shadow-sm">
+                                                                Descargar PDF
+                                                            </span>
+                                                        </a>
+                                                    ) : (
+                                                        <div className="inline-flex flex-col items-center justify-center gap-1 opacity-50 cursor-not-allowed">
+                                                            <PdfIcon className="w-8 h-8 filter grayscale" />
+                                                            <span className="bg-slate-100 text-slate-400 text-[9px] py-1 px-2 rounded font-bold whitespace-nowrap shadow-sm border border-slate-200">
+                                                                No disponible
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                </td>
+                                                <td className="py-4 px-4 align-middle text-center w-[120px]">
+                                                    {adj.url_pdf_cartafianza ? (
+                                                        <a
+                                                            href={adj.url_pdf_cartafianza}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="group inline-flex flex-col items-center justify-center gap-1"
+                                                        >
+                                                            <PdfIcon className="w-8 h-8 transition-transform group-hover:-translate-y-1" />
+                                                            <span className="bg-slate-900 text-white text-[9px] py-1 px-2 rounded font-bold whitespace-nowrap shadow-sm">
+                                                                Descargar PDF
+                                                            </span>
+                                                        </a>
+                                                    ) : (
+                                                        <div className="inline-flex flex-col items-center justify-center gap-1 opacity-50 cursor-not-allowed">
+                                                            <PdfIcon className="w-8 h-8 filter grayscale" />
+                                                            <span className="bg-slate-100 text-slate-400 text-[9px] py-1 px-2 rounded font-bold whitespace-nowrap shadow-sm border border-slate-200">
+                                                                No disponible
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 )}
             </div>

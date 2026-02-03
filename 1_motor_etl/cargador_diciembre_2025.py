@@ -70,7 +70,7 @@ def determinar_estado(tender_status, item_status):
     st = safe_str(tender_status).lower()
     if not st: return "DESCONOCIDO"
 
-    mapping = {'active': 'CONVOCADO', 'complete': 'CONTRATADO', 'cancelled': 'CANCELADO', 'unsuccessful': 'DESIERTO', 'withdrawn': 'NULO', 'planned': 'PROGRAMADO', 'awarded': 'ADJUDICADO'}
+    mapping = {'active': 'CONVOCADO', 'activo': 'CONVOCADO', 'complete': 'CONTRATADO', 'cancelled': 'CANCELADO', 'unsuccessful': 'DESIERTO', 'withdrawn': 'NULO', 'planned': 'PROGRAMADO', 'awarded': 'ADJUDICADO'}
     return mapping.get(st, st.upper())
 
 def traducir_categoria(cat_ingles):

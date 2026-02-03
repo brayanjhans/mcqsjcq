@@ -63,8 +63,8 @@ export const licitacionService = {
     },
 
     // Delete licitacion
-    delete: async (id: string) => {
-        const response = await api.delete(`/api/licitaciones/${id}`);
+    delete: async (id: string, pin: string) => {
+        const response = await api.delete(`/api/licitaciones/${id}?pin=${pin}`);
         return response.data;
     },
 

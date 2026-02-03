@@ -15,6 +15,10 @@ dist/
 coverage/
 npm-debug.log*
 
+# Deployment Secrets
+*.ps1
+
+
 # OS
 .DS_Store
 Thumbs.db
@@ -60,3 +64,14 @@ get_*.py
 read_*.py
 run_*.py
 upload_*.py
+
+# Temporary Debug Artifacts
+analisis_*.json
+api_*.json
+contrato_*.json
+debug_*
+garantias_*.json
+# Ignore all scripts in root scripts/ folder if they are just one-off tests
+scripts/
+# Ignore seace build artifacts in root if they appear there
+seace_main-*.js

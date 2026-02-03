@@ -207,20 +207,20 @@ export default function GestionManualPage() {
     };
 
     const handleConfirmDelete = async (authCode: string) => {
-        if (authCode === '123123') { // Auth code changed to 123123
-            if (licitacionToDelete) {
-                try {
-                    await licitacionService.delete(licitacionToDelete.id_convocatoria);
-                    setIsDeleteModalOpen(false);
-                    setLicitacionToDelete(null);
-                    fetchLicitaciones();
-                } catch (error) {
-                    console.error("Error deleting:", error);
-                    alert("Error al eliminar");
-                }
+        // Send PIN directly to backend for verification
+        if (licitacionToDelete && authCode) {
+            try {
+                await licitacionService.delete(licitacionToDelete.id_convocatoria, authCode);
+                setIsDeleteModalOpen(false);
+                setLicitacionToDelete(null);
+                fetchLicitaciones();
+            } catch (error: any) {
+                console.error("Error deleting:", error);
+
+                // Show backend error message if available (e.g. "PIN incorrecto")
+                const msg = error.response?.data?.detail || "Error al eliminar";
+                alert(msg);
             }
-        } else {
-            alert("Código de autorización incorrecto");
         }
     };
 

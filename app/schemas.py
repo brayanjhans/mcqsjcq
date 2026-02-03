@@ -9,7 +9,7 @@ from decimal import Decimal
 
 class DetalleConsorcioSchema(BaseModel):
     """Consortium member details."""
-    id_detalle: int
+    id: int
     id_contrato: Optional[str] = None
     ruc_miembro: Optional[str] = None
     nombre_miembro: Optional[str] = None
@@ -166,8 +166,11 @@ class LicitacionDetalleSchema(BaseModel):
     departamento: Optional[str] = None
     provincia: Optional[str] = None
     distrito: Optional[str] = None
-    adjudicacion: Optional[AdjudicacionSchema] = None
-
+    adjudicaciones: List[AdjudicacionSchema] = []
+    monto_total_adjudicado: Optional[float] = None
+    entidades_financieras: Optional[str] = None
+    tipo_garantia: Optional[str] = None
+    
     model_config = ConfigDict(from_attributes=True)
 
 

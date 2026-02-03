@@ -45,18 +45,6 @@ def get_notifications(
     offset: int = 0,
     db: Session = Depends(get_db)
 ):
-    # Hardcoded user_id=1 for now, or get from auth if available
-    # Assuming the user running this is the one we want to show
-    # In a real app, strict auth is needed.
-    # We will try to get all notifications for now, assuming single tenant or test.
-    # But wait, logic above used user_id=1.
-    # Let's verify what user_id the frontend expects.
-    # The frontend doesn't send user_id.
-    # We'll default to retrieving for ALL users for demo purposes or a specific test user (11).
-    # Since we generated for "all active users" in script, let's just pick one or fetch all?
-    # No, fetching all is bad. Let's pick user_id=11 as default/test since we used it before, 
-    # OR better: if no auth, maybe return empty?
-    # Let's assume user_id=11 is the logged in user based on previous turns.
     current_user_id = 11 
     
     notifs = notification_service.get_user_notifications(
@@ -172,8 +160,37 @@ def create_notification_internal(
                     metadata=metadata,
                     expires_days=15
                 )
+            
+            # --- WEBSOCKET BROADCAST (SYNC BRIDGE) ---
+            try:
+                from app.services.chatbot import websocket
+                import asyncio
+                
+                # Only broadcast valid business alerts (prevent spam if needed)
+                ws_payload = {
+                    "type": "alert",
+                    "content": f"**{title}**\n\n{message}",
+                    "speech": message,
+                    "suggestions": ["Ver detalles", "Ignorar"]
+                }
+                
+                if websocket.global_loop and websocket.global_loop.is_running():
+                    asyncio.run_coroutine_threadsafe(
+                        websocket.manager.broadcast(ws_payload), 
+                        websocket.global_loop
+                    )
+                else:
+                    print(f"WS WARN: Global loop not active. Skipping broadcast for '{title}'")
+                    
+            except Exception as wse:
+                 print(f"WS BROADCAST ERROR: {wse}")
+                 
         finally:
             db.close()
             
     except Exception as e:
         print(f"Error in create_notification_internal: {e}")
+        try:
+             with open("debug_errors.log", "a") as f:
+                f.write(f"NOTIFICATION ERROR: {e}\n")
+        except: pass

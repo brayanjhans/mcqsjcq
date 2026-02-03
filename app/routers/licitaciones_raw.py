@@ -8,6 +8,9 @@ from app.database import get_db
 from app.data.financial_entities import ENTIDADES_FINANCIERAS
 from typing import Optional
 from datetime import date
+from fastapi import APIRouter, Depends, Query, HTTPException, status
+from app.models.user import User
+from app.utils.dependencies import get_current_user
 
 router = APIRouter(prefix="/api/licitaciones", tags=["Licitaciones"])
 
@@ -476,7 +479,9 @@ def get_licitaciones(
                 (SELECT SUM(la.monto_adjudicado) FROM licitaciones_adjudicaciones la WHERE la.id_convocatoria = lc.id_convocatoria) as monto_total_adjudicado,
                 (SELECT COUNT(*) FROM licitaciones_adjudicaciones la WHERE la.id_convocatoria = lc.id_convocatoria) as total_adjudicaciones,
                 (SELECT la.fecha_adjudicacion FROM licitaciones_adjudicaciones la WHERE la.id_convocatoria = lc.id_convocatoria LIMIT 1) as fecha_adjudicacion,
-                (SELECT la.id_contrato FROM licitaciones_adjudicaciones la WHERE la.id_convocatoria = lc.id_convocatoria LIMIT 1) as id_contrato
+                (SELECT la.id_contrato FROM licitaciones_adjudicaciones la WHERE la.id_convocatoria = lc.id_convocatoria LIMIT 1) as id_contrato,
+                (SELECT GROUP_CONCAT(DISTINCT la.nombres_consorciados SEPARATOR ' | ') FROM licitaciones_adjudicaciones la WHERE la.id_convocatoria = lc.id_convocatoria) as nombres_consorciados,
+                (SELECT GROUP_CONCAT(DISTINCT la.rucs_consorciados SEPARATOR ' | ') FROM licitaciones_adjudicaciones la WHERE la.id_convocatoria = lc.id_convocatoria) as rucs_consorciados
             FROM licitaciones_cabecera lc
             {where_sql.replace('licitaciones_cabecera', 'lc') if where_sql else ''}
             ORDER BY lc.fecha_publicacion DESC
@@ -516,7 +521,9 @@ def get_licitaciones(
                 "monto_total_adjudicado": float(row[20]) if row[20] else 0,
                 "total_adjudicaciones": int(row[21]) if row[21] else 0,
                 "fecha_adjudicacion": row[22].isoformat() if row[22] else None,
-                "id_contrato": row[23]
+                "id_contrato": row[23],
+                "nombres_consorciados": row[24],
+                "rucs_consorciados": row[25]
             })
         
         # Calculate pagination
@@ -640,7 +647,8 @@ def get_licitacion_detail(
             SELECT 
                 id_adjudicacion, ganador_nombre, ganador_ruc,
                 monto_adjudicado, fecha_adjudicacion,
-                estado_item, entidad_financiera, moneda
+                estado_item, entidad_financiera, moneda,
+                id_contrato, url_documento_consorcio, url_pdf_cartafianza
             FROM licitaciones_adjudicaciones
             WHERE id_convocatoria = :id
         """)
@@ -657,7 +665,10 @@ def get_licitacion_detail(
                 "fecha_adjudicacion": adj_row[4].isoformat() if adj_row[4] else None,
                 "estado_item": adj_row[5],
                 "entidad_financiera": adj_row[6],
-                "moneda": adj_row[7]
+                "moneda": adj_row[7],
+                "id_contrato": adj_row[8],
+                "url_documento_consorcio": adj_row[9],
+                "url_pdf_cartafianza": adj_row[10]
             })
         
         licitacion["adjudicaciones"] = adjudicaciones
@@ -687,9 +698,9 @@ def get_licitacion_detail(
                     consorcios_map[c_id] = []
                 
                 consorcios_map[c_id].append({
-                    "ruc": row[1],
-                    "nombre": row[2],
-                    "porcentaje": float(row[3]) if row[3] else 0
+                    "ruc_miembro": row[1],
+                    "nombre_miembro": row[2],
+                    "porcentaje_participacion": float(row[3]) if row[3] else 0
                 })
             
             # Attach to adjudicaciones
@@ -703,6 +714,11 @@ def get_licitacion_detail(
             # Initialize empty list if no contracts
             for adj in licitacion["adjudicaciones"]:
                 adj["consorcios"] = []
+
+        # Calculate Totals
+        total_monto = sum(item["monto_adjudicado"] for item in adjudicaciones)
+        licitacion["monto_total_adjudicado"] = total_monto
+        licitacion["total_adjudicaciones"] = len(adjudicaciones)
 
         return licitacion
         
@@ -1126,10 +1142,40 @@ def update_licitacion(id: str, licitacion: LicitacionCreate, db: Session = Depen
         return {"error": str(e)}
 
 @router.delete("/{id}")
-def delete_licitacion(id: str, db: Session = Depends(get_db)):
+def delete_licitacion(
+    id: str, 
+    pin: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     """
-    Delete licitacion and cascade (Raw SQL)
+    Delete licitacion and cascade (Raw SQL).
+    REQUIRES USER PIN for confirmation.
     """
+    if not pin:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Se requiere el PIN de autorización"
+        )
+
+    if not current_user.pin_hash:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Su usuario no tiene un PIN de seguridad configurado"
+        )
+
+    # Verify PIN
+    try:
+        from app.utils.security import verify_password
+        if not verify_password(pin, current_user.pin_hash):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="PIN incorrecto"
+            )
+    except Exception as e:
+        print(f"PIN Verify Error: {e}")
+        raise HTTPException(status_code=401, detail="Error validando PIN")
+
     try:
         # Get info for notification before delete
         desc = "Licitación"
@@ -1161,6 +1207,8 @@ def delete_licitacion(id: str, db: Session = Depends(get_db)):
             print(f"Error creating notification: {e}")
             
         return {"message": "Deleted successfully"}
+    except HTTPException as he:
+        raise he
     except Exception as e:
         db.rollback()
         return {"error": str(e)}

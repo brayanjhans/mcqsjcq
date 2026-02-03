@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Mic, Send, MessageSquare, X, Volume2, StopCircle, RefreshCw, Terminal, Bot } from 'lucide-react';
-import { RobotIcon } from '../icons/RobotIcon';
+// import { RobotIcon } from '../icons/RobotIcon'; // REMOVED: File not found and unused
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import ChartRenderer from './ChartRenderer';
@@ -23,8 +23,8 @@ interface Message {
     source?: 'BD' | 'WEB';
     suggestions?: string[];
     chartData?: any;
-    isError?: boolean;      // New: Flag for error state
-    retryText?: string;     // New: Text to retry if error
+    isError?: boolean;
+    retryText?: string;
 }
 
 interface ChatResponse {
@@ -34,8 +34,6 @@ interface ChatResponse {
     suggested_questions?: string[];
     chart_data?: any;
 }
-
-
 
 // --- Component ---
 export default function ChatbotWidget() {
@@ -51,11 +49,13 @@ export default function ChatbotWidget() {
     const [isLoading, setIsLoading] = useState(false);
     const [isListening, setIsListening] = useState(false);
     const [isSpeaking, setIsSpeaking] = useState(false);
+    const [isConnected, setIsConnected] = useState(false);
 
-    // Refs for scrolling and speech
+    // Refs for scrolling, speech, and deduplication
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const recognitionRef = useRef<any>(null);
     const widgetRef = useRef<HTMLDivElement>(null);
+    const lastAlertContentRef = useRef<string | null>(null); // Ref for strict deduplication of alerts
 
     // Click Outside to Close
     useEffect(() => {
@@ -82,7 +82,7 @@ export default function ChatbotWidget() {
             const recognition = new SpeechRecognition();
             recognition.continuous = false;
             recognition.interimResults = false;
-            recognition.lang = 'es-PE'; // Spanish (Peru)
+            recognition.lang = 'es-PE';
 
             recognition.onstart = () => setIsListening(true);
             recognition.onend = () => setIsListening(false);
@@ -93,6 +93,138 @@ export default function ChatbotWidget() {
 
             recognitionRef.current = recognition;
         }
+    }, []);
+
+    // --- WebSocket Logic (Real-Time Alerts) ---
+    useEffect(() => {
+        // --- ROBUST HOST DETECTION FOR VPS/PROD/DEV ---
+        // Helps avoid reconfiguration when deploying to VPS.
+        const getWebSocketUrl = () => {
+            if (typeof window === 'undefined') return '';
+
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const host = window.location.hostname;
+            const port = window.location.port;
+
+            // Scenario 1: Development (Localhost)
+            // If running on localhost:3000, Backend is usually on :8000
+            if (host === 'localhost' || host === '127.0.0.1') {
+                return `${protocol}//${host}:8000/api/chatbot/ws`;
+            }
+
+            // Scenario 2: Production / VPS (Same Origin)
+            // If running on https://misistema.com or IP, assumes Nginx proxies /api
+            // This allows the app to work on ANY domain without changing code.
+            // If port is present (e.g. :3000 on VPS without Nginx), we might need :8000
+            // BUT standard VPS setup uses Nginx on port 80/443.
+            // We'll use the "Same Origin" strategy which is safest for proper deployments.
+            return `${protocol}//${window.location.host}/api/chatbot/ws`;
+        };
+
+        const encodedWsUrl = getWebSocketUrl();
+        console.log("🔌 AURA WS Endpoint:", encodedWsUrl);
+
+        let socket: WebSocket | null = null;
+        let reconnectTimer: any = null;
+
+        const connect = () => {
+            if (!encodedWsUrl) return;
+            // Prevent double connections in Strict Mode
+            if (socket && socket.readyState === WebSocket.OPEN) return;
+
+            try {
+                socket = new WebSocket(encodedWsUrl);
+
+                socket.onopen = () => {
+                    console.log("🟢 AURA Real-Time Connected");
+                    setIsConnected(true);
+                };
+
+                socket.onmessage = (event) => {
+                    const pd = JSON.parse(event.data);
+
+                    if (pd.type === 'alert') {
+                        // STRICT DEDUPLICATION: Check against Ref (Sync)
+                        if (lastAlertContentRef.current === pd.content) {
+                            console.log("🔒 Duplicate alert blocked by Ref:", pd.content.substring(0, 20));
+                            return;
+                        }
+                        lastAlertContentRef.current = pd.content; // Update Ref immediately
+
+                        // 1. Play Notification Sound
+                        const audio = new Audio('/notification.mp3');
+                        audio.play().catch(e => console.log("Audio play failed"));
+
+                        // 2. Auto-Read Alert (Strict Whitelist Filter)
+                        if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+                            const speakAlert = () => {
+                                // STRICT WHITELIST: Keep only Alphanumeric, Spanish Accents, and basic Punctuation.
+                                // This removes ALL emojis, symbols, and weird unicode chars guarantees.
+                                const cleanText = (pd.speech || pd.content)
+                                    .replace(/[^a-zA-Z0-9\sáéíóúÁÉÍÓÚñÑüÜ.,!?;:()\-]/g, ' ') // Replace non-allowed with space
+                                    .replace(/\s+/g, ' ') // Collapse multiple spaces
+                                    .trim();
+
+                                const utterance = new SpeechSynthesisUtterance(cleanText);
+
+                                // Try to find a Spanish voice
+                                const voices = window.speechSynthesis.getVoices();
+                                const esVoice = voices.find(v => v.lang.includes('es-PE')) || voices.find(v => v.lang.includes('es'));
+
+                                if (esVoice) {
+                                    utterance.voice = esVoice;
+                                } else {
+                                    utterance.lang = 'es-ES'; // Fallback
+                                }
+
+                                utterance.rate = 1.0;
+                                window.speechSynthesis.cancel(); // Stop current speech
+                                window.speechSynthesis.speak(utterance);
+                            };
+
+                            // Chrome quirk: voices might load async
+                            if (window.speechSynthesis.getVoices().length === 0) {
+                                window.speechSynthesis.onvoiceschanged = speakAlert;
+                            } else {
+                                speakAlert();
+                            }
+                        }
+
+                        // 3. Inject Alert into Chat
+                        setMessages(prev => [...prev, {
+                            id: Date.now().toString(),
+                            role: 'assistant',
+                            content: pd.content,
+                            suggestions: pd.suggestions,
+                            source: 'WEB'
+                        }]);
+
+                        // setIsOpen(true); // DISABLED per user request: "solo que lo lea"
+                    }
+                };
+
+                socket.onerror = (err) => {
+                    console.error("WS Error", err);
+                };
+
+                socket.onclose = () => {
+                    console.log("🔴 AURA Disconnected");
+                    setIsConnected(false);
+                    reconnectTimer = setTimeout(connect, 3000);
+                };
+            } catch (e) {
+                console.error("WS Connection Error", e);
+                setIsConnected(false);
+            }
+        }
+
+        connect();
+
+        return () => {
+            // Cleanup: Close socket and clear timer
+            if (socket) socket.close();
+            if (reconnectTimer) clearTimeout(reconnectTimer);
+        };
     }, []);
 
     const toggleListening = () => {
@@ -106,12 +238,12 @@ export default function ChatbotWidget() {
     // --- Voice Output (Text-to-Speech) ---
     const speak = (text: string) => {
         if (typeof window !== 'undefined' && window.speechSynthesis) {
-            // Strip markdown tables and complex symbols for speech
-            // 1. Remove everything starting from the first table pipe '|' to avoid reading data grids
             let textToSpeak = text.split('|')[0];
-
-            // 2. Clean up common markdown
-            textToSpeak = textToSpeak.replace(/[*#`_]/g, '').trim();
+            // Normalize: Strict Whitelist for manual speak too
+            textToSpeak = textToSpeak
+                .replace(/[^a-zA-Z0-9\sáéíóúÁÉÍÓÚñÑüÜ.,!?;:()\-]/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
 
             if (window.speechSynthesis.speaking) {
                 window.speechSynthesis.cancel();
@@ -120,7 +252,12 @@ export default function ChatbotWidget() {
             }
 
             const utterance = new SpeechSynthesisUtterance(textToSpeak);
-            utterance.lang = 'es-ES'; // Or es-PE if available
+            // Re-use logic for voice selection if possible, or keep simple here
+            const voices = window.speechSynthesis.getVoices();
+            const esVoice = voices.find(v => v.lang.includes('es-PE')) || voices.find(v => v.lang.includes('es'));
+            if (esVoice) utterance.voice = esVoice;
+            else utterance.lang = 'es-ES';
+
             utterance.onend = () => setIsSpeaking(false);
             utterance.onstart = () => setIsSpeaking(true);
 
@@ -133,7 +270,6 @@ export default function ChatbotWidget() {
         const textToSend = retryContent || input;
         if (!textToSend.trim() || isLoading) return;
 
-        // Only add user message if it's new (not a retry)
         if (!retryContent) {
             const userMsg: Message = {
                 id: Date.now().toString(),
@@ -149,7 +285,6 @@ export default function ChatbotWidget() {
         try {
             const historyContext = messages.map(m => ({ role: m.role, content: m.content }));
 
-            // URL UPDATED FOR MAIN PROJECT INTEGRATION
             const response = await fetch('/api/chatbot/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -175,9 +310,6 @@ export default function ChatbotWidget() {
 
             setMessages(prev => [...prev, botMsg]);
 
-            // Auto-speak if command was short or if listening mode was active (optional, keeping manual for now)
-            // speak(data.response_markdown); 
-
         } catch (error) {
             setMessages(prev => [...prev, {
                 id: Date.now().toString(),
@@ -198,13 +330,12 @@ export default function ChatbotWidget() {
                 ref={widgetRef}
                 className={cn(
                     "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-2xl overflow-hidden transition-all duration-300 pointer-events-auto flex flex-col font-sans z-50",
-                    // Mobile: Full Screen, Desktop: Floating Card
                     isOpen
                         ? "fixed inset-0 w-full h-full sm:fixed sm:top-auto sm:left-auto sm:bottom-4 sm:right-4 sm:w-[450px] sm:h-[700px] sm:rounded-2xl opacity-100 translate-y-0"
                         : "fixed bottom-4 right-4 w-0 h-0 opacity-0 translate-y-12 pointer-events-none"
                 )}
             >
-                {/* Header - Premium Design */}
+                {/* Header - Premium Design (RESTORED SLATE COLOR) */}
                 <div className="bg-[#334155] p-3 flex items-center justify-between shrink-0 relative shadow-md">
                     <div className="flex items-center gap-3 z-10">
                         <div className="relative w-12 h-12 rounded-full border-2 border-white/30 shadow-sm overflow-hidden bg-white backdrop-blur-sm flex items-center justify-center">
@@ -215,8 +346,17 @@ export default function ChatbotWidget() {
                             />
                         </div>
                         <div>
-                            <h3 className="font-bold text-white text-lg tracking-wide">AURA</h3>
-                            <p className="text-indigo-100 text-xs font-medium opacity-90">Tu Asistente Personal</p>
+                            <h3 className="font-bold text-white text-lg tracking-wide">AURA v3.1</h3>
+                            {/* Connection Status Indicator */}
+                            <div className="flex items-center gap-1.5 opacity-90">
+                                <div className={cn(
+                                    "w-2 h-2 rounded-full animate-pulse transition-all duration-500",
+                                    isConnected ? "bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.8)]" : "bg-red-400 shadow-[0_0_8px_rgba(248,113,113,0.8)]"
+                                )}></div>
+                                <p className="text-indigo-100 text-xs font-medium">
+                                    {isConnected ? 'En línea' : 'Reconectando...'}
+                                </p>
+                            </div>
                         </div>
                     </div>
 
@@ -251,9 +391,9 @@ export default function ChatbotWidget() {
                     </div>
                 </div>
 
-                {/* Messages Area - WhatsApp BG - FIXED LAYOUT */}
+                {/* Messages Area */}
                 <div className="flex-1 relative bg-[#efeae2] dark:bg-zinc-900 overflow-hidden">
-                    {/* Doodle Background Layer - Static */}
+                    {/* Doodle Background Layer */}
                     <div
                         className="absolute inset-0 opacity-[0.4] pointer-events-none z-0"
                         style={{
@@ -275,7 +415,6 @@ export default function ChatbotWidget() {
                                             ? "bg-[#e0f2fe] text-gray-900 rounded-tr-none"
                                             : "bg-white text-gray-900 rounded-tl-none"
                                     )
-
                                     }
                                 >
                                     <div className="prose prose-sm max-w-none text-gray-900 leading-relaxed overflow-hidden">
@@ -302,12 +441,10 @@ export default function ChatbotWidget() {
                                         </div>
                                     )}
 
-                                    {/* Retry Button for Errors */}
                                     {m.isError && m.retryText && (
                                         <div className="mt-2">
                                             <button
                                                 onClick={() => {
-                                                    // Remove the error message and retry
                                                     setMessages(prev => prev.filter(msg => msg.id !== m.id));
                                                     handleSend(m.retryText);
                                                 }}
@@ -319,12 +456,10 @@ export default function ChatbotWidget() {
                                         </div>
                                     )}
 
-                                    {/* Chart Visualization */}
                                     {m.chartData && m.role === 'assistant' && (
                                         <ChartRenderer chartData={m.chartData} />
                                     )}
 
-                                    {/* Suggestions Chips */}
                                     {m.suggestions && m.suggestions.length > 0 && (
                                         <div className="flex flex-wrap gap-2 mt-3 animate-fade-in pl-1">
                                             {m.suggestions.map((s, idx) => (
@@ -354,8 +489,8 @@ export default function ChatbotWidget() {
                             </div>
                         )}
                         <div ref={messagesEndRef} />
-                    </div> {/* End of Scrollable Content Layer */}
-                </div> {/* End of Messages Area Fixed Wrapper */}
+                    </div>
+                </div>
 
                 {/* Input Area */}
                 <div className="p-3 bg-white dark:bg-zinc-900 border-t border-gray-100 dark:border-zinc-800 shrink-0 z-20 relative">
@@ -389,7 +524,6 @@ export default function ChatbotWidget() {
             {
                 !isOpen && (
                     <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end pointer-events-auto group">
-                        {/* Ripple/Glow Animation behind */}
                         <span className="absolute inline-flex h-full w-full rounded-full bg-blue-600 opacity-50 animate-ping group-hover:animate-none duration-1000"></span>
 
                         <button
@@ -403,7 +537,6 @@ export default function ChatbotWidget() {
                             />
                         </button>
 
-                        {/* Tooltip with improved animation */}
                         <span className="absolute right-full mr-4 top-1/2 -translate-y-1/2 bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-700 text-xs font-bold px-3 py-1.5 rounded-xl shadow-lg opacity-0 group-hover:opacity-100 group-hover:translate-x-0 translate-x-4 transition-all duration-300 whitespace-nowrap text-gray-700 dark:text-gray-200 z-0">
                             Hablar con AURA
                         </span>

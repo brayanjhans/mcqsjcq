@@ -378,6 +378,20 @@ export const LicitacionCard: React.FC<Props> = ({
                     </div>
                 </div>
 
+                {/* 8. Tipo de Garantia (EXTENDED) - MOVED TO FIRST POSITION */}
+                {showExtendedDetails && (
+                    <div className="flex gap-3">
+                        <div className="w-4 flex justify-center pt-0.5 shrink-0">
+                            {/* SHIELD Check Icon  */}
+                            <ShieldCheck className="w-4 h-4 text-slate-400" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-[10px] text-slate-500 font-medium uppercase mb-0.5">Tipo de Garantía</p>
+                            {renderGuaranteeBadges() || <p className="text-[10px] text-slate-400 italic">No especificada</p>}
+                        </div>
+                    </div>
+                )}
+
                 {/* 7. Ganador (EXTENDED - Always show structure if extended, N/A if missing) */}
                 {showExtendedDetails && (
                     <div className="flex gap-3">
@@ -393,20 +407,25 @@ export const LicitacionCard: React.FC<Props> = ({
                             <p className="text-[10px] text-slate-500">
                                 RUC Ganador: {licitacion.ganador_ruc || "N/A"}
                             </p>
-                        </div>
-                    </div>
-                )}
 
-                {/* 8. Tipo de Garantia (EXTENDED) */}
-                {showExtendedDetails && (
-                    <div className="flex gap-3">
-                        <div className="w-4 flex justify-center pt-0.5 shrink-0">
-                            {/* SHIELD Check Icon  */}
-                            <ShieldCheck className="w-4 h-4 text-slate-400" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                            <p className="text-[10px] text-slate-500 font-medium uppercase mb-0.5">Tipo de Garantía</p>
-                            {renderGuaranteeBadges() || <p className="text-[10px] text-slate-400 italic">No especificada</p>}
+                            {/* CONSORCIO VISIBLE (Updated) */}
+                            {licitacion.nombres_consorciados && (
+                                <div className="mt-2 pl-2 border-l-2 border-indigo-100">
+                                    <div className="flex items-center gap-1.5 mb-1">
+                                        <Users className="w-3 h-3 text-indigo-500" />
+                                        <span className="text-[10px] font-bold text-indigo-600 uppercase">
+                                            Consorciados ({licitacion.nombres_consorciados.split('|').length})
+                                        </span>
+                                    </div>
+                                    <div className="flex flex-col gap-0.5">
+                                        {licitacion.nombres_consorciados.split('|').map((nombre, idx) => (
+                                            <span key={idx} className="text-[9px] text-slate-500 leading-tight font-medium uppercase truncate">
+                                                • {nombre}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}

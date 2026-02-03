@@ -8,7 +8,9 @@ from sqlalchemy import text, inspect
 from sqlalchemy.exc import SQLAlchemyError
 from groq import Groq
 from app.database import get_db, engine
-from app.models.chat_history import ChatHistory  # Import ChatHistory model
+from app.models.chat_history import ChatHistory
+from fastapi import WebSocket, WebSocketDisconnect
+from app.services.chatbot import websocket # Import the manager
 
 # Initialize Router
 router = APIRouter(
@@ -374,3 +376,15 @@ async def chat_endpoint(request: ChatRequest, req: Request, db=Depends(get_db)):
     check_rate_limit(req)
     service = ChatService(db)
     return service.process_message(request, req.client.host)
+
+@router.websocket("/ws")
+async def websocket_endpoint(ws: WebSocket):
+    await websocket.manager.connect(ws)
+    try:
+        while True:
+            data = await ws.receive_text()
+            # Echo or process if needed, but primarily for pushing alerts
+            pass 
+    except WebSocketDisconnect:
+        websocket.manager.disconnect(ws)
+

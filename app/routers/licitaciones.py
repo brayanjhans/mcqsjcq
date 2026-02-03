@@ -221,23 +221,50 @@ def get_licitacion_detalle(
             detail=f"Licitación con id_convocatoria={id_convocatoria} no encontrada"
         )
     
-    # Build response with first adjudication (if exists)
-    adjudicacion = None
+    # Build response with all adjudications
+    adjudicaciones_list = []
+    total_adjudicado = 0
+    
     if licitacion.adjudicaciones:
         from app.models import DetalleConsorcios
-        adj = licitacion.adjudicaciones[0]
+        from app.schemas import AdjudicacionSchema, DetalleConsorcioSchema
         
-        # Manually load consorcios for this adjudication
-        consorcios = []
-        if adj.id_contrato:
-            consorcios = db.query(DetalleConsorcios).filter(
-                DetalleConsorcios.id_contrato == adj.id_contrato
-            ).all()
-        
-        # Build adjudication schema with consorcios
-        from app.schemas import AdjudicacionSchema
-        adjudicacion = AdjudicacionSchema.model_validate(adj)
-        adjudicacion.consorcios = consorcios
+        for adj in licitacion.adjudicaciones:
+            # Calculate total
+            if adj.monto_adjudicado:
+                total_adjudicado += adj.monto_adjudicado
+            
+            # Manually load consorcios for this adjudication
+            consorcios = []
+            
+            if adj.id_contrato:
+                consorcios = db.query(DetalleConsorcios).filter(
+                    DetalleConsorcios.id_contrato == str(adj.id_contrato)
+                ).all()
+            elif adj.id_adjudicacion: # Fallback linkage
+                 consorcios = db.query(DetalleConsorcios).filter(
+                    DetalleConsorcios.id_contrato == str(adj.id_adjudicacion)
+                ).all()
+            
+            # Build adjudication schema with consorcios
+            adj_schema = AdjudicacionSchema.model_validate(adj)
+            # Explicitly convert to Pydantic models
+            adj_schema.consorcios = [DetalleConsorcioSchema.model_validate(c) for c in consorcios]
+            # Build schema
+            adjudicaciones_list.append(adj_schema)
+
+    # Compute summaries for missing fields
+    entidades = set()
+    garantias = set()
+    
+    for adj in adjudicaciones_list:
+        if adj.entidad_financiera:
+            entidades.add(adj.entidad_financiera)
+        if adj.tipo_garantia and adj.tipo_garantia != 'SIN_GARANTIA':
+            garantias.add(adj.tipo_garantia)
+            
+    entidades_str = " | ".join(sorted(entidades)) if entidades else None
+    garantias_str = ",".join(sorted(garantias)) if garantias else None
     
     return LicitacionDetalleSchema(
         id_convocatoria=licitacion.id_convocatoria,
@@ -255,7 +282,10 @@ def get_licitacion_detalle(
         departamento=licitacion.departamento,
         provincia=licitacion.provincia,
         distrito=licitacion.distrito,
-        adjudicacion=adjudicacion
+        adjudicaciones=adjudicaciones_list,
+        monto_total_adjudicado=float(total_adjudicado) if total_adjudicado else 0.0,
+        entidades_financieras=entidades_str,
+        tipo_garantia=garantias_str
     )
 
 

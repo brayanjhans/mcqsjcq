@@ -27,9 +27,12 @@ export interface Licitacion {
     banco?: string;
     fecha_adjudicacion?: string;
     id_contrato?: string;
+    adjudicaciones?: Adjudicacion[];
 
     // Campos para Consorcios
     miembros_consorcio?: MiembroConsorcio[];
+    nombres_consorciados?: string;
+    rucs_consorciados?: string;
 }
 
 export interface MiembroConsorcio {
@@ -49,6 +52,9 @@ export interface Adjudicacion {
     tipo_garantia?: string;
     estado?: string;
     moneda?: string;
+    consorcios?: MiembroConsorcio[];
+    url_documento_consorcio?: string;
+    url_pdf_cartafianza?: string; // Nuevo campo
 }
 
 export interface SearchFilters {

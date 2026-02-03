@@ -6,8 +6,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import os
 
-# Load environment variables explicitly with absolute path
-load_dotenv("/home/admin/repositories/garantias_seacee/.env")
+# Load environment variables dynamically based on file location
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+load_dotenv(os.path.join(BASE_DIR, ".env"))
 print(f"DEBUG_STARTUP: GROQ_API_KEY present? {'Yes' if os.getenv('GROQ_API_KEY') else 'No'}")
 print(f"DEBUG_STARTUP: DATABASE_URL present? {'Yes' if os.getenv('DATABASE_URL') else 'No'}")
 
@@ -65,9 +66,18 @@ app.include_router(exports.router)
 # ====== Startup/Shutdown Events ======
 
 @app.on_event("startup")
-def startup_event():
+async def startup_event():
     """Iniciar scheduler de notificaciones al arranque"""
     start_scheduler()
+    
+    # Capture Main Event Loop for Sync-to-Async Bridge (Notifications -> Chatbot)
+    try:
+        import asyncio
+        from app.services.chatbot import websocket
+        websocket.global_loop = asyncio.get_running_loop()
+        print(f"DEBUG: Main Event Loop captured for Chatbot Bridge: {websocket.global_loop}")
+    except Exception as e:
+        print(f"ERROR: Failed to capture event loop: {e}")
 
 @app.on_event("shutdown")
 def shutdown_event():
@@ -90,3 +100,14 @@ def root():
 def health_check():
     """Health check endpoint."""
     return {"status": "healthy", "service": "MQS Garantías API"}
+
+
+# Force reload 3
+
+# Force reload 4
+
+# Force reload 5
+
+# Force reload 6
+
+# Force reload 7
