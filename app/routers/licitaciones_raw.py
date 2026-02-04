@@ -523,8 +523,51 @@ def get_licitaciones(
                 "fecha_adjudicacion": row[22].isoformat() if row[22] else None,
                 "id_contrato": row[23],
                 "nombres_consorciados": row[24],
-                "rucs_consorciados": row[25]
+                "rucs_consorciados": row[25],
+                # Will be populated below
+                "miembros_consorcio": []
             })
+            
+        # --- BATCH FETCH CONSORCIOS ---
+        # Get all displayed IDs
+        visible_ids = [item["id_convocatoria"] for item in items]
+        
+        if visible_ids:
+            # Check both id_contrato or id_adjudicacion linkage
+            batch_cons_sql = text("""
+                SELECT 
+                    la.id_convocatoria, 
+                    dc.nombre_miembro, 
+                    dc.ruc_miembro, 
+                    dc.porcentaje_participacion
+                FROM licitaciones_adjudicaciones la
+                JOIN detalle_consorcios dc ON (
+                    CAST(dc.id_contrato AS CHAR) = CAST(la.id_contrato AS CHAR) 
+                    OR 
+                    CAST(dc.id_contrato AS CHAR) = CAST(la.id_adjudicacion AS CHAR)
+                )
+                WHERE la.id_convocatoria IN :ids
+            """)
+            
+            cons_rows = db.execute(batch_cons_sql, {"ids": tuple(visible_ids)}).fetchall()
+            
+            # Map results to id_convocatoria
+            cons_map = {}
+            for r in cons_rows:
+                conv_id = r[0]
+                if conv_id not in cons_map:
+                    cons_map[conv_id] = []
+                
+                cons_map[conv_id].append({
+                    "nombre_miembro": r[1],
+                    "ruc_miembro": r[2],
+                    "porcentaje_participacion": float(r[3]) if r[3] else 0
+                })
+            
+            # Attach to items
+            for item in items:
+                if item["id_convocatoria"] in cons_map:
+                    item["miembros_consorcio"] = cons_map[item["id_convocatoria"]]
         
         # Calculate pagination
         total_pages = (total + limit - 1) // limit if limit > 0 else 0

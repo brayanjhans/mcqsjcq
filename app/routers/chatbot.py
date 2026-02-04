@@ -3,6 +3,7 @@ import json
 import time
 from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, Body, Request
+from fastapi.responses import Response
 from pydantic import BaseModel
 from sqlalchemy import text, inspect
 from sqlalchemy.exc import SQLAlchemyError
@@ -11,6 +12,7 @@ from app.database import get_db, engine
 from app.models.chat_history import ChatHistory
 from fastapi import WebSocket, WebSocketDisconnect
 from app.services.chatbot import websocket # Import the manager
+from elevenlabs import ElevenLabs, VoiceSettings
 
 # Initialize Router
 router = APIRouter(
@@ -20,9 +22,11 @@ router = APIRouter(
 
 # --- Configuration & Constants ---
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
 MODEL_NAME = "llama-3.1-8b-instant"
 
 client = Groq(api_key=GROQ_API_KEY)
+elevenlabs_client = ElevenLabs(api_key=ELEVENLABS_API_KEY) if ELEVENLABS_API_KEY else None
 
 # --- Global Cache ---
 _SCHEMA_CACHE = None
@@ -62,6 +66,7 @@ class ChatResponse(BaseModel):
     data_source: str = "BD"
     suggested_questions: List[str] = []
     chart_data: Optional[Dict[str, Any]] = None
+    audio_base64: Optional[str] = None  # Audio pre-generado
 
 # --- Helper: Schema Loading (Optimized) ---
 def get_schema_summary():
@@ -375,7 +380,90 @@ Instructions:
 async def chat_endpoint(request: ChatRequest, req: Request, db=Depends(get_db)):
     check_rate_limit(req)
     service = ChatService(db)
-    return service.process_message(request, req.client.host)
+    response = service.process_message(request, req.client.host)
+    
+    # Generate audio in parallel for instant playback
+    if elevenlabs_client and response.response_markdown:
+        try:
+            # Clean text for TTS
+            clean_text = response.response_markdown.split('|')[0]
+            clean_text = ''.join(c for c in clean_text if c.isalnum() or c.isspace() or c in '.,!?;:()-áéíóúÁÉÍÓÚñÑüÜ')
+            clean_text = ' '.join(clean_text.split())
+            
+            if clean_text.strip():
+                # Generate audio with ElevenLabs
+                audio_generator = elevenlabs_client.text_to_speech.convert(
+                    text=clean_text[:500],  # Limit to 500 chars for speed
+                    voice_id="hpp4J3VqNfWAUOO0d1Us",  # Bella
+                    model_id="eleven_multilingual_v2",
+                    voice_settings=VoiceSettings(
+                        stability=0.5,
+                        similarity_boost=0.75,
+                        use_speaker_boost=True
+                    )
+                )
+                
+                # Convert to base64 for embedding in JSON
+                import base64
+                audio_bytes = b"".join(audio_generator)
+                response.audio_base64 = base64.b64encode(audio_bytes).decode('utf-8')
+        except Exception as e:
+            print(f"Audio generation failed: {e}")
+            # Continue without audio
+    
+    return response
+
+# --- Text-to-Speech Endpoint ---
+class SpeakRequest(BaseModel):
+    text: str
+    voice: Optional[str] = "hpp4J3VqNfWAUOO0d1Us"  # Bella voice ID (Professional, Bright, Warm)
+
+@router.post("/speak")
+async def speak_endpoint(request: SpeakRequest):
+    """
+    Convert text to speech using ElevenLabs API.
+    Returns MP3 audio file.
+    
+    Available voices (free tier):
+    - hpp4J3VqNfWAUOO0d1Us: Bella (female, professional, warm)
+    - pNInz6obpgDQGcFmaJgB: Adam (male, dominant, firm)
+    - nPczCjzI2devNBz1zQrb: Brian (male, deep, comforting)
+    """
+    if not elevenlabs_client:
+        raise HTTPException(status_code=503, detail="ElevenLabs API not configured")
+    
+    try:
+        # Clean text for better pronunciation
+        clean_text = request.text.strip()
+        
+        # Generate audio using ElevenLabs
+        audio_generator = elevenlabs_client.text_to_speech.convert(
+            text=clean_text,
+            voice_id=request.voice,  # Use the voice ID from request
+            model_id="eleven_multilingual_v2",  # Best for Spanish
+            voice_settings=VoiceSettings(
+                stability=0.5,
+                similarity_boost=0.75,
+                style=0.0,
+                use_speaker_boost=True
+            )
+        )
+        
+        # Collect audio bytes
+        audio_bytes = b"".join(audio_generator)
+        
+        # Return as MP3
+        return Response(
+            content=audio_bytes,
+            media_type="audio/mpeg",
+            headers={
+                "Content-Disposition": "inline; filename=speech.mp3"
+            }
+        )
+        
+    except Exception as e:
+        print(f"ElevenLabs TTS Error: {e}")
+        raise HTTPException(status_code=500, detail=f"TTS generation failed: {str(e)}")
 
 @router.websocket("/ws")
 async def websocket_endpoint(ws: WebSocket):

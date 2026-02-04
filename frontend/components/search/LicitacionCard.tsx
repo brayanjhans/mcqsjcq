@@ -67,7 +67,7 @@ export const LicitacionCard: React.FC<Props> = ({
     };
 
     const formatCurrency = (amount?: number, currency: string = "PEN") => {
-        if (amount === undefined || amount === null) return "S/ 0.00";
+        if (amount === undefined || amount === null) return "S/ N/A";
         return new Intl.NumberFormat("es-PE", {
             style: "currency",
             currency: currency || "PEN",
@@ -135,7 +135,7 @@ export const LicitacionCard: React.FC<Props> = ({
     const hiddenMatch = getHiddenMatch();
 
     // LOGIC
-    const statusUpper = licitacion.estado_proceso?.toUpperCase() || "PENDIENTE";
+    const statusUpper = licitacion.estado_proceso?.toUpperCase() || "SIN ESTADO";
     const isContratado = statusUpper.includes("CONTRATADO") || statusUpper.includes("ADJUDICADO");
     const isConvocado = statusUpper.includes("CONVOCADO");
     const isCancelado = statusUpper.includes("CANCELADO") || statusUpper.includes("DESIERTO") || statusUpper.includes("NULO");
@@ -154,13 +154,13 @@ export const LicitacionCard: React.FC<Props> = ({
 
         return (
             <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide border ${styles}`}>
-                {licitacion.estado_proceso || "PENDIENTE"}
+                {licitacion.estado_proceso || "SIN ESTADO"}
             </span>
         );
     };
 
     const renderCategoryBadge = () => {
-        const cat = licitacion.categoria || "BIENES";
+        const cat = licitacion.categoria || "SIN CATEGORÍA";
         let styles = "bg-purple-100 text-purple-700";
         if (cat === "OBRAS") styles = "bg-orange-100 text-orange-700";
         if (cat === "SERVICIOS") styles = "bg-blue-100 text-blue-700";
@@ -170,8 +170,8 @@ export const LicitacionCard: React.FC<Props> = ({
                 <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${styles}`}>
                     {cat}
                 </span>
-                <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px] font-medium truncate max-w-[150px]" title={licitacion.tipo_procedimiento || "Procedimiento"}>
-                    {licitacion.tipo_procedimiento || "Procedimiento"}
+                <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px] font-medium truncate max-w-[150px]" title={licitacion.tipo_procedimiento || "Sin Procedimiento"}>
+                    {licitacion.tipo_procedimiento || "Sin Procedimiento"}
                 </span>
             </div>
         );
@@ -254,7 +254,7 @@ export const LicitacionCard: React.FC<Props> = ({
                                 {licitacion.nomenclatura ? getHighlightedText(licitacion.nomenclatura, searchTerm) : "SIN NOMENCLATURA"}
                             </h4>
                             <p className="text-[10px] text-slate-400 font-medium mt-1">
-                                {getHighlightedText(licitacion.ocid || `ocds-id-${licitacion.id_convocatoria}`, searchTerm)}
+                                {getHighlightedText(licitacion.ocid || "N/A", searchTerm)}
                             </p>
                         </div>
                     </div>
@@ -366,11 +366,9 @@ export const LicitacionCard: React.FC<Props> = ({
                     <div className="flex-1 min-w-0">
                         <p className="text-[10px] text-slate-500 font-medium uppercase mb-0.5">Identificadores</p>
                         <div className="flex flex-col gap-0.5">
-                            {licitacion.id_contrato && (
-                                <span className="text-[11px] font-bold text-[#4F46E5] dark:text-indigo-400">
-                                    ID Contrato: {licitacion.id_contrato}
-                                </span>
-                            )}
+                            <span className="text-[11px] font-bold text-[#4F46E5] dark:text-indigo-400">
+                                ID Contrato: {licitacion.id_contrato || "N/A"}
+                            </span>
                             <span className={`text-[11px] ${!licitacion.id_contrato ? 'text-[#4F46E5] font-bold' : 'text-slate-600'}`}>
                                 ID Convocatoria: {licitacion.id_convocatoria}
                             </span>
@@ -408,21 +406,31 @@ export const LicitacionCard: React.FC<Props> = ({
                                 RUC Ganador: {licitacion.ganador_ruc || "N/A"}
                             </p>
 
-                            {/* CONSORCIO VISIBLE (Updated) */}
-                            {licitacion.nombres_consorciados && (
+                            {/* CONSORCIO VISIBLE (Updated Logic) */}
+                            {((licitacion.miembros_consorcio && licitacion.miembros_consorcio.length > 0) || licitacion.nombres_consorciados) && (
                                 <div className="mt-2 pl-2 border-l-2 border-indigo-100">
                                     <div className="flex items-center gap-1.5 mb-1">
                                         <Users className="w-3 h-3 text-indigo-500" />
                                         <span className="text-[10px] font-bold text-indigo-600 uppercase">
-                                            Consorciados ({licitacion.nombres_consorciados.split('|').length})
+                                            Consorciados ({licitacion.miembros_consorcio?.length || licitacion.nombres_consorciados?.split('|').length})
                                         </span>
                                     </div>
                                     <div className="flex flex-col gap-0.5">
-                                        {licitacion.nombres_consorciados.split('|').map((nombre, idx) => (
-                                            <span key={idx} className="text-[9px] text-slate-500 leading-tight font-medium uppercase truncate">
-                                                • {nombre}
-                                            </span>
-                                        ))}
+                                        {licitacion.miembros_consorcio && licitacion.miembros_consorcio.length > 0 ? (
+                                            // Render from Objects (Preferred - shows clean names)
+                                            licitacion.miembros_consorcio.map((miembro, idx) => (
+                                                <span key={idx} className="text-[9px] text-slate-500 leading-tight font-medium uppercase truncate">
+                                                    • {miembro.nombre_miembro}
+                                                </span>
+                                            ))
+                                        ) : (
+                                            // Fallback to text string
+                                            licitacion.nombres_consorciados?.split('|').map((nombre, idx) => (
+                                                <span key={idx} className="text-[9px] text-slate-500 leading-tight font-medium uppercase truncate">
+                                                    • {nombre}
+                                                </span>
+                                            ))
+                                        )}
                                     </div>
                                 </div>
                             )}
@@ -439,7 +447,7 @@ export const LicitacionCard: React.FC<Props> = ({
                         <div className="flex-1 min-w-0">
                             <p className="text-[10px] text-slate-500 font-medium uppercase mb-0.5">Adjudicaciones</p>
                             <p className="text-[11px] font-bold text-emerald-600 flex items-center gap-1">
-                                {licitacion.total_adjudicaciones || 1} item(s)
+                                {licitacion.total_adjudicaciones || 0} item(s)
                                 {licitacion.tipo_garantia && <span className="text-[10px] text-emerald-600">✓ Con Garantía</span>}
                             </p>
                         </div>
@@ -461,39 +469,7 @@ export const LicitacionCard: React.FC<Props> = ({
 
             </div>
 
-            {/* SECCION CONSORCIO (New) */}
-            {licitacion.miembros_consorcio && licitacion.miembros_consorcio.length > 0 && (
-                <div className="mx-5 mb-4 mt-2 p-4 bg-slate-50 rounded-xl border border-slate-100">
-                    <div className="flex items-center gap-2 mb-3">
-                        <Users className="w-4 h-4 text-slate-500" />
-                        <h4 className="text-xs font-bold text-slate-700 uppercase">Detalle de Miembros del Consorcio</h4>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {licitacion.miembros_consorcio.map((miembro, idx) => (
-                            <div key={idx} className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
-                                <div className="flex justify-between items-start mb-2">
-                                    <span className="px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 text-[10px] font-bold">
-                                        {miembro.porcentaje_participacion.toFixed(2)}%
-                                    </span>
-                                    <span className="text-[10px] text-slate-400 font-mono">
-                                        {miembro.ruc_miembro}
-                                    </span>
-                                </div>
-                                <p className="text-xs font-bold text-slate-800 mb-2 line-clamp-1" title={miembro.nombre_miembro}>
-                                    {miembro.nombre_miembro}
-                                </p>
-                                {/* Progress Bar */}
-                                <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                                    <div
-                                        className="h-full bg-indigo-600 rounded-full"
-                                        style={{ width: `${miembro.porcentaje_participacion}%` }}
-                                    />
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )}
+
 
             {/* FOOTER BUTTON - Full Width Block */}
             <div className="mt-4">

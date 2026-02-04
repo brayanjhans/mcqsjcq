@@ -202,8 +202,40 @@ def get_licitaciones(
         LicitacionesCabecera.fecha_publicacion.desc()
     ).offset(offset).limit(limit).all()
     
+    # Enrich with consortium members for list view (Cards)
+    results = []
+    if items:
+        # Avoid circular imports
+        from app.models.seace import DetalleConsorcios
+        from app.schemas import DetalleConsorcioSchema
+
+        for item in items:
+            item_schema = LicitacionListSchema.model_validate(item)
+            
+            # Aggregate members from all adjudications
+            consortium_members = []
+            if item.adjudicaciones:
+                for adj in item.adjudicaciones:
+                    # Logic similar to get_licitacion_detalle
+                    consorcios_adj = []
+                    if adj.id_contrato:
+                        consorcios_adj = db.query(DetalleConsorcios).filter(
+                            DetalleConsorcios.id_contrato == str(adj.id_contrato)
+                        ).all()
+                    
+                    if not consorcios_adj and adj.id_adjudicacion:
+                         consorcios_adj = db.query(DetalleConsorcios).filter(
+                            DetalleConsorcios.id_contrato == str(adj.id_adjudicacion)
+                        ).all()
+                    
+                    for c in consorcios_adj:
+                        consortium_members.append(DetalleConsorcioSchema.model_validate(c))
+            
+            item_schema.miembros_consorcio = consortium_members
+            results.append(item_schema)
+
     return PaginatedLicitacionesSchema(
-        items=items,
+        items=results,
         total=total,
         page=page,
         limit=limit,

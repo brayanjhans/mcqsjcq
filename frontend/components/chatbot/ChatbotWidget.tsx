@@ -33,6 +33,7 @@ interface ChatResponse {
     data_source?: string;
     suggested_questions?: string[];
     chart_data?: any;
+    audio_base64?: string;  // Pre-generated audio
 }
 
 // --- Component ---
@@ -50,12 +51,14 @@ export default function ChatbotWidget() {
     const [isListening, setIsListening] = useState(false);
     const [isSpeaking, setIsSpeaking] = useState(false);
     const [isConnected, setIsConnected] = useState(false);
+    const [isVoiceEnabled, setIsVoiceEnabled] = useState(true); // Auto-play enabled by default
 
     // Refs for scrolling, speech, and deduplication
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const recognitionRef = useRef<any>(null);
     const widgetRef = useRef<HTMLDivElement>(null);
     const lastAlertContentRef = useRef<string | null>(null); // Ref for strict deduplication of alerts
+    const currentAudioRef = useRef<HTMLAudioElement | null>(null); // Ref for current playing audio
 
     // Click Outside to Close
     useEffect(() => {
@@ -70,10 +73,12 @@ export default function ChatbotWidget() {
         };
     }, [isOpen]);
 
+
     // Scroll to bottom on new message
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages, isOpen]);
+
 
     // --- Voice Input (Speech-to-Text) ---
     useEffect(() => {
@@ -155,40 +160,51 @@ export default function ChatbotWidget() {
                         const audio = new Audio('/notification.mp3');
                         audio.play().catch(e => console.log("Audio play failed"));
 
-                        // 2. Auto-Read Alert (Strict Whitelist Filter)
-                        if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-                            const speakAlert = () => {
-                                // STRICT WHITELIST: Keep only Alphanumeric, Spanish Accents, and basic Punctuation.
-                                // This removes ALL emojis, symbols, and weird unicode chars guarantees.
-                                const cleanText = (pd.speech || pd.content)
-                                    .replace(/[^a-zA-Z0-9\sáéíóúÁÉÍÓÚñÑüÜ.,!?;:()\-]/g, ' ') // Replace non-allowed with space
-                                    .replace(/\s+/g, ' ') // Collapse multiple spaces
-                                    .trim();
+                        // 2. Auto-Read Alert using ElevenLabs
+                        const speakAlert = async () => {
+                            const cleanText = (pd.speech || pd.content)
+                                .replace(/[^a-zA-Z0-9\sáéíóúÁÉÍÓÚñÑüÜ.,!?;:()-]/g, ' ')
+                                .replace(/\s+/g, ' ')
+                                .trim();
 
+                            try {
+                                // Try ElevenLabs first
+                                const response = await fetch('/api/chatbot/speak', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ text: cleanText, voice: 'hpp4J3VqNfWAUOO0d1Us' }),
+                                });
+
+                                if (response.ok) {
+                                    const audioBlob = await response.blob();
+                                    const audioUrl = URL.createObjectURL(audioBlob);
+                                    const alertAudio = new Audio(audioUrl);
+                                    alertAudio.onended = () => URL.revokeObjectURL(audioUrl);
+                                    await alertAudio.play();
+                                } else {
+                                    // Fallback to native
+                                    speakNativeAlert(cleanText);
+                                }
+                            } catch (error) {
+                                console.error('Alert TTS failed, using native:', error);
+                                speakNativeAlert(cleanText);
+                            }
+                        };
+
+                        const speakNativeAlert = (cleanText: string) => {
+                            if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
                                 const utterance = new SpeechSynthesisUtterance(cleanText);
-
-                                // Try to find a Spanish voice
                                 const voices = window.speechSynthesis.getVoices();
                                 const esVoice = voices.find(v => v.lang.includes('es-PE')) || voices.find(v => v.lang.includes('es'));
-
-                                if (esVoice) {
-                                    utterance.voice = esVoice;
-                                } else {
-                                    utterance.lang = 'es-ES'; // Fallback
-                                }
-
+                                if (esVoice) utterance.voice = esVoice;
+                                else utterance.lang = 'es-ES';
                                 utterance.rate = 1.0;
-                                window.speechSynthesis.cancel(); // Stop current speech
+                                window.speechSynthesis.cancel();
                                 window.speechSynthesis.speak(utterance);
-                            };
-
-                            // Chrome quirk: voices might load async
-                            if (window.speechSynthesis.getVoices().length === 0) {
-                                window.speechSynthesis.onvoiceschanged = speakAlert;
-                            } else {
-                                speakAlert();
                             }
-                        }
+                        };
+
+                        speakAlert();
 
                         // 3. Inject Alert into Chat
                         setMessages(prev => [...prev, {
@@ -236,23 +252,94 @@ export default function ChatbotWidget() {
     };
 
     // --- Voice Output (Text-to-Speech) ---
-    const speak = (text: string) => {
-        if (typeof window !== 'undefined' && window.speechSynthesis) {
-            let textToSpeak = text.split('|')[0];
-            // Normalize: Strict Whitelist for manual speak too
-            textToSpeak = textToSpeak
-                .replace(/[^a-zA-Z0-9\sáéíóúÁÉÍÓÚñÑüÜ.,!?;:()\-]/g, ' ')
-                .replace(/\s+/g, ' ')
-                .trim();
+    const speak = async (text: string) => {
+        // Clean text first
+        let textToSpeak = text.split('|')[0];
+        textToSpeak = textToSpeak
+            .replace(/[^a-zA-Z0-9\sáéíóúÁÉÍÓÚñÑüÜ.,!?;:()-]/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
 
-            if (window.speechSynthesis.speaking) {
-                window.speechSynthesis.cancel();
-                setIsSpeaking(false);
-                return;
+        // Stop current audio if playing
+        if (currentAudioRef.current) {
+            currentAudioRef.current.pause();
+            currentAudioRef.current = null;
+        }
+
+        // Cancel native speech if active
+        if (window.speechSynthesis?.speaking) {
+            window.speechSynthesis.cancel();
+        }
+
+        try {
+            setIsSpeaking(true);
+
+            // Try ElevenLabs API first
+            const response = await fetch('/api/chatbot/speak', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    text: textToSpeak,
+                    voice: 'hpp4J3VqNfWAUOO0d1Us' // Bella voice ID
+                }),
+            });
+
+            if (response.ok) {
+                const audioBlob = await response.blob();
+                const audioUrl = URL.createObjectURL(audioBlob);
+                const audio = new Audio(audioUrl);
+
+                // Store reference to current audio
+                currentAudioRef.current = audio;
+
+                audio.onended = () => {
+                    setIsSpeaking(false);
+                    currentAudioRef.current = null;
+                    URL.revokeObjectURL(audioUrl);
+                };
+
+                audio.onerror = () => {
+                    setIsSpeaking(false);
+                    currentAudioRef.current = null;
+                    URL.revokeObjectURL(audioUrl);
+                    // Fallback to native on audio playback error
+                    speakNative(textToSpeak);
+                };
+
+                await audio.play();
+            } else {
+                // Fallback to native if API fails
+                speakNative(textToSpeak);
             }
+        } catch (error) {
+            console.error('ElevenLabs TTS failed, using native:', error);
+            // Fallback to native browser TTS
+            speakNative(textToSpeak);
+        }
+    };
 
+    // Stop current speech
+    const stopSpeaking = () => {
+        // Stop ElevenLabs audio
+        if (currentAudioRef.current) {
+            currentAudioRef.current.pause();
+            currentAudioRef.current.currentTime = 0;
+            currentAudioRef.current = null;
+        }
+
+        // Stop native speech
+        if (window.speechSynthesis?.speaking) {
+            window.speechSynthesis.cancel();
+        }
+
+        setIsSpeaking(false);
+        setIsVoiceEnabled(false); // Disable auto-play when user manually stops
+    };
+
+    // Fallback native browser TTS
+    const speakNative = (textToSpeak: string) => {
+        if (typeof window !== 'undefined' && window.speechSynthesis) {
             const utterance = new SpeechSynthesisUtterance(textToSpeak);
-            // Re-use logic for voice selection if possible, or keep simple here
             const voices = window.speechSynthesis.getVoices();
             const esVoice = voices.find(v => v.lang.includes('es-PE')) || voices.find(v => v.lang.includes('es'));
             if (esVoice) utterance.voice = esVoice;
@@ -262,6 +349,8 @@ export default function ChatbotWidget() {
             utterance.onstart = () => setIsSpeaking(true);
 
             window.speechSynthesis.speak(utterance);
+        } else {
+            setIsSpeaking(false);
         }
     };
 
@@ -309,6 +398,40 @@ export default function ChatbotWidget() {
             };
 
             setMessages(prev => [...prev, botMsg]);
+
+            // Play pre-generated audio immediately (ZERO delay)
+            if (data.audio_base64 && isVoiceEnabled) {  // Only auto-play if voice is enabled
+                try {
+                    // Decode base64 audio
+                    const binaryString = atob(data.audio_base64);
+                    const bytes = new Uint8Array(binaryString.length);
+                    for (let i = 0; i < binaryString.length; i++) {
+                        bytes[i] = binaryString.charCodeAt(i);
+                    }
+                    const audioBlob = new Blob([bytes], { type: 'audio/mpeg' });
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    const audio = new Audio(audioUrl);
+
+                    currentAudioRef.current = audio;
+                    setIsSpeaking(true);
+
+                    audio.onended = () => {
+                        setIsSpeaking(false);
+                        currentAudioRef.current = null;
+                        URL.revokeObjectURL(audioUrl);
+                    };
+
+                    audio.onerror = () => {
+                        setIsSpeaking(false);
+                        currentAudioRef.current = null;
+                        URL.revokeObjectURL(audioUrl);
+                    };
+
+                    audio.play();
+                } catch (error) {
+                    console.error('Failed to play embedded audio:', error);
+                }
+            }
 
         } catch (error) {
             setMessages(prev => [...prev, {
@@ -363,13 +486,31 @@ export default function ChatbotWidget() {
                     <div className="flex items-center gap-2 z-10">
                         <button
                             onClick={() => {
-                                const lastMsg = messages.filter(m => m.role === 'assistant').pop();
-                                if (lastMsg) speak(lastMsg.content);
+                                if (isSpeaking) {
+                                    // If speaking, stop it
+                                    stopSpeaking();
+                                } else {
+                                    // If not speaking, play last message and re-enable auto-play
+                                    const lastMsg = messages.filter(m => m.role === 'assistant').pop();
+                                    if (lastMsg) {
+                                        setIsVoiceEnabled(true); // Re-enable auto-play
+                                        speak(lastMsg.content);
+                                    }
+                                }
                             }}
-                            className="p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-colors"
-                            title="Leer último mensaje"
+                            className={cn(
+                                "p-2.5 rounded-full transition-all duration-200 flex items-center justify-center",
+                                isSpeaking
+                                    ? "bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/50 animate-pulse"
+                                    : "bg-white/20 hover:bg-white/30 text-white border border-white/30 hover:border-white/50"
+                            )}
+                            title={isSpeaking ? "🔴 Detener voz" : "🔊 Reproducir último mensaje"}
                         >
-                            <Volume2 className="w-4 h-4" />
+                            {isSpeaking ? (
+                                <StopCircle className="w-5 h-5" fill="currentColor" />
+                            ) : (
+                                <Volume2 className="w-5 h-5" />
+                            )}
                         </button>
                         <button
                             onClick={() => setMessages([{

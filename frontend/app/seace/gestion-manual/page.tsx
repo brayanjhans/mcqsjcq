@@ -175,11 +175,18 @@ export default function GestionManualPage() {
         setIsModalOpen(true);
     };
 
-    const handleEdit = (id: string) => {
-        const item = licitaciones.find(l => l.id_convocatoria === id);
-        if (item) {
-            setSelectedLicitacion(item);
-            setIsModalOpen(true);
+    const handleEdit = async (id: string) => {
+        try {
+            // Fetch full details including adjudicaciones y consorcios
+            // The list view item doesn't have nested data, so we must fetch by ID
+            const fullItem = await licitacionService.getById(id);
+            if (fullItem) {
+                setSelectedLicitacion(fullItem);
+                setIsModalOpen(true);
+            }
+        } catch (error) {
+            console.error("Error fetching full details:", error);
+            alert("Error al cargar los detalles de la licitación");
         }
     };
 

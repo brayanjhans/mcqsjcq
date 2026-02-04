@@ -22,3 +22,4 @@ werkzeug
 PyJWT
 reportlab
 websockets
+elevenlabs

@@ -102,7 +102,7 @@ start-prod.bat
 - **Dashboard Ejecutivo**: KPIs y métricas en tiempo real
 - **Búsqueda de Licitaciones**: Filtros avanzados
 - **Análisis de Tendencias**: Visualizaciones interactivas
-- **Chatbot AI (AURA)**: Asistente inteligente con voz
+- **Chatbot AI (AURA)**: Asistente inteligente con voz profesional (ElevenLabs)
 - **Gestión de Usuarios**: Roles y permisos
 - **Reportes**: Exportación a Excel/PDF
 
@@ -131,7 +131,22 @@ Ver `.env.example` para todas las variables requeridas.
 Principales:
 - `DATABASE_URL`: Conexión a MySQL
 - `GEMINI_API_KEY`: API key de Google Gemini
+- `GROQ_API_KEY`: API key de Groq (para chatbot)
+- `ELEVENLABS_API_KEY`: API key de ElevenLabs (para voz del chatbot)
 - `NEXT_PUBLIC_API_URL`: URL del backend (opcional)
+
+### Configuración de ElevenLabs (Voz del Chatbot)
+
+El chatbot AURA usa ElevenLabs para generar voz natural y profesional:
+
+1. Obtén tu API key gratuita en https://elevenlabs.io/sign-up
+2. Agrégala al archivo `.env`:
+   ```
+   ELEVENLABS_API_KEY="tu_api_key_aqui"
+   ```
+3. Plan gratuito: 10,000 caracteres/mes (~50 mensajes con voz)
+
+**Nota:** Si no configuras ElevenLabs, el chatbot usará la voz nativa del navegador como fallback.
 
 ## 🗄️ Base de Datos
 
