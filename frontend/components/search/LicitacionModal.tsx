@@ -238,8 +238,7 @@ export default function LicitacionModal({
                                     }`}
                             >
                                 <FileText size={18} className="flex-shrink-0" />
-                                <span className="hidden sm:inline font-bold">Información General</span>
-                                <span className="sm:hidden font-bold">General</span>
+                                <span className="font-bold">Información General</span>
                             </button>
                             <button
                                 onClick={() => setActiveTab('adjudicaciones')}
@@ -255,8 +254,7 @@ export default function LicitacionModal({
                                     }`}
                             >
                                 <Trophy size={18} className="flex-shrink-0" />
-                                <span className="hidden sm:inline font-bold">Adjudicaciones y Consorcios</span>
-                                <span className="sm:hidden font-bold">Adjudicaciones</span>
+                                <span className="font-bold">Adjudicaciones y Consorcios</span>
                             </button>
                         </div>
                     </div>
