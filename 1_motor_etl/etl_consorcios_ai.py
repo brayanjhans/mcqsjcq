@@ -45,15 +45,19 @@ def obtener_pendientes():
     try:
         conn = mysql.connector.connect(**DB_CONFIG)
         cursor = conn.cursor()
-        # Buscamos contratos 'CONSORCIO' que aún NO tengan detalle en la tabla hija
-        # LIMIT 100 protege tu RAM. El bucle infinito en main() se encarga de pedir más lotes.
+        # MODIFICADO: Ahora incluimos items que NO tienen id_contrato (ADJUDICADO)
+        # y usamos id_adjudicacion como fallback
         sql = """
-            SELECT a.id_contrato, a.ganador_nombre 
+            SELECT 
+                COALESCE(NULLIF(a.id_contrato, ''), a.id_adjudicacion) as id_vinculo,
+                a.ganador_nombre 
             FROM Licitaciones_Adjudicaciones a
-            LEFT JOIN Detalle_Consorcios d ON a.id_contrato = d.id_contrato
+            LEFT JOIN Detalle_Consorcios d ON (
+                d.id_contrato = a.id_contrato 
+                OR d.id_contrato = a.id_adjudicacion
+            )
             WHERE a.ganador_nombre LIKE '%CONSORCIO%' 
               AND d.id_contrato IS NULL
-              AND a.id_contrato IS NOT NULL AND a.id_contrato != ''
             LIMIT 100
         """
         cursor.execute(sql)

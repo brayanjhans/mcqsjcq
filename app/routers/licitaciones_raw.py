@@ -169,9 +169,9 @@ def get_all_filters(db: Session = Depends(get_db)):
         # User requested to strictly define years as 2024, 2025, 2026
         anios = [2026, 2025, 2024]
 
-        # NEW: 6. Entidades (Comprador)
-        entidad_sql = text("SELECT DISTINCT UPPER(TRIM(comprador)) FROM licitaciones_cabecera WHERE comprador IS NOT NULL AND TRIM(comprador) != '' ORDER BY 1")
-        entidades = [r[0] for r in db.execute(entidad_sql).fetchall() if r[0]]
+        # NEW: 6. Entidades (Comprador) - Now using validated static list (2964 entities)
+        from app.data.entidades_list import ENTIDADES_COMPRADORAS
+        entidades = ENTIDADES_COMPRADORAS
 
         # NEW: 7. Tipos de Garantia
         garantia_sql = text("SELECT DISTINCT UPPER(TRIM(tipo_garantia)) FROM licitaciones_adjudicaciones WHERE tipo_garantia IS NOT NULL AND TRIM(tipo_garantia) != ''")
@@ -451,6 +451,7 @@ def get_licitaciones(
         """)
         
         total = db.execute(count_sql, params).scalar() or 0
+        print(f"DEBUG: get_licitaciones total_count={total}")
         
         # Get paginated data
         offset = (page - 1) * limit
@@ -542,9 +543,9 @@ def get_licitaciones(
                     dc.porcentaje_participacion
                 FROM licitaciones_adjudicaciones la
                 JOIN detalle_consorcios dc ON (
-                    CAST(dc.id_contrato AS CHAR) = CAST(la.id_contrato AS CHAR) 
+                    TRIM(CAST(dc.id_contrato AS CHAR)) = TRIM(CAST(la.id_contrato AS CHAR)) 
                     OR 
-                    CAST(dc.id_contrato AS CHAR) = CAST(la.id_adjudicacion AS CHAR)
+                    TRIM(CAST(dc.id_contrato AS CHAR)) = TRIM(CAST(la.id_adjudicacion AS CHAR))
                 )
                 WHERE la.id_convocatoria IN :ids
             """)
@@ -646,8 +647,11 @@ def get_licitacion_detail(
     """
     Get licitacion detail with adjudicaciones.
     """
+    print(f"DEBUG: get_licitacion_detail received id='{id_convocatoria}' type={type(id_convocatoria)}")
     
     try:
+        id_clean = id_convocatoria.strip()
+
         # Get main licitacion data
         main_sql = text("""
             SELECT 
@@ -661,7 +665,24 @@ def get_licitacion_detail(
             WHERE id_convocatoria = :id
         """)
         
-        row = db.execute(main_sql, {"id": id_convocatoria}).fetchone()
+        row = db.execute(main_sql, {"id": id_clean}).fetchone()
+        
+        # Fallback LIKE if not found
+        if not row:
+            print(f"DEBUG: Exact match failed via RAW SQL for '{id_clean}'. Trying LIKE.")
+            like_sql = text("""
+                SELECT 
+                    id_convocatoria, ocid, nomenclatura, descripcion,
+                    comprador, categoria, tipo_procedimiento,
+                    monto_estimado, moneda, fecha_publicacion,
+                    estado_proceso, ubicacion_completa,
+                    departamento, provincia, distrito,
+                    entidad_ruc
+                FROM licitaciones_cabecera
+                WHERE id_convocatoria LIKE :id_pattern
+                LIMIT 1
+            """)
+            row = db.execute(like_sql, {"id_pattern": f"%{id_clean}%"}).fetchone()
         
         if not row:
             return {"error": "Not found"}
@@ -691,12 +712,15 @@ def get_licitacion_detail(
                 id_adjudicacion, ganador_nombre, ganador_ruc,
                 monto_adjudicado, fecha_adjudicacion,
                 estado_item, entidad_financiera, moneda,
-                id_contrato, url_documento_consorcio, url_pdf_cartafianza
+                id_contrato, url_pdf_cartafianza,
+                url_pdf_contrato, url_pdf_consorcio
             FROM licitaciones_adjudicaciones
             WHERE id_convocatoria = :id
         """)
         
-        adj_rows = db.execute(adj_sql, {"id": id_convocatoria}).fetchall()
+        # Use real ID from DB (row[0]) to match adjudicaciones
+        real_id = licitacion["id_convocatoria"]
+        adj_rows = db.execute(adj_sql, {"id": real_id}).fetchall()
         
         adjudicaciones = []
         for adj_row in adj_rows:
@@ -710,30 +734,39 @@ def get_licitacion_detail(
                 "entidad_financiera": adj_row[6],
                 "moneda": adj_row[7],
                 "id_contrato": adj_row[8],
-                "url_documento_consorcio": adj_row[9],
-                "url_pdf_cartafianza": adj_row[10]
+                "url_pdf_cartafianza": adj_row[9],
+                "url_pdf_contrato": adj_row[10],
+                "url_pdf_consorcio": adj_row[11]
             })
         
         licitacion["adjudicaciones"] = adjudicaciones
 
         # --- NEW: Fetch Consorcios ---
-        # Collect contract IDs to fetch consorcios in batch
-        contrato_ids = [adj["id_contrato"] for adj in adjudicaciones if adj.get("id_contrato")]
+        # --- NEW: Fetch Consorcios ---
+        # Collect contract IDs and Adjudicacion IDs to fetch consorcios in batch
+        all_ids = set()
+        for adj in adjudicaciones:
+            if adj.get("id_contrato"): 
+                all_ids.add(str(adj["id_contrato"]).strip())
+            if adj.get("id_adjudicacion"):
+                all_ids.add(str(adj["id_adjudicacion"]).strip())
         
-        if contrato_ids:
+        if all_ids:
             # SQL to fetch consorcios
+            # We use TRIM(CAST(...)) to be safe, matching against the set of IDs
             cons_sql = text("""
                 SELECT 
-                    id_contrato, ruc_miembro, nombre_miembro, 
+                    TRIM(CAST(id_contrato AS CHAR)) as id_link,
+                    ruc_miembro, nombre_miembro, 
                     porcentaje_participacion 
                 FROM detalle_consorcios
-                WHERE id_contrato IN :ids
+                WHERE TRIM(CAST(id_contrato AS CHAR)) IN :ids
             """)
             
             # Execute with tuple of IDs
-            cons_rows = db.execute(cons_sql, {"ids": tuple(contrato_ids)}).fetchall()
+            cons_rows = db.execute(cons_sql, {"ids": tuple(all_ids)}).fetchall()
             
-            # Group by id_contrato
+            # Group by id_link
             consorcios_map = {}
             for row in cons_rows:
                 c_id = row[0]
@@ -746,15 +779,21 @@ def get_licitacion_detail(
                     "porcentaje_participacion": float(row[3]) if row[3] else 0
                 })
             
-            # Attach to adjudicaciones
+            # Attach to adjudicaciones checking BOTH keys
             for adj in licitacion["adjudicaciones"]:
-                c_id = adj.get("id_contrato")
+                c_id = str(adj.get("id_contrato") or '').strip()
+                a_id = str(adj.get("id_adjudicacion") or '').strip()
+                
+                # Check match on id_contrato
                 if c_id and c_id in consorcios_map:
                     adj["consorcios"] = consorcios_map[c_id]
+                # Fallback: check match on id_adjudicacion
+                elif a_id and a_id in consorcios_map:
+                    adj["consorcios"] = consorcios_map[a_id]
                 else:
                     adj["consorcios"] = []
         else:
-            # Initialize empty list if no contracts
+            # Initialize empty list if no IDs
             for adj in licitacion["adjudicaciones"]:
                 adj["consorcios"] = []
 
@@ -766,12 +805,10 @@ def get_licitacion_detail(
         return licitacion
         
     except Exception as e:
+        print(f"ERROR Handled: {e}")
         import traceback
         traceback.print_exc()
-        return {"error": str(e)}
-
-    except Exception as e:
-        return {"error": str(e)}
+        return {"error": f"Internal Error: {str(e)}"}
 
 
 
