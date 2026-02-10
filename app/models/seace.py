@@ -52,8 +52,9 @@ class LicitacionesAdjudicaciones(Base):
     estado_item = Column(String(50))
     entidad_financiera = Column(String(255), index=True)  # Banco garantía
     tipo_garantia = Column(String(50))
-    url_documento_contrato = Column(String(500))  # URL del documento de contrato
-    url_documento_consorcio = Column(String(500))  # URL del documento de consorcio
+    url_pdf_contrato = Column(String(500))
+    url_pdf_consorcio = Column(String(500))
+    url_pdf_cartafianza = Column(String(500))
     ubicacion_completa = Column(String(500))  # Ubicación específica del item
     departamento = Column(String(100))  # Departamento del item
     provincia = Column(String(100))  # Provincia del item

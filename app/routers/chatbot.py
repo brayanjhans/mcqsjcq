@@ -12,7 +12,9 @@ from app.database import get_db, engine
 from app.models.chat_history import ChatHistory
 from fastapi import WebSocket, WebSocketDisconnect
 from app.services.chatbot import websocket # Import the manager
-from elevenlabs import ElevenLabs, VoiceSettings
+from gtts import gTTS
+import io
+import asyncio
 
 # Initialize Router
 router = APIRouter(
@@ -22,11 +24,9 @@ router = APIRouter(
 
 # --- Configuration & Constants ---
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
 MODEL_NAME = "llama-3.1-8b-instant"
 
 client = Groq(api_key=GROQ_API_KEY)
-elevenlabs_client = ElevenLabs(api_key=ELEVENLABS_API_KEY) if ELEVENLABS_API_KEY else None
 
 # --- Global Cache ---
 _SCHEMA_CACHE = None
@@ -49,11 +49,29 @@ def check_rate_limit(request: Request):
     # Check limit
     requests = _RATE_LIMIT_STORE.get(client_ip, [])
     if len(requests) >= MAX_REQUESTS_PER_WINDOW:
-        raise HTTPException(status_code=429, detail="Rate limit exceeded. Try again later.")
+        raise HTTPException(status_code=429, detail="Too many requests. Please try again later.")
     
-    # Add new request
-    requests.append(current_time)
-    _RATE_LIMIT_STORE[client_ip] = requests
+    # Add current request
+    _RATE_LIMIT_STORE.setdefault(client_ip, []).append(current_time)
+
+# --- gTTS Helper Function (100% Free, Reliable) ---
+def generate_gtts(text: str, lang: str = "es") -> bytes:
+    """
+    Genera audio usando Google Text-to-Speech (gTTS) - 100% gratis y confiable
+    
+    Args:
+        text: Texto a convertir en voz
+        lang: Idioma (por defecto: español)
+    
+    Returns:
+        bytes: Audio en formato MP3
+    """
+    # gTTS es síncrono, pero rápido para frases cortas
+    tts = gTTS(text=text, lang=lang, slow=False)
+    audio_buffer = io.BytesIO()
+    tts.write_to_fp(audio_buffer)
+    audio_buffer.seek(0)
+    return audio_buffer.read()
 
 # --- Pydantic Models ---
 class ChatRequest(BaseModel):
@@ -383,7 +401,7 @@ async def chat_endpoint(request: ChatRequest, req: Request, db=Depends(get_db)):
     response = service.process_message(request, req.client.host)
     
     # Generate audio in parallel for instant playback
-    if elevenlabs_client and response.response_markdown:
+    if response.response_markdown:
         try:
             # Clean text for TTS
             clean_text = response.response_markdown.split('|')[0]
@@ -391,24 +409,17 @@ async def chat_endpoint(request: ChatRequest, req: Request, db=Depends(get_db)):
             clean_text = ' '.join(clean_text.split())
             
             if clean_text.strip():
-                # Generate audio with ElevenLabs
-                audio_generator = elevenlabs_client.text_to_speech.convert(
-                    text=clean_text[:500],  # Limit to 500 chars for speed
-                    voice_id="hpp4J3VqNfWAUOO0d1Us",  # Bella
-                    model_id="eleven_multilingual_v2",
-                    voice_settings=VoiceSettings(
-                        stability=0.5,
-                        similarity_boost=0.75,
-                        use_speaker_boost=True
-                    )
-                )
+                # Generate audio with gTTS (100% gratis, confiable)
+                # Ejecutamos en un thread separado para no bloquear el loop asíncrono
+                audio_bytes = await asyncio.to_thread(generate_gtts, clean_text[:500], "es")
                 
                 # Convert to base64 for embedding in JSON
                 import base64
-                audio_bytes = b"".join(audio_generator)
                 response.audio_base64 = base64.b64encode(audio_bytes).decode('utf-8')
         except Exception as e:
             print(f"Audio generation failed: {e}")
+            import traceback
+            traceback.print_exc()
             # Continue without audio
     
     return response
@@ -416,41 +427,28 @@ async def chat_endpoint(request: ChatRequest, req: Request, db=Depends(get_db)):
 # --- Text-to-Speech Endpoint ---
 class SpeakRequest(BaseModel):
     text: str
-    voice: Optional[str] = "hpp4J3VqNfWAUOO0d1Us"  # Bella voice ID (Professional, Bright, Warm)
+    voice: Optional[str] = "es"  # Idioma por defecto (gTTS solo soporta idiomas, no voces específicas)
 
 @router.post("/speak")
 async def speak_endpoint(request: SpeakRequest):
     """
-    Convert text to speech using ElevenLabs API.
-    Returns MP3 audio file.
+    Convert text to speech using Google Text-to-Speech (gTTS).
+    100% Gratis y Confiable.
     
-    Available voices (free tier):
-    - hpp4J3VqNfWAUOO0d1Us: Bella (female, professional, warm)
-    - pNInz6obpgDQGcFmaJgB: Adam (male, dominant, firm)
-    - nPczCjzI2devNBz1zQrb: Brian (male, deep, comforting)
+    Args:
+        text: Texto a convertir
+        voice: Código de idioma (es = español)
     """
-    if not elevenlabs_client:
-        raise HTTPException(status_code=503, detail="ElevenLabs API not configured")
-    
     try:
         # Clean text for better pronunciation
         clean_text = request.text.strip()
         
-        # Generate audio using ElevenLabs
-        audio_generator = elevenlabs_client.text_to_speech.convert(
-            text=clean_text,
-            voice_id=request.voice,  # Use the voice ID from request
-            model_id="eleven_multilingual_v2",  # Best for Spanish
-            voice_settings=VoiceSettings(
-                stability=0.5,
-                similarity_boost=0.75,
-                style=0.0,
-                use_speaker_boost=True
-            )
+        # Generate audio using gTTS (100% gratis)
+        audio_bytes = await asyncio.to_thread(
+            generate_gtts, 
+            text=clean_text, 
+            lang=request.voice
         )
-        
-        # Collect audio bytes
-        audio_bytes = b"".join(audio_generator)
         
         # Return as MP3
         return Response(
@@ -462,7 +460,7 @@ async def speak_endpoint(request: SpeakRequest):
         )
         
     except Exception as e:
-        print(f"ElevenLabs TTS Error: {e}")
+        print(f"gTTS Error: {e}")
         raise HTTPException(status_code=500, detail=f"TTS generation failed: {str(e)}")
 
 @router.websocket("/ws")

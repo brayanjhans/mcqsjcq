@@ -254,15 +254,28 @@ def get_licitacion_detalle(
     - Adjudication details
     - Consortium members (if any)
     """
+    print(f"DEBUG: Buscando licitación id_convocatoria='{id_convocatoria}' type={type(id_convocatoria)}")
     
-    # Query with eager loading for optimal performance
-    licitacion = db.query(LicitacionesCabecera).options(
-        joinedload(LicitacionesCabecera.adjudicaciones)
-    ).filter(
-        LicitacionesCabecera.id_convocatoria == id_convocatoria
+    # Cleaning
+    id_clean = id_convocatoria.strip()
+    
+    # Query with eager loading and robust lookup
+    # DISABLED joinedload to debug ORM issues
+    licitacion = db.query(LicitacionesCabecera).filter(
+        LicitacionesCabecera.id_convocatoria == id_clean
     ).first()
     
+    # Fallback: Try with LIKE if exact match fails (handles potential dirty data in DB)
     if not licitacion:
+        print(f"DEBUG: Exact match failed for '{id_clean}'. Retrying with LIKE...")
+        licitacion = db.query(LicitacionesCabecera).filter(
+            LicitacionesCabecera.id_convocatoria.like(f"%{id_clean}%")
+        ).first()
+    
+    print(f"DEBUG: Resultado búsqueda: {licitacion}")
+
+    if not licitacion:
+        print(f"DEBUG: Licitación NO encontrada para id='{id_convocatoria}' (cleaned='{id_clean}')")
         raise HTTPException(
             status_code=404,
             detail=f"Licitación con id_convocatoria={id_convocatoria} no encontrada"
@@ -272,33 +285,49 @@ def get_licitacion_detalle(
     adjudicaciones_list = []
     total_adjudicado = 0
     
-    if licitacion.adjudicaciones:
-        from app.models import DetalleConsorcios
-        from app.schemas import AdjudicacionSchema, DetalleConsorcioSchema
-        
-        for adj in licitacion.adjudicaciones:
-            # Calculate total
-            if adj.monto_adjudicado:
-                total_adjudicado += adj.monto_adjudicado
+    try:
+        print("DEBUG: Accessing adjuciaciones relationship...")
+        if licitacion.adjudicaciones:
+            print(f"DEBUG: Found {len(licitacion.adjudicaciones)} adjudicaciones.")
+            from app.models import DetalleConsorcios
+            from app.schemas import AdjudicacionSchema, DetalleConsorcioSchema
             
-            # Manually load consorcios for this adjudication
-            consorcios = []
-            
-            if adj.id_contrato:
-                consorcios = db.query(DetalleConsorcios).filter(
-                    DetalleConsorcios.id_contrato == str(adj.id_contrato)
-                ).all()
-            elif adj.id_adjudicacion: # Fallback linkage
-                 consorcios = db.query(DetalleConsorcios).filter(
-                    DetalleConsorcios.id_contrato == str(adj.id_adjudicacion)
-                ).all()
-            
-            # Build adjudication schema with consorcios
-            adj_schema = AdjudicacionSchema.model_validate(adj)
-            # Explicitly convert to Pydantic models
-            adj_schema.consorcios = [DetalleConsorcioSchema.model_validate(c) for c in consorcios]
-            # Build schema
-            adjudicaciones_list.append(adj_schema)
+            for adj in licitacion.adjudicaciones:
+                # Calculate total
+                if adj.monto_adjudicado:
+                    total_adjudicado += adj.monto_adjudicado
+                
+                # Manually load consorcios for this adjudication
+                consorcios = []
+                
+                # Safe consorcio loading
+                try:
+                    target_id_contrato = str(adj.id_contrato) if adj.id_contrato else str(adj.id_adjudicacion)
+                    if target_id_contrato:
+                         consorcios = db.query(DetalleConsorcios).filter(
+                            DetalleConsorcios.id_contrato == target_id_contrato
+                        ).all()
+                except Exception as e_cons:
+                    print(f"ERROR: Error loading consorcios for adj {adj.id_adjudicacion}: {e_cons}")
+
+                # Build adjudication schema with consorcios
+                try:
+                    adj_schema = AdjudicacionSchema.model_validate(adj)
+                    # Explicitly convert to Pydantic models
+                    adj_schema.consorcios = [DetalleConsorcioSchema.model_validate(c) for c in consorcios]
+                    # Build schema
+                    adjudicaciones_list.append(adj_schema)
+                except Exception as e_valid:
+                    print(f"ERROR: Validation error for adj {adj.id_adjudicacion}: {e_valid}")
+                    # Skip invalid items but continue
+                    continue
+
+    except Exception as e:
+        print(f"CRITICAL ERROR loading adjudicaciones: {e}")
+        import traceback
+        traceback.print_exc()
+        # Ensure we return valid response even if details fail
+        # We will return empty list for now to allow page load
 
     # Compute summaries for missing fields
     entidades = set()

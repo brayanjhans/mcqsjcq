@@ -348,13 +348,36 @@ export const LicitacionCard: React.FC<Props> = ({
                         <Calendar className="w-4 h-4 text-slate-400" />
                     </div>
                     <div className="flex-1 min-w-0">
-                        <p className="text-[10px] text-slate-500 font-medium uppercase mb-0.5">
-                            {showExtendedDetails ? "Fecha de Adjudicación" : "Fecha de Publicación"}
-                        </p>
-                        {/* GREEN color for date if extended/adjudicated */}
-                        <p className={`text-[11px] font-bold ${showExtendedDetails ? 'text-emerald-600' : 'text-slate-800'} dark:text-slate-200`}>
-                            {formatDate(showExtendedDetails && licitacion.fecha_adjudicacion ? licitacion.fecha_adjudicacion : licitacion.fecha_publicacion)}
-                        </p>
+                        {/* LOGIC: If Contract exists, show Adjudication (Main) AND Publication (Sub). Else, only Publication. */}
+                        {licitacion.id_contrato && licitacion.fecha_adjudicacion ? (
+                            <>
+                                {/* PRIMARY: Adjudication Date */}
+                                <div className="mb-1">
+                                    <p className="text-[10px] text-emerald-600 font-bold uppercase mb-0.5">
+                                        Fecha de Adjudicación
+                                    </p>
+                                    <p className="text-[11px] font-extrabold text-emerald-600 dark:text-emerald-400">
+                                        {formatDate(licitacion.fecha_adjudicacion)}
+                                    </p>
+                                </div>
+                                {/* SECONDARY: Publication Date */}
+                                <div>
+                                    <p className="text-[9px] text-slate-400 font-medium uppercase">
+                                        Fecha de Publicación: {formatDate(licitacion.fecha_publicacion)}
+                                    </p>
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                {/* ONLY Publication Date */}
+                                <p className="text-[10px] text-slate-500 font-medium uppercase mb-0.5">
+                                    Fecha de Publicación
+                                </p>
+                                <p className="text-[11px] font-bold text-slate-800 dark:text-slate-200">
+                                    {formatDate(licitacion.fecha_publicacion)}
+                                </p>
+                            </>
+                        )}
                     </div>
                 </div>
 

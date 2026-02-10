@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Mic, Send, MessageSquare, X, Volume2, StopCircle, RefreshCw, Terminal, Bot } from 'lucide-react';
+import { Mic, Send, MessageSquare, X, Volume2, VolumeX, RefreshCw, Terminal, Bot } from 'lucide-react'; // Add VolumeX import
+
 // import { RobotIcon } from '../icons/RobotIcon'; // REMOVED: File not found and unused
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -112,9 +113,9 @@ export default function ChatbotWidget() {
             const port = window.location.port;
 
             // Scenario 1: Development (Localhost)
-            // If running on localhost:3000, Backend is usually on :8000
+            // If running on localhost:3000, Backend is on :8001
             if (host === 'localhost' || host === '127.0.0.1') {
-                return `${protocol}//${host}:8000/api/chatbot/ws`;
+                return `${protocol}//${host}:8001/api/chatbot/ws`;
             }
 
             // Scenario 2: Production / VPS (Same Origin)
@@ -172,37 +173,26 @@ export default function ChatbotWidget() {
                                 const response = await fetch('/api/chatbot/speak', {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ text: cleanText, voice: 'hpp4J3VqNfWAUOO0d1Us' }),
+                                    body: JSON.stringify({ text: cleanText, voice: 'es' }),
                                 });
 
                                 if (response.ok) {
                                     const audioBlob = await response.blob();
                                     const audioUrl = URL.createObjectURL(audioBlob);
                                     const alertAudio = new Audio(audioUrl);
+                                    alertAudio.playbackRate = 1.2; // Un poco más rápido (1.2x)
                                     alertAudio.onended = () => URL.revokeObjectURL(audioUrl);
                                     await alertAudio.play();
                                 } else {
-                                    // Fallback to native
-                                    speakNativeAlert(cleanText);
+                                    console.error('TTS API Error:', response.status);
                                 }
                             } catch (error) {
-                                console.error('Alert TTS failed, using native:', error);
-                                speakNativeAlert(cleanText);
+                                console.error('Alert TTS failed:', error);
                             }
                         };
 
-                        const speakNativeAlert = (cleanText: string) => {
-                            if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-                                const utterance = new SpeechSynthesisUtterance(cleanText);
-                                const voices = window.speechSynthesis.getVoices();
-                                const esVoice = voices.find(v => v.lang.includes('es-PE')) || voices.find(v => v.lang.includes('es'));
-                                if (esVoice) utterance.voice = esVoice;
-                                else utterance.lang = 'es-ES';
-                                utterance.rate = 1.0;
-                                window.speechSynthesis.cancel();
-                                window.speechSynthesis.speak(utterance);
-                            }
-                        };
+                        // Native fallback removed per user request
+                        // const speakNativeAlert = ...
 
                         speakAlert();
 
@@ -280,7 +270,7 @@ export default function ChatbotWidget() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     text: textToSpeak,
-                    voice: 'hpp4J3VqNfWAUOO0d1Us' // Bella voice ID
+                    voice: 'es' // Google TTS Spanish
                 }),
             });
 
@@ -288,6 +278,8 @@ export default function ChatbotWidget() {
                 const audioBlob = await response.blob();
                 const audioUrl = URL.createObjectURL(audioBlob);
                 const audio = new Audio(audioUrl);
+                audio.playbackRate = 1.2; // Un poco más rápido (1.2x)
+
 
                 // Store reference to current audio
                 currentAudioRef.current = audio;
@@ -303,18 +295,18 @@ export default function ChatbotWidget() {
                     currentAudioRef.current = null;
                     URL.revokeObjectURL(audioUrl);
                     // Fallback to native on audio playback error
-                    speakNative(textToSpeak);
+                    console.error('Audio playback error');
+                    setIsSpeaking(false);
                 };
 
                 await audio.play();
             } else {
-                // Fallback to native if API fails
-                speakNative(textToSpeak);
+                console.error('TTS API response not ok');
+                setIsSpeaking(false);
             }
         } catch (error) {
-            console.error('ElevenLabs TTS failed, using native:', error);
-            // Fallback to native browser TTS
-            speakNative(textToSpeak);
+            console.error('TTS fetch failed:', error);
+            setIsSpeaking(false);
         }
     };
 
@@ -336,23 +328,8 @@ export default function ChatbotWidget() {
         setIsVoiceEnabled(false); // Disable auto-play when user manually stops
     };
 
-    // Fallback native browser TTS
-    const speakNative = (textToSpeak: string) => {
-        if (typeof window !== 'undefined' && window.speechSynthesis) {
-            const utterance = new SpeechSynthesisUtterance(textToSpeak);
-            const voices = window.speechSynthesis.getVoices();
-            const esVoice = voices.find(v => v.lang.includes('es-PE')) || voices.find(v => v.lang.includes('es'));
-            if (esVoice) utterance.voice = esVoice;
-            else utterance.lang = 'es-ES';
-
-            utterance.onend = () => setIsSpeaking(false);
-            utterance.onstart = () => setIsSpeaking(true);
-
-            window.speechSynthesis.speak(utterance);
-        } else {
-            setIsSpeaking(false);
-        }
-    };
+    // Native fallback removed per user request
+    // const speakNative = ...
 
     // --- Send Logic ---
     const handleSend = async (retryContent?: string) => {
@@ -411,6 +388,7 @@ export default function ChatbotWidget() {
                     const audioBlob = new Blob([bytes], { type: 'audio/mpeg' });
                     const audioUrl = URL.createObjectURL(audioBlob);
                     const audio = new Audio(audioUrl);
+                    audio.playbackRate = 1.2; // Un poco más rápido (1.2x)
 
                     currentAudioRef.current = audio;
                     setIsSpeaking(true);
@@ -454,7 +432,7 @@ export default function ChatbotWidget() {
                 className={cn(
                     "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-2xl overflow-hidden transition-all duration-300 pointer-events-auto flex flex-col font-sans z-50",
                     isOpen
-                        ? "fixed inset-0 w-full h-full sm:fixed sm:top-auto sm:left-auto sm:bottom-4 sm:right-4 sm:w-[450px] sm:h-[700px] sm:rounded-2xl opacity-100 translate-y-0"
+                        ? "fixed inset-0 w-full h-full sm:fixed sm:top-auto sm:left-auto sm:bottom-4 sm:right-4 sm:w-[380px] sm:h-[550px] sm:rounded-2xl opacity-100 translate-y-0"
                         : "fixed bottom-4 right-4 w-0 h-0 opacity-0 translate-y-12 pointer-events-none"
                 )}
             >
@@ -487,13 +465,11 @@ export default function ChatbotWidget() {
                         <button
                             onClick={() => {
                                 if (isSpeaking) {
-                                    // If speaking, stop it
                                     stopSpeaking();
                                 } else {
-                                    // If not speaking, play last message and re-enable auto-play
                                     const lastMsg = messages.filter(m => m.role === 'assistant').pop();
                                     if (lastMsg) {
-                                        setIsVoiceEnabled(true); // Re-enable auto-play
+                                        setIsVoiceEnabled(true);
                                         speak(lastMsg.content);
                                     }
                                 }
@@ -501,13 +477,13 @@ export default function ChatbotWidget() {
                             className={cn(
                                 "p-2.5 rounded-full transition-all duration-200 flex items-center justify-center",
                                 isSpeaking
-                                    ? "bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/50 animate-pulse"
+                                    ? "bg-white/20 hover:bg-white/30 text-white border border-white/30 hover:border-white/50" // Same style as idle
                                     : "bg-white/20 hover:bg-white/30 text-white border border-white/30 hover:border-white/50"
                             )}
-                            title={isSpeaking ? "🔴 Detener voz" : "🔊 Reproducir último mensaje"}
+                            title={isSpeaking ? "🔇 Silenciar" : "🔊 Reproducir último mensaje"}
                         >
                             {isSpeaking ? (
-                                <StopCircle className="w-5 h-5" fill="currentColor" />
+                                <VolumeX className="w-5 h-5" /> // Muted icon when speaking
                             ) : (
                                 <Volume2 className="w-5 h-5" />
                             )}

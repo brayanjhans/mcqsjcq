@@ -39,6 +39,7 @@ deploy_package.zip
 1_database/*.json
 1_database/*.csv
 data/
+!app/data/
 *.db
 *.sqlite
 *.sql
@@ -64,6 +65,13 @@ get_*.py
 read_*.py
 run_*.py
 upload_*.py
+manual_surgery_*.py
+comprehensive_diagnostic.py
+convert_entities_to_py.py
+find_all_tables.py
+extract_entities.py
+minimal_main.py
+compare_entities.py
 
 # Temporary Debug Artifacts
 analisis_*.json
@@ -71,7 +79,14 @@ api_*.json
 contrato_*.json
 debug_*
 garantias_*.json
+diagnostic_results.txt
+entidades_compradoras.txt
+test.mp3
+
 # Ignore all scripts in root scripts/ folder if they are just one-off tests
-scripts/
+# BUT KEEP repair_consortium_data.py
+scripts/*
+!scripts/repair_consortium_data.py
+
 # Ignore seace build artifacts in root if they appear there
 seace_main-*.js

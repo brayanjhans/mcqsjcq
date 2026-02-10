@@ -260,10 +260,10 @@ export default function GestionManualPage() {
                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
                             <div>
                                 <h1 className="text-2xl font-extrabold text-[#0F172A] dark:text-white tracking-tight">
-                                    Gestión Manual de Licitaciones
+                                    Gestión Manual de Procedimientos
                                 </h1>
                                 <p className="mt-1 text-sm font-medium text-slate-500 dark:text-slate-400">
-                                    Busca, filtra y gestiona licitaciones manualmente con controles avanzados
+                                    Busca, filtra y gestiona procedimientos manualmente con controles avanzados
                                 </p>
                             </div>
 

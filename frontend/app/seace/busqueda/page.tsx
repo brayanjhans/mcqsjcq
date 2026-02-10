@@ -31,6 +31,7 @@ const DEFAULT_TIPOS_PROCEDIMIENTO = [
     "Adjudicación Simplificada - Ley N° 31728",
     "Concurso Público",
     "Concurso Público de Servicios",
+    "Contratación Directa",
     "Licitación Pública",
     "Licitación Pública Abreviada",
     "Licitación Pública Abreviada - Ley N°26859",
@@ -225,7 +226,7 @@ function BusquedaContent() {
                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
                             <div>
                                 <h1 className="text-2xl font-extrabold text-[#0F172A] dark:text-white tracking-tight">
-                                    Búsqueda de Licitaciones
+                                    Búsqueda de Procedimientos
                                 </h1>
                                 <p className="mt-1 text-sm font-medium text-slate-500 dark:text-slate-400">
                                     Encuentra oportunidades de negocio en el estado

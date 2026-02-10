@@ -33,8 +33,9 @@ class AdjudicacionSchema(BaseModel):
     estado_item: Optional[str] = None
     entidad_financiera: Optional[str] = None
     tipo_garantia: Optional[str] = None
-    url_documento_contrato: Optional[str] = None
-    url_documento_consorcio: Optional[str] = None
+    url_pdf_contrato: Optional[str] = None
+    url_pdf_consorcio: Optional[str] = None
+    url_pdf_cartafianza: Optional[str] = None
     ubicacion_completa: Optional[str] = None
     departamento: Optional[str] = None
     provincia: Optional[str] = None
@@ -84,8 +85,9 @@ class AdjudicacionCreate(BaseModel):
     estado_item: str = 'ADJUDICADO'
     tipo_garantia: Optional[str] = None
     entidad_financiera: Optional[str] = None
-    url_documento_contrato: Optional[str] = None
-    url_documento_consorcio: Optional[str] = None
+    url_pdf_contrato: Optional[str] = None
+    url_pdf_consorcio: Optional[str] = None
+    url_pdf_cartafianza: Optional[str] = None
     ubicacion_completa: Optional[str] = None
     departamento: Optional[str] = None
     provincia: Optional[str] = None

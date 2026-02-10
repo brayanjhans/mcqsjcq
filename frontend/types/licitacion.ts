@@ -53,8 +53,9 @@ export interface Adjudicacion {
     estado?: string;
     moneda?: string;
     consorcios?: MiembroConsorcio[];
-    url_documento_consorcio?: string;
-    url_pdf_cartafianza?: string; // Nuevo campo
+    url_pdf_contrato?: string;
+    url_pdf_consorcio?: string;
+    url_pdf_cartafianza?: string;
 }
 
 export interface SearchFilters {

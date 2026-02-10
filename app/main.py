@@ -13,7 +13,7 @@ print(f"DEBUG_STARTUP: GROQ_API_KEY present? {'Yes' if os.getenv('GROQ_API_KEY')
 print(f"DEBUG_STARTUP: DATABASE_URL present? {'Yes' if os.getenv('DATABASE_URL') else 'No'}")
 
 import app.models # Ensure all models are registered
-from app.routers import auth, mqs, admin, scraping, tendencias, etl, formatos, users, support, test, notifications, reportes, chatbot, exports
+from app.routers import auth, mqs, admin, scraping, tendencias, etl, formatos, users, support, test, notifications, reportes, exports, chatbot
 from app.routers import dashboard_raw as dashboard
 from app.routers import licitaciones_raw as licitaciones
 from app.services.notification_scheduler import start_scheduler, stop_scheduler
@@ -68,16 +68,17 @@ app.include_router(exports.router)
 @app.on_event("startup")
 async def startup_event():
     """Iniciar scheduler de notificaciones al arranque"""
-    start_scheduler()
+    """Iniciar scheduler de notificaciones al arranque"""
+    # start_scheduler()
     
     # Capture Main Event Loop for Sync-to-Async Bridge (Notifications -> Chatbot)
-    try:
-        import asyncio
-        from app.services.chatbot import websocket
-        websocket.global_loop = asyncio.get_running_loop()
-        print(f"DEBUG: Main Event Loop captured for Chatbot Bridge: {websocket.global_loop}")
-    except Exception as e:
-        print(f"ERROR: Failed to capture event loop: {e}")
+    # try:
+    #     import asyncio
+    #     from app.services.chatbot import websocket
+    #     websocket.global_loop = asyncio.get_running_loop()
+    #     print(f"DEBUG: Main Event Loop captured for Chatbot Bridge: {websocket.global_loop}")
+    # except Exception as e:
+    #     print(f"ERROR: Failed to capture event loop: {e}")
 
 @app.on_event("shutdown")
 def shutdown_event():

@@ -51,6 +51,7 @@ export const SearchFiltersComponent: React.FC<Props> = ({
         "Adjudicación Simplificada - Ley N° 31728",
         "Concurso Público",
         "Concurso Público de Servicios",
+        "Contratación Directa",
         "Licitación Pública",
         "Licitación Pública Abreviada",
         "Licitación Pública Abreviada - Ley N°26859",

@@ -46,9 +46,9 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                 } else {
                     setError("No se encontró la licitación.");
                 }
-            } catch (err) {
+            } catch (err: any) {
                 console.error("Error fetching detail:", err);
-                setError("Ocurrió un error al cargar los detalles.");
+                setError(`API Error: ${err.message || JSON.stringify(err)}`);
             } finally {
                 setLoading(false);
             }
@@ -93,6 +93,14 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
             <div className="text-center">
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Error</h3>
                 <p className="text-slate-500 mb-4">{error || "No se encontró la información solicitada."}</p>
+
+                {/* DEBUG INFO */}
+                <div className="mb-4 p-4 bg-red-50 text-red-700 text-xs font-mono text-left rounded border border-red-200 overflow-auto max-w-lg mx-auto">
+                    <p><strong>Debug Info:</strong></p>
+                    <p>Requested ID: "{id}" (Type: {typeof id})</p>
+                    <p>ID Length: {id?.length}</p>
+                </div>
+
                 <Link href={basePath} className="text-indigo-600 font-bold hover:underline">
                     &larr; Volver a resultados
                 </Link>
@@ -331,8 +339,9 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                                         <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
                                             <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">Adjudicación / Ganador</th>
                                             <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">Integrantes del Consorcio</th>
-                                            <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">Contrato Consorcio</th>
-                                            <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">Carta Fianza</th>
+                                            <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">Contrato</th>
+                                            <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">Consorcio</th>
+                                            <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">Fianza</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
@@ -367,9 +376,31 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                                                     )}
                                                 </td>
                                                 <td className="py-4 px-4 align-middle text-center w-[120px]">
-                                                    {adj.url_documento_consorcio ? (
+                                                    {adj.url_pdf_contrato ? (
                                                         <a
-                                                            href={adj.url_documento_consorcio}
+                                                            href={adj.url_pdf_contrato}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="group inline-flex flex-col items-center justify-center gap-1"
+                                                        >
+                                                            <PdfIcon className="w-8 h-8 transition-transform group-hover:-translate-y-1" />
+                                                            <span className="bg-slate-900 text-white text-[9px] py-1 px-2 rounded font-bold whitespace-nowrap shadow-sm">
+                                                                Descargar PDF
+                                                            </span>
+                                                        </a>
+                                                    ) : (
+                                                        <div className="inline-flex flex-col items-center justify-center gap-1 opacity-50 cursor-not-allowed">
+                                                            <PdfIcon className="w-8 h-8 filter grayscale" />
+                                                            <span className="bg-slate-100 text-slate-400 text-[9px] py-1 px-2 rounded font-bold whitespace-nowrap shadow-sm border border-slate-200">
+                                                                No disponible
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                </td>
+                                                <td className="py-4 px-4 align-middle text-center w-[120px]">
+                                                    {adj.url_pdf_consorcio ? (
+                                                        <a
+                                                            href={adj.url_pdf_consorcio}
                                                             target="_blank"
                                                             rel="noopener noreferrer"
                                                             className="group inline-flex flex-col items-center justify-center gap-1"

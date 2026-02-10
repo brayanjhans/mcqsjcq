@@ -16,6 +16,7 @@ export const DEFAULT_TIPOS_PROCEDIMIENTO = [
     "Adjudicación Simplificada - Ley N° 31728",
     "Concurso Público",
     "Concurso Público de Servicios",
+    "Contratación Directa",
     "Licitación Pública",
     "Licitación Pública Abreviada",
     "Licitación Pública Abreviada - Ley N°26859",

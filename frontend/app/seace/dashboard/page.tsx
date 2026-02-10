@@ -8,6 +8,7 @@ import { SalesAreaChart } from "@/components/ecommerce/SalesAreaChart";
 import { PeruInteractiveMap } from "@/components/ecommerce/PeruInteractiveMap";
 import { FinancialEntitiesTable } from "@/components/ecommerce/FinancialEntitiesTable";
 import { licitacionService } from "@/lib/services/licitacionService";
+import { DEFAULT_TIPOS_PROCEDIMIENTO } from "@/lib/constants/procedimientos";
 import { ChevronDown, Filter, RotateCcw } from "lucide-react";
 
 export default function EcommerceDashboardPage() {
@@ -33,7 +34,7 @@ export default function EcommerceDashboardPage() {
 
     // Filter Options
     const [options, setOptions] = useState({
-        tipos: [],
+        tipos: DEFAULT_TIPOS_PROCEDIMIENTO, // Initialize with static list
         anios: [],
         meses: [
             { id: 1, name: "Enero" }, { id: 2, name: "Febrero" }, { id: 3, name: "Marzo" },
@@ -54,7 +55,8 @@ export default function EcommerceDashboardPage() {
                 const data = await licitacionService.getFilters();
                 setOptions(prev => ({
                     ...prev,
-                    tipos: data.tipos_entidad || [], // Procedure Types
+                    // tipos: data.tipos_entidad || [], // OLD: Dynamic from DB
+                    tipos: DEFAULT_TIPOS_PROCEDIMIENTO, // NEW: Static List (Contains "Contratación Directa")
                     // Use backend years if available, else default
                     anios: data.anios || [2026, 2025, 2024]
                 }));
