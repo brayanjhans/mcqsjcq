@@ -1250,7 +1250,10 @@ def update_licitacion(id: str, licitacion: LicitacionCreate, db: Session = Depen
         db.rollback()
         import traceback
         traceback.print_exc()
-        return {"error": str(e)}
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            detail=f"Error al actualizar: {str(e)}"
+        )
 
 @router.delete("/{id}")
 def delete_licitacion(
