@@ -1104,7 +1104,6 @@ def update_licitacion(id: str, licitacion: LicitacionCreate, db: Session = Depen
         })
         
         # 2. Cleanup Old Adjudicaciones & Consorcios
-        # 2. Cleanup Old Adjudicaciones & Consorcios
         try:
              # Find contracts linked to this licitacion
              # Fetch both id_contrato and id_adjudicacion to cover all linking possibilities
