@@ -15,6 +15,9 @@ export const licitacionService = {
             (params[key] === undefined || params[key] === '' || params[key] === null) && delete params[key]
         );
 
+        // Add Timestamp to prevent caching
+        params._t = new Date().getTime();
+
         const response = await api.get('/api/licitaciones', { params });
         return response.data;
     },
@@ -46,7 +49,9 @@ export const licitacionService = {
 
     // Get single licitacion details
     getById: async (id: string) => {
-        const response = await api.get(`/api/licitaciones/${id}`);
+        const response = await api.get(`/api/licitaciones/${id}`, {
+            params: { _t: new Date().getTime() }
+        });
         return response.data;
     },
 

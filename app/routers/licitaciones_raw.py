@@ -1250,13 +1250,6 @@ def update_licitacion(id: str, licitacion: LicitacionCreate, db: Session = Depen
     except Exception as e:
         db.rollback()
         import traceback
-        import logging
-        
-        # Configure logging to file
-        logging.basicConfig(filename='debug_licitaciones.log', level=logging.ERROR)
-        logging.error(f"Error updating licitacion {id}: {str(e)}")
-        logging.error(traceback.format_exc())
-        
         traceback.print_exc()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
