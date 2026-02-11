@@ -423,15 +423,7 @@ export default function LicitacionModal({
                                                 onChange={(e) => setFormData({ ...formData, fecha_publicacion: e.target.value })}
                                             />
                                         </div>
-                                        <div className="space-y-1.5">
-                                            <label className="text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase">Fecha Adjudicación</label>
-                                            <input
-                                                type="date"
-                                                className="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800/50 text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none"
-                                                value={formData.fecha_adjudicacion?.split('T')[0] || ''}
-                                                onChange={(e) => setFormData({ ...formData, fecha_adjudicacion: e.target.value })}
-                                            />
-                                        </div>
+
                                         <div className="space-y-1.5">
                                             <label className="text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase">Estado Proceso</label>
                                             <select
@@ -747,10 +739,10 @@ export default function LicitacionModal({
                                                         type="url"
                                                         placeholder="https://..."
                                                         className="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800/50 text-sm focus:ring-2 focus:ring-blue-500 outline-none text-blue-600 dark:text-blue-400"
-                                                        value={adj.url_documento_contrato || ''}
+                                                        value={adj.url_pdf_contrato || ''}
                                                         onChange={(e) => {
                                                             const newAdj = [...(formData.adjudicaciones || [])];
-                                                            newAdj[index].url_documento_contrato = e.target.value;
+                                                            newAdj[index].url_pdf_contrato = e.target.value;
                                                             setFormData({ ...formData, adjudicaciones: newAdj });
                                                         }}
                                                     />
@@ -761,10 +753,24 @@ export default function LicitacionModal({
                                                         type="url"
                                                         placeholder="https://..."
                                                         className="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800/50 text-sm focus:ring-2 focus:ring-blue-500 outline-none text-blue-600 dark:text-blue-400"
-                                                        value={adj.url_documento_consorcio || ''}
+                                                        value={adj.url_pdf_consorcio || ''}
                                                         onChange={(e) => {
                                                             const newAdj = [...(formData.adjudicaciones || [])];
-                                                            newAdj[index].url_documento_consorcio = e.target.value;
+                                                            newAdj[index].url_pdf_consorcio = e.target.value;
+                                                            setFormData({ ...formData, adjudicaciones: newAdj });
+                                                        }}
+                                                    />
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    <label className="text-[10px] font-bold text-slate-500 uppercase">URL Documento Carta Fianza</label>
+                                                    <input
+                                                        type="url"
+                                                        placeholder="https://..."
+                                                        className="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800/50 text-sm focus:ring-2 focus:ring-blue-500 outline-none text-blue-600 dark:text-blue-400"
+                                                        value={adj.url_pdf_cartafianza || ''}
+                                                        onChange={(e) => {
+                                                            const newAdj = [...(formData.adjudicaciones || [])];
+                                                            newAdj[index].url_pdf_cartafianza = e.target.value;
                                                             setFormData({ ...formData, adjudicaciones: newAdj });
                                                         }}
                                                     />

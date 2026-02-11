@@ -176,6 +176,10 @@ def get_all_filters(db: Session = Depends(get_db)):
         # NEW: 7. Tipos de Garantia
         garantia_sql = text("SELECT DISTINCT UPPER(TRIM(tipo_garantia)) FROM licitaciones_adjudicaciones WHERE tipo_garantia IS NOT NULL AND TRIM(tipo_garantia) != ''")
         raw_garantias = [r[0] for r in db.execute(garantia_sql).fetchall() if r[0]]
+        
+        if not raw_garantias:
+             raw_garantias = ["CARTA FIANZA", "POLIZA DE CAUCION", "RETENCION", "FIDEICOMISO", "CERTIFICADO BANCARIO"]
+             
         garantias_set = set()
         for g in raw_garantias:
             parts = [p.strip() for p in g.split('|')]
@@ -711,7 +715,7 @@ def get_licitacion_detail(
             SELECT 
                 id_adjudicacion, ganador_nombre, ganador_ruc,
                 monto_adjudicado, fecha_adjudicacion,
-                estado_item, entidad_financiera, moneda,
+                estado_item, entidad_financiera, tipo_garantia, moneda,
                 id_contrato, url_pdf_cartafianza,
                 url_pdf_contrato, url_pdf_consorcio
             FROM licitaciones_adjudicaciones
@@ -732,11 +736,12 @@ def get_licitacion_detail(
                 "fecha_adjudicacion": adj_row[4].isoformat() if adj_row[4] else None,
                 "estado_item": adj_row[5],
                 "entidad_financiera": adj_row[6],
-                "moneda": adj_row[7],
-                "id_contrato": adj_row[8],
-                "url_pdf_cartafianza": adj_row[9],
-                "url_pdf_contrato": adj_row[10],
-                "url_pdf_consorcio": adj_row[11]
+                "tipo_garantia": adj_row[7],
+                "moneda": adj_row[8],
+                "id_contrato": adj_row[9],
+                "url_pdf_cartafianza": adj_row[10],
+                "url_pdf_contrato": adj_row[11],
+                "url_pdf_consorcio": adj_row[12]
             })
         
         licitacion["adjudicaciones"] = adjudicaciones
@@ -881,6 +886,9 @@ class AdjudicacionItem(BaseModel):
     tipo_garantia: Optional[str] = None
     id_contrato: Optional[str] = None
     moneda: Optional[str] = 'PEN'
+    url_pdf_contrato: Optional[str] = None
+    url_pdf_consorcio: Optional[str] = None
+    url_pdf_cartafianza: Optional[str] = None
     consorcios: Optional[List[ConsorcioItem]] = []
 
 class LicitacionCreate(BaseModel):
@@ -927,7 +935,9 @@ def create_licitacion(licitacion: LicitacionCreate, db: Session = Depends(get_db
             )
         """)
         
-        ubicacion = f"{licitacion.departamento or ''} - {licitacion.provincia or ''} - {licitacion.distrito or ''}"
+        ubicacion = licitacion.ubicacion_completa
+        if not ubicacion:
+             ubicacion = f"{licitacion.departamento or ''} - {licitacion.provincia or ''} - {licitacion.distrito or ''}"
         
         # Sanitize Dates (Remove ISO T/Z)
         def clean_date(d):
@@ -962,11 +972,13 @@ def create_licitacion(licitacion: LicitacionCreate, db: Session = Depends(get_db
                 INSERT INTO licitaciones_adjudicaciones (
                     id_adjudicacion, id_convocatoria, ganador_nombre, ganador_ruc,
                     monto_adjudicado, fecha_adjudicacion, estado_item, 
-                    entidad_financiera, tipo_garantia, id_contrato, moneda
+                    entidad_financiera, tipo_garantia, id_contrato, moneda,
+                    url_pdf_contrato, url_pdf_consorcio, url_pdf_cartafianza
                 ) VALUES (
                     :id_adj, :id_conv, :nombre, :ruc, 
                     :monto, :fecha, :estado, 
-                    :banco, :garantia, :contrato, :moneda
+                    :banco, :garantia, :contrato, :moneda,
+                    :url_contrato, :url_consorcio, :url_fianza
                 )
             """)
             
@@ -985,7 +997,10 @@ def create_licitacion(licitacion: LicitacionCreate, db: Session = Depends(get_db
                     "banco": adj.entidad_financiera,
                     "garantia": adj.tipo_garantia,
                     "contrato": adj.id_contrato,
-                    "moneda": adj.moneda
+                    "moneda": adj.moneda,
+                    "url_contrato": adj.url_pdf_contrato,
+                    "url_consorcio": adj.url_pdf_consorcio,
+                    "url_fianza": adj.url_pdf_cartafianza
                 })
 
                 # 4. Insert Consorcios (if any)
@@ -1057,7 +1072,9 @@ def update_licitacion(id: str, licitacion: LicitacionCreate, db: Session = Depen
             WHERE id_convocatoria = :id
         """)
         
-        ubicacion = f"{licitacion.departamento or ''} - {licitacion.provincia or ''} - {licitacion.distrito or ''}"
+        ubicacion = licitacion.ubicacion_completa
+        if not ubicacion:
+             ubicacion = f"{licitacion.departamento or ''} - {licitacion.provincia or ''} - {licitacion.distrito or ''}"
         
         # Sanitize Dates
         def clean_date(d):
@@ -1111,11 +1128,13 @@ def update_licitacion(id: str, licitacion: LicitacionCreate, db: Session = Depen
                 INSERT INTO licitaciones_adjudicaciones (
                     id_adjudicacion, id_convocatoria, ganador_nombre, ganador_ruc,
                     monto_adjudicado, fecha_adjudicacion, estado_item, 
-                    entidad_financiera, tipo_garantia, id_contrato, moneda
+                    entidad_financiera, tipo_garantia, id_contrato, moneda,
+                    url_pdf_contrato, url_pdf_consorcio, url_pdf_cartafianza
                 ) VALUES (
                     :id_adj, :id_conv, :nombre, :ruc, 
                     :monto, :fecha, :estado, 
-                    :banco, :garantia, :contrato, :moneda
+                    :banco, :garantia, :contrato, :moneda,
+                    :url_contrato, :url_consorcio, :url_fianza
                 )
             """)
             
@@ -1135,7 +1154,10 @@ def update_licitacion(id: str, licitacion: LicitacionCreate, db: Session = Depen
                     "banco": adj.entidad_financiera,
                     "garantia": adj.tipo_garantia,
                     "contrato": adj.id_contrato,
-                    "moneda": adj.moneda
+                    "moneda": adj.moneda,
+                    "url_contrato": adj.url_pdf_contrato,
+                    "url_consorcio": adj.url_pdf_consorcio,
+                    "url_fianza": adj.url_pdf_cartafianza
                 })
 
                 if adj.consorcios:

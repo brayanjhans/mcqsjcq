@@ -427,7 +427,10 @@ def create_licitacion(
                 fecha_adjudicacion=adj_data.fecha_adjudicacion,
                 estado_item=adj_data.estado_item,
                 tipo_garantia=getattr(adj_data, 'tipo_garantia', None),
-                entidad_financiera=adj_data.entidad_financiera
+                entidad_financiera=adj_data.entidad_financiera,
+                url_pdf_contrato=getattr(adj_data, 'url_pdf_contrato', None),
+                url_pdf_consorcio=getattr(adj_data, 'url_pdf_consorcio', None),
+                url_pdf_cartafianza=getattr(adj_data, 'url_pdf_cartafianza', None)
             )
             db.add(new_adj)
             db.commit()
@@ -546,7 +549,10 @@ def update_licitacion(
                 fecha_adjudicacion=adj_data.fecha_adjudicacion,
                 estado_item=adj_data.estado_item,
                 tipo_garantia=getattr(adj_data, 'tipo_garantia', None),
-                entidad_financiera=adj_data.entidad_financiera
+                entidad_financiera=adj_data.entidad_financiera,
+                url_pdf_contrato=getattr(adj_data, 'url_pdf_contrato', None),
+                url_pdf_consorcio=getattr(adj_data, 'url_pdf_consorcio', None),
+                url_pdf_cartafianza=getattr(adj_data, 'url_pdf_cartafianza', None)
             )
             db.add(new_adj)
             db.flush() # Ensure ID is available

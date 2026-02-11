@@ -115,7 +115,7 @@ export default function ChatbotWidget() {
             // Scenario 1: Development (Localhost)
             // If running on localhost:3000, Backend is on :8001
             if (host === 'localhost' || host === '127.0.0.1') {
-                return `${protocol}//${host}:8001/api/chatbot/ws`;
+                return `${protocol}//${host}:8000/api/chatbot/ws`;
             }
 
             // Scenario 2: Production / VPS (Same Origin)
@@ -158,7 +158,7 @@ export default function ChatbotWidget() {
                         lastAlertContentRef.current = pd.content; // Update Ref immediately
 
                         // 1. Play Notification Sound
-                        const audio = new Audio('/notification.mp3');
+                        const audio = new Audio('/notification.wav');
                         audio.play().catch(e => console.log("Audio play failed"));
 
                         // 2. Auto-Read Alert using ElevenLabs

@@ -18,7 +18,7 @@ export function useNotificationWebSocket() {
             }
 
             try {
-                const wsUrl = `ws://localhost:8001/api/notifications/ws?token=${token}`;
+                const wsUrl = `ws://localhost:8000/api/notifications/ws?token=${token}`;
                 const ws = new WebSocket(wsUrl);
 
                 ws.onopen = () => {
@@ -57,7 +57,7 @@ export function useNotificationWebSocket() {
 
                         // Reproducir sonido opcional
                         try {
-                            const audio = new Audio('/notification.mp3');
+                            const audio = new Audio('/notification.wav');
                             audio.volume = 0.3;
                             audio.play().catch(() => { }); // Ignorar si falla
                         } catch (e) { }

@@ -40,6 +40,8 @@ deploy_package.zip
 1_database/*.csv
 data/
 !app/data/
+!app/data/ubigeo_data.py
+!app/data/entidades_list.py
 *.db
 *.sqlite
 *.sql
