@@ -1104,20 +1104,30 @@ def update_licitacion(id: str, licitacion: LicitacionCreate, db: Session = Depen
         })
         
         # 2. Cleanup Old Adjudicaciones & Consorcios
+        # 2. Cleanup Old Adjudicaciones & Consorcios
         try:
              # Find contracts linked to this licitacion
-             linked_contracts = db.execute(text("SELECT id_contrato FROM licitaciones_adjudicaciones WHERE id_convocatoria = :id"), {"id": id}).fetchall()
-             linked_ids = [r[0] for r in linked_contracts if r[0]]
+             # Fetch both id_contrato and id_adjudicacion to cover all linking possibilities
+             linked_data = db.execute(text("SELECT id_contrato, id_adjudicacion FROM licitaciones_adjudicaciones WHERE id_convocatoria = :id"), {"id": id}).fetchall()
              
-             if linked_ids:
-                 # Delete consorcios linked to these contracts
-                 # Construct safe IN clause
-                 s_ids = ",".join([f"'{str(x)}'" for x in linked_ids])
-                 if s_ids:
-                    db.execute(text(f"DELETE FROM detalle_consorcios WHERE id_contrato IN ({s_ids})"))
+             ids_to_remove = set()
+             for r in linked_data:
+                 if r[0]: ids_to_remove.add(str(r[0])) # Real Contract ID
+                 if r[1]: 
+                     adj_id = str(r[1])
+                     ids_to_remove.add(adj_id) # Adjudication ID
+                     ids_to_remove.add(f"GEN-{adj_id[:8]}") # Generated ID pattern
+                     ids_to_remove.add(f"UPD-{adj_id[:8]}") # Update ID pattern
+
+             if ids_to_remove:
+                 # Delete consorcios
+                 s_ids = ",".join([f"'{x}'" for x in ids_to_remove])
+                 db.execute(text(f"DELETE FROM detalle_consorcios WHERE id_contrato IN ({s_ids})"))
+                 
         except Exception as e:
             print(f"Warning cleanup consorcios: {e}")
 
+        # Delete Adjudicaciones
         del_adj = text("DELETE FROM licitaciones_adjudicaciones WHERE id_convocatoria = :id")
         db.execute(del_adj, {"id": id})
 
