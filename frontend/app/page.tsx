@@ -112,7 +112,8 @@ function LoginModal({ onClose }: { onClose: () => void }) {
 
         try {
             // Real authentication with backend
-            const response = await fetch('/api/auth/login', {
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
+            const response = await fetch(`${apiUrl}/api/auth/login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

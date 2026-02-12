@@ -1,14 +1,14 @@
 /**
  * API client configuration and utilities.
  * 
- * NOTE: We rely on Next.js proxy configuration (next.config.js) to forward
- * /api/* requests to the FastAPI backend on port 8001.
- * DO NOT set baseURL here - it will bypass the proxy and cause 404 errors.
+ * Uses NEXT_PUBLIC_API_URL environment variable to configure the base URL.
+ * In production, this points to https://api.mcqs-jcq.com
+ * In development, it can be empty to use Next.js proxy or set to localhost.
  */
 import axios from 'axios';
 
 export const api = axios.create({
-    // NO baseURL - use Next.js proxy
+    baseURL: process.env.NEXT_PUBLIC_API_URL || '', // Use env variable or empty for proxy
     headers: {
         'Content-Type': 'application/json',
     },
