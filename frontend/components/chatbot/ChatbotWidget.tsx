@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Mic, Send, MessageSquare, X, Volume2, VolumeX, RefreshCw, Terminal, Bot } from 'lucide-react'; // Add VolumeX import
+import { Mic, Send, MessageSquare, X, Volume2, VolumeX, RefreshCw, Terminal, Bot, StopCircle } from 'lucide-react'; // Add VolumeX import
 
 // import { RobotIcon } from '../icons/RobotIcon'; // REMOVED: File not found and unused
 import ReactMarkdown from 'react-markdown';
@@ -108,22 +108,21 @@ export default function ChatbotWidget() {
         const getWebSocketUrl = () => {
             if (typeof window === 'undefined') return '';
 
+            // Priority: Use env variable if available (Production/VPS)
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+            if (apiUrl) {
+                const wsUrl = apiUrl.replace('https://', 'wss://').replace('http://', 'ws://');
+                return `${wsUrl}/api/chatbot/ws`;
+            }
+
+            // Fallback: Localhost logic (if env not set)
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
             const host = window.location.hostname;
-            const port = window.location.port;
-
-            // Scenario 1: Development (Localhost)
-            // If running on localhost:3000, Backend is on :8001
             if (host === 'localhost' || host === '127.0.0.1') {
                 return `${protocol}//${host}:8000/api/chatbot/ws`;
             }
 
-            // Scenario 2: Production / VPS (Same Origin)
-            // If running on https://misistema.com or IP, assumes Nginx proxies /api
-            // This allows the app to work on ANY domain without changing code.
-            // If port is present (e.g. :3000 on VPS without Nginx), we might need :8000
-            // BUT standard VPS setup uses Nginx on port 80/443.
-            // We'll use the "Same Origin" strategy which is safest for proper deployments.
+            // Fallback: Same Origin (should not be reached in prod if env is set)
             return `${protocol}//${window.location.host}/api/chatbot/ws`;
         };
 
