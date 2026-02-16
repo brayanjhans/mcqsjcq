@@ -11,6 +11,7 @@ from datetime import date
 from fastapi import APIRouter, Depends, Query, HTTPException, status
 from app.models.user import User
 from app.utils.dependencies import get_current_user
+import uuid
 
 router = APIRouter(prefix="/api/licitaciones", tags=["Licitaciones"])
 
@@ -235,48 +236,85 @@ def get_licitaciones(
         where_clauses = []
         params = {}
         
+
         if search:
-            # Universal Search Logic - Comprehensive search across ALL relevant fields
-            search_term = f"%{search.upper()}%"
-            where_clauses.append("""
-                (
-                    UPPER(id_convocatoria) LIKE :search OR
-                    UPPER(nomenclatura) LIKE :search OR 
-                    UPPER(comprador) LIKE :search OR 
-                    UPPER(descripcion) LIKE :search OR
-                    UPPER(ocid) LIKE :search OR
-                    UPPER(departamento) LIKE :search OR
-                    UPPER(provincia) LIKE :search OR
-                    UPPER(distrito) LIKE :search OR
-                    UPPER(ubicacion_completa) LIKE :search OR
-                    UPPER(categoria) LIKE :search OR
-                    UPPER(tipo_procedimiento) LIKE :search OR
-                    UPPER(estado_proceso) LIKE :search OR
-                    CAST(monto_estimado AS CHAR) LIKE :search OR
-                    UPPER(moneda) LIKE :search OR
-                    CAST(fecha_publicacion AS CHAR) LIKE :search OR
-                    CAST(fecha_adjudicacion AS CHAR) LIKE :search OR
-                    UPPER(archivo_origen) LIKE :search OR
-                    CAST(last_update AS CHAR) LIKE :search OR
-                    EXISTS (
-                        SELECT 1 FROM licitaciones_adjudicaciones la 
-                        WHERE la.id_convocatoria = licitaciones_cabecera.id_convocatoria 
-                        AND (
-                            UPPER(la.ganador_nombre) LIKE :search OR 
-                            la.ganador_ruc LIKE :search OR 
-                            UPPER(la.entidad_financiera) LIKE :search OR
-                            UPPER(la.tipo_garantia) LIKE :search OR
-                            UPPER(la.id_contrato) LIKE :search OR
-                            UPPER(la.estado_item) LIKE :search OR
-                            CAST(la.id_adjudicacion AS CHAR) LIKE :search OR
-                            CAST(la.monto_adjudicado AS CHAR) LIKE :search OR
-                            CAST(la.fecha_adjudicacion AS CHAR) LIKE :search OR
-                            CAST(la.fecha_registro AS CHAR) LIKE :search
-                        )
+            # OPTIMIZED APP-SIDE JOIN STRATEGY
+            # 1. Execute subqueries separately to get IDs
+            # This avoids MySQL optimizer issues with complex UNION joins
+            
+            found_ids = set()
+            limit_subquery = 200 
+            
+            # A. Fulltext Search
+            terms = [f"+{t.replace('*', '')}*" for t in search.strip().split() if len(t) > 1]
+            if terms:
+                boolean_search = " ".join(terms)
+                try:
+                    ft_sql = text("""
+                        SELECT id_convocatoria FROM licitaciones_cabecera 
+                        WHERE MATCH(nomenclatura, descripcion, comprador, id_convocatoria, ubicacion_completa) 
+                        AGAINST(:search_ft IN BOOLEAN MODE)
+                        LIMIT :limit
+                    """)
+                    ft_ids = db.execute(ft_sql, {"search_ft": boolean_search, "limit": limit_subquery}).scalars().all()
+                    found_ids.update(ft_ids)
+                except Exception as e:
+                    print(f"Fulltext Error: {e}")
+
+            # B. Relational Search (Split into granular lookups)
+            search_like = f"%{search}%"
+            try:
+                # B1. Search Consortium Members directly (Get IDs first)
+                cons_sql = text("""
+                    SELECT id_contrato FROM detalle_consorcios 
+                    WHERE UPPER(nombre_miembro) LIKE :search OR ruc_miembro LIKE :search
+                    LIMIT :limit
+                """)
+                cons_contract_ids = db.execute(cons_sql, {"search": search_like, "limit": limit_subquery}).scalars().all()
+                
+                if cons_contract_ids:
+                    # Get Convocatorias for these contracts
+                    # Use DISTINCT to avoid duplicates
+                    # Manual expansion for raw SQL
+                    c_in_params = [f":cid_c{i}" for i in range(len(cons_contract_ids))]
+                    c_params = {f"cid_c{i}": cid for i, cid in enumerate(cons_contract_ids)}
+                    
+                    conv_from_cons_sql = text(f"""
+                        SELECT DISTINCT id_convocatoria FROM licitaciones_adjudicaciones 
+                        WHERE id_contrato IN ({','.join(c_in_params)}) OR id_adjudicacion IN ({','.join(c_in_params)})
+                    """) 
+                    
+                    c_ids = db.execute(conv_from_cons_sql, c_params).scalars().all()
+                    found_ids.update(c_ids)
+
+                # B2. Search Adjudication Details (Winners, Banks, guarantees)
+                adj_sql = text("""
+                    SELECT id_convocatoria FROM licitaciones_adjudicaciones 
+                    WHERE (
+                        UPPER(ganador_nombre) LIKE :search OR 
+                        ganador_ruc LIKE :search OR 
+                        UPPER(entidad_financiera) LIKE :search OR 
+                        id_contrato LIKE :search
                     )
-                )
-            """)
-            params['search'] = search_term
+                    LIMIT :limit
+                """)
+                adj_ids = db.execute(adj_sql, {"search": search_like, "limit": limit_subquery}).scalars().all()
+                found_ids.update(adj_ids)
+                
+            except Exception as e:
+                print(f"Relational Search Error: {e}")
+            
+            # C. Apply Filter
+            if found_ids:
+                # Manually expand IN clause for raw SQL text()
+                in_params = [f":id{i}" for i in range(len(found_ids))]
+                where_clauses.append(f"licitaciones_cabecera.id_convocatoria IN ({','.join(in_params)})")
+                for i, id_val in enumerate(found_ids):
+                    params[f"id{i}"] = id_val
+            else:
+                # Force no result if search yields nothing
+                where_clauses.append("1=0")
+
         if estado:
             where_clauses.append("UPPER(TRIM(estado_proceso)) = :estado")
             params['estado'] = estado
@@ -305,7 +343,7 @@ def get_licitaciones(
             where_clauses.append("UPPER(TRIM(distrito)) = :distrito")
             params['distrito'] = distrito
         if anio:
-            where_clauses.append("EXTRACT(YEAR FROM fecha_publicacion) = :anio")
+            where_clauses.append("anio = :anio")
             params['anio'] = anio
         if comprador:
             where_clauses.append("UPPER(TRIM(comprador)) = :comprador")
@@ -476,17 +514,7 @@ def get_licitaciones(
                 lc.departamento,
                 lc.provincia,
                 lc.distrito,
-                lc.entidad_ruc,
-                (SELECT GROUP_CONCAT(DISTINCT la.ganador_nombre SEPARATOR ' | ') FROM licitaciones_adjudicaciones la WHERE la.id_convocatoria = lc.id_convocatoria) as ganador_nombre,
-                (SELECT GROUP_CONCAT(DISTINCT la.ganador_ruc SEPARATOR ' | ') FROM licitaciones_adjudicaciones la WHERE la.id_convocatoria = lc.id_convocatoria) as ganador_ruc,
-                (SELECT GROUP_CONCAT(DISTINCT la.entidad_financiera SEPARATOR ' | ') FROM licitaciones_adjudicaciones la WHERE la.id_convocatoria = lc.id_convocatoria) as entidad_financiera,
-                (SELECT GROUP_CONCAT(DISTINCT la.tipo_garantia SEPARATOR ',') FROM licitaciones_adjudicaciones la WHERE la.id_convocatoria = lc.id_convocatoria) as tipo_garantia,
-                (SELECT SUM(la.monto_adjudicado) FROM licitaciones_adjudicaciones la WHERE la.id_convocatoria = lc.id_convocatoria) as monto_total_adjudicado,
-                (SELECT COUNT(*) FROM licitaciones_adjudicaciones la WHERE la.id_convocatoria = lc.id_convocatoria) as total_adjudicaciones,
-                (SELECT la.fecha_adjudicacion FROM licitaciones_adjudicaciones la WHERE la.id_convocatoria = lc.id_convocatoria LIMIT 1) as fecha_adjudicacion,
-                (SELECT la.id_contrato FROM licitaciones_adjudicaciones la WHERE la.id_convocatoria = lc.id_convocatoria LIMIT 1) as id_contrato,
-                (SELECT GROUP_CONCAT(DISTINCT la.nombres_consorciados SEPARATOR ' | ') FROM licitaciones_adjudicaciones la WHERE la.id_convocatoria = lc.id_convocatoria) as nombres_consorciados,
-                (SELECT GROUP_CONCAT(DISTINCT la.rucs_consorciados SEPARATOR ' | ') FROM licitaciones_adjudicaciones la WHERE la.id_convocatoria = lc.id_convocatoria) as rucs_consorciados
+                lc.entidad_ruc
             FROM licitaciones_cabecera lc
             {where_sql.replace('licitaciones_cabecera', 'lc') if where_sql else ''}
             ORDER BY lc.fecha_publicacion DESC
@@ -518,58 +546,94 @@ def get_licitaciones(
                 "provincia": row[13],
                 "distrito": row[14],
                 "entidad_ruc": row[15],
-                # New fields from subqueries
-                "ganador_nombre": row[16],
-                "ganador_ruc": row[17],
-                "entidad_financiera": row[18],
-                "tipo_garantia": row[19],
-                "monto_total_adjudicado": float(row[20]) if row[20] else 0,
-                "total_adjudicaciones": int(row[21]) if row[21] else 0,
-                "fecha_adjudicacion": row[22].isoformat() if row[22] else None,
-                "id_contrato": row[23],
-                "nombres_consorciados": row[24],
-                "rucs_consorciados": row[25],
-                # Will be populated below
+                # Default empty fields (filled by batch fetch)
+                "ganador_nombre": None,
+                "ganador_ruc": None,
+                "entidad_financiera": None,
+                "tipo_garantia": None,
+                "monto_total_adjudicado": 0,
+                "total_adjudicaciones": 0,
+                "fecha_adjudicacion": None,
+                "id_contrato": None,
+                "nombres_consorciados": None,
+                "rucs_consorciados": None,
                 "miembros_consorcio": []
             })
             
-        # --- BATCH FETCH CONSORCIOS ---
-        # Get all displayed IDs
+        # --- BATCH FETCH EVERYTHING ---
         visible_ids = [item["id_convocatoria"] for item in items]
         
         if visible_ids:
-            # Check both id_contrato or id_adjudicacion linkage
-            batch_cons_sql = text("""
+            # 1. Fetch Adjudication Details (Batch)
+            adj_in_params = [f":aid{i}" for i in range(len(visible_ids))]
+            adj_params = {f"aid{i}": aid for i, aid in enumerate(visible_ids)}
+            
+            batch_adj_sql = text(f"""
                 SELECT 
-                    la.id_convocatoria, 
-                    dc.nombre_miembro, 
-                    dc.ruc_miembro, 
-                    dc.porcentaje_participacion
-                FROM licitaciones_adjudicaciones la
-                JOIN detalle_consorcios dc ON (
-                    TRIM(CAST(dc.id_contrato AS CHAR)) = TRIM(CAST(la.id_contrato AS CHAR)) 
-                    OR 
-                    TRIM(CAST(dc.id_contrato AS CHAR)) = TRIM(CAST(la.id_adjudicacion AS CHAR))
-                )
-                WHERE la.id_convocatoria IN :ids
+                    id_convocatoria, ganador_nombre, ganador_ruc, 
+                    entidad_financiera, tipo_garantia, monto_adjudicado, 
+                    fecha_adjudicacion, id_contrato, nombres_consorciados, rucs_consorciados
+                FROM licitaciones_adjudicaciones
+                WHERE id_convocatoria IN ({','.join(adj_in_params)})
             """)
             
-            cons_rows = db.execute(batch_cons_sql, {"ids": tuple(visible_ids)}).fetchall()
+            adj_rows = db.execute(batch_adj_sql, adj_params).fetchall()
             
-            # Map results to id_convocatoria
+            adj_map = {}
+            for r in adj_rows:
+                cid = r[0]
+                if cid not in adj_map: adj_map[cid] = []
+                adj_map[cid].append(r)
+                
+            for item in items:
+                cid = item["id_convocatoria"]
+                if cid in adj_map:
+                    adjs = adj_map[cid]
+                    item["ganador_nombre"] = " | ".join(sorted(list(set(filter(None, [a[1] for a in adjs])))))
+                    item["ganador_ruc"] = " | ".join(sorted(list(set(filter(None, [a[2] for a in adjs])))))
+                    item["entidad_financiera"] = " | ".join(sorted(list(set(filter(None, [a[3] for a in adjs])))))
+                    item["tipo_garantia"] = ",".join(sorted(list(set(filter(None, [a[4] for a in adjs])))))
+                    item["monto_total_adjudicado"] = sum([float(a[5]) for a in adjs if a[5]])
+                    item["total_adjudicaciones"] = len(adjs)
+                    # For date/id_contrato, pick the first one if multiple items exist (simplified list view)
+                    first = adjs[0]
+                    item["fecha_adjudicacion"] = first[6].isoformat() if first[6] else None
+                    item["id_contrato"] = first[7]
+                    item["nombres_consorciados"] = " | ".join(sorted(list(set(filter(None, [a[8] for a in adjs])))))
+                    item["rucs_consorciados"] = " | ".join(sorted(list(set(filter(None, [a[9] for a in adjs])))))
+
+            # 2. Fetch Consortium Members (Batch + UNION Optimized)
+            cons_in_params = [f":cid{i}" for i in range(len(visible_ids))]
+            batch_cons_params = {f"cid{i}": cid for i, cid in enumerate(visible_ids)}
+            
+            batch_cons_sql = text(f"""
+                (
+                    SELECT la.id_convocatoria, dc.nombre_miembro, dc.ruc_miembro, dc.porcentaje_participacion
+                    FROM licitaciones_adjudicaciones la
+                    JOIN detalle_consorcios dc ON dc.id_contrato = la.id_contrato
+                    WHERE la.id_convocatoria IN ({','.join(cons_in_params)})
+                )
+                UNION
+                (
+                    SELECT la.id_convocatoria, dc.nombre_miembro, dc.ruc_miembro, dc.porcentaje_participacion
+                    FROM licitaciones_adjudicaciones la
+                    JOIN detalle_consorcios dc ON dc.id_contrato = la.id_adjudicacion
+                    WHERE la.id_convocatoria IN ({','.join(cons_in_params)})
+                )
+            """)
+            
+            cons_rows = db.execute(batch_cons_sql, batch_cons_params).fetchall()
+            
             cons_map = {}
             for r in cons_rows:
-                conv_id = r[0]
-                if conv_id not in cons_map:
-                    cons_map[conv_id] = []
-                
-                cons_map[conv_id].append({
+                cid = r[0]
+                if cid not in cons_map: cons_map[cid] = []
+                cons_map[cid].append({
                     "nombre_miembro": r[1],
                     "ruc_miembro": r[2],
                     "porcentaje_participacion": float(r[3]) if r[3] else 0
                 })
             
-            # Attach to items
             for item in items:
                 if item["id_convocatoria"] in cons_map:
                     item["miembros_consorcio"] = cons_map[item["id_convocatoria"]]
@@ -892,6 +956,7 @@ class AdjudicacionItem(BaseModel):
     consorcios: Optional[List[ConsorcioItem]] = []
 
 class LicitacionCreate(BaseModel):
+    id_convocatoria: Optional[str] = None
     ocid: Optional[str] = None
     nomenclatura: Optional[str] = None
     descripcion: str
@@ -917,9 +982,11 @@ def create_licitacion(licitacion: LicitacionCreate, db: Session = Depends(get_db
     Create a new licitacion and its adjudicaciones (Raw SQL)
     """
     try:
-        # 1. Generate ID (simple UUID or logic)
-        import uuid
-        new_id = str(uuid.uuid4())
+        # 1. Generate ID (or use provided one)
+        if licitacion.id_convocatoria and licitacion.id_convocatoria.strip():
+             new_id = licitacion.id_convocatoria.strip()
+        else:
+             new_id = str(uuid.uuid4())
         
         # 2. Insert Header
         sql_header = text("""
@@ -1015,8 +1082,8 @@ def create_licitacion(licitacion: LicitacionCreate, db: Session = Depends(get_db
                         )
                     """)
                     
-                    # Use provided contract ID or fallback
-                    c_id = adj.id_contrato if adj.id_contrato else f"GEN-{adj_id[:8]}"
+                    # Use provided contract ID or fallback to Adjudication ID (for consistent linking)
+                    c_id = adj.id_contrato if adj.id_contrato else adj_id
 
                     for cons in adj.consorcios:
                         db.execute(cons_sql, {
@@ -1041,7 +1108,7 @@ def create_licitacion(licitacion: LicitacionCreate, db: Session = Depends(get_db
         except Exception as e:
             print(f"Error creating notification: {e}")
 
-        return {"message": "Success", "id": new_id}
+        return {"message": "Success", "id_convocatoria": new_id, "id": new_id}
         
     except Exception as e:
         db.rollback()
@@ -1062,15 +1129,46 @@ def update_licitacion(id: str, licitacion: LicitacionCreate, db: Session = Depen
         except:
             pass
             
-        # 1. Update Header
+        # 2. Cleanup Old Adjudicaciones & Consorcios (MOVED UP to allow ID change)
+        try:
+             # Find contracts linked to this licitacion
+             # Fetch both id_contrato and id_adjudicacion to cover all linking possibilities
+             linked_data = db.execute(text("SELECT id_contrato, id_adjudicacion FROM licitaciones_adjudicaciones WHERE id_convocatoria = :id"), {"id": id}).fetchall()
+             
+             ids_to_remove = set()
+             for r in linked_data:
+                 if r[0]: ids_to_remove.add(str(r[0])) # Real Contract ID
+                 if r[1]: 
+                     adj_id = str(r[1])
+                     ids_to_remove.add(adj_id) # Adjudication ID
+                     ids_to_remove.add(f"GEN-{adj_id[:8]}") # Generated ID pattern
+                     ids_to_remove.add(f"UPD-{adj_id[:8]}") # Update ID pattern
+
+             if ids_to_remove:
+                 # Delete consorcios using parameter binding for safety
+                 db.execute(text("DELETE FROM detalle_consorcios WHERE id_contrato IN :ids"), {"ids": list(ids_to_remove)})
+                 
+        except Exception as e:
+            print(f"Warning cleanup consorcios: {e}")
+
+        # Delete Adjudicaciones
+        del_adj = text("DELETE FROM licitaciones_adjudicaciones WHERE id_convocatoria = :id")
+        db.execute(del_adj, {"id": id})
+
+        # 3. Update Header (now Safe to update PK)
+        target_id = id
+        if licitacion.id_convocatoria and licitacion.id_convocatoria.strip():
+             target_id = licitacion.id_convocatoria.strip()
+
         sql_header = text("""
             UPDATE licitaciones_cabecera SET
+                id_convocatoria = :new_id,
                 ocid = :ocid, nomenclatura = :nom, descripcion = :desc, 
                 comprador = :comp, entidad_ruc = :ruc, categoria = :cat, tipo_procedimiento = :proc, 
                 monto_estimado = :monto, moneda = :mon, fecha_publicacion = :fecha, 
                 estado_proceso = :estado, ubicacion_completa = :ubic, 
                 departamento = :dept, provincia = :prov, distrito = :dist
-            WHERE id_convocatoria = :id
+            WHERE id_convocatoria = :old_id
         """)
         
         ubicacion = licitacion.ubicacion_completa
@@ -1086,7 +1184,8 @@ def update_licitacion(id: str, licitacion: LicitacionCreate, db: Session = Depen
         fecha_pub = clean_date(licitacion.fecha_publicacion)
 
         result = db.execute(sql_header, {
-            "id": id,
+            "new_id": target_id,
+            "old_id": id,
             "ocid": licitacion.ocid,
             "nom": licitacion.nomenclatura,
             "desc": licitacion.descripcion,
@@ -1104,35 +1203,8 @@ def update_licitacion(id: str, licitacion: LicitacionCreate, db: Session = Depen
             "dist": licitacion.distrito
         })
         
-        # 2. Cleanup Old Adjudicaciones & Consorcios
-        try:
-             # Find contracts linked to this licitacion
-             # Fetch both id_contrato and id_adjudicacion to cover all linking possibilities
-             linked_data = db.execute(text("SELECT id_contrato, id_adjudicacion FROM licitaciones_adjudicaciones WHERE id_convocatoria = :id"), {"id": id}).fetchall()
-             
-             ids_to_remove = set()
-             for r in linked_data:
-                 if r[0]: ids_to_remove.add(str(r[0])) # Real Contract ID
-                 if r[1]: 
-                     adj_id = str(r[1])
-                     ids_to_remove.add(adj_id) # Adjudication ID
-                     ids_to_remove.add(f"GEN-{adj_id[:8]}") # Generated ID pattern
-                     ids_to_remove.add(f"UPD-{adj_id[:8]}") # Update ID pattern
-
-             if ids_to_remove:
-                 # Delete consorcios
-                 s_ids = ",".join([f"'{x}'" for x in ids_to_remove])
-                 db.execute(text(f"DELETE FROM detalle_consorcios WHERE id_contrato IN ({s_ids})"))
-                 
-        except Exception as e:
-            print(f"Warning cleanup consorcios: {e}")
-
-        # Delete Adjudicaciones
-        del_adj = text("DELETE FROM licitaciones_adjudicaciones WHERE id_convocatoria = :id")
-        db.execute(del_adj, {"id": id})
-
         
-        # Re-insert
+        # 4. Re-insert (linked to target_id)
         if licitacion.adjudicaciones:
             sql_adj = text("""
                 INSERT INTO licitaciones_adjudicaciones (
@@ -1148,14 +1220,13 @@ def update_licitacion(id: str, licitacion: LicitacionCreate, db: Session = Depen
                 )
             """)
             
-            import uuid
             for adj in licitacion.adjudicaciones:
                 adj_id = str(uuid.uuid4()) # New ID for re-inserted items
                 fecha_adj = clean_date(adj.fecha_adjudicacion)
                 
                 db.execute(sql_adj, {
                     "id_adj": adj_id,
-                    "id_conv": id,
+                    "id_conv": target_id,
                     "nombre": adj.ganador_nombre,
                     "ruc": adj.ganador_ruc,
                     "monto": adj.monto_adjudicado,
@@ -1180,7 +1251,7 @@ def update_licitacion(id: str, licitacion: LicitacionCreate, db: Session = Depen
                         )
                     """)
                     
-                    c_id = adj.id_contrato if adj.id_contrato else f"UPD-{adj_id[:8]}"
+                    c_id = adj.id_contrato if adj.id_contrato else adj_id
 
                     for cons in adj.consorcios:
                         db.execute(cons_sql, {
@@ -1205,16 +1276,16 @@ def update_licitacion(id: str, licitacion: LicitacionCreate, db: Session = Depen
                 
                 try:
                     # Fetch extra info from DB to be sure (in case payload didn't have it)
-                    res = db.execute(text("SELECT categoria, ubicacion_completa, monto_estimado, ocid, departamento, tipo_procedimiento, descripcion, nomenclatura FROM licitaciones_cabecera WHERE id_convocatoria = :id"), {"id": id}).fetchone()
+                    res = db.execute(text("SELECT categoria, ubicacion_completa, monto_estimado, ocid, departamento, tipo_procedimiento, descripcion, nomenclatura FROM licitaciones_cabecera WHERE id_convocatoria = :id"), {"id": target_id}).fetchone()
                     if res:
                         meta = {
                             "categoria": res[0] or "GENERAL",
                             "ubicacion": res[1] or res[4] or "PERU", 
                             "monto": float(res[2] or 0),
-                            "orcid": res[3] or id,
+                            "orcid": res[3] or target_id,
                             "estadoAnterior": old_state,
                             "estadoNuevo": new_state,
-                            "licitacionId": id
+                            "licitacionId": target_id
                         }
                         # Prefer DB values if not in payload
                         if not licitacion.tipo_procedimiento and res[5]:
@@ -1225,7 +1296,7 @@ def update_licitacion(id: str, licitacion: LicitacionCreate, db: Session = Depen
                         db_desc = res[6]
                         if db_nom: title_ref = db_nom
                         elif db_desc: title_ref = (db_desc[:60] + "...") if len(db_desc) > 60 else db_desc
-                        else: title_ref = id
+                        else: title_ref = target_id
                         
                 except:
                     pass
@@ -1239,7 +1310,7 @@ def update_licitacion(id: str, licitacion: LicitacionCreate, db: Session = Depen
                     message=msg,
                     type="licitacion",
                     priority="medium",
-                    link=f"/seace/busqueda?q={id}",
+                    link=f"/seace/busqueda?q={target_id}",
                     metadata=meta
                 )
         except Exception as e:
