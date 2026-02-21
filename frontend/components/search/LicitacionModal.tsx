@@ -700,10 +700,20 @@ export default function LicitacionModal({
                                                         }}
                                                     >
                                                         <option value="">Seleccionar...</option>
-                                                        <option value="CARTA_FIANZA">Carta Fianza</option>
-                                                        <option value="GARANTIA_BANCARIA">Garantía Bancaria</option>
-                                                        <option value="POLIZA_CAUTION">Póliza de Caución</option>
-                                                        <option value="RETENCION">Retención</option>
+                                                        {tipoGarantiaOptions.length > 0 ? (
+                                                            tipoGarantiaOptions.map((tipo, i) => (
+                                                                <option key={i} value={tipo}>{tipo}</option>
+                                                            ))
+                                                        ) : (
+                                                            <>
+                                                                <option value="CARTA FIANZA">CARTA FIANZA</option>
+                                                                <option value="GARANTIA BANCARIA">GARANTIA BANCARIA</option>
+                                                                <option value="POLIZA DE CAUCION">POLIZA DE CAUCION</option>
+                                                                <option value="RETENCION">RETENCION</option>
+                                                                <option value="FIDEICOMISO">FIDEICOMISO</option>
+                                                                <option value="CERTIFICADO BANCARIO">CERTIFICADO BANCARIO</option>
+                                                            </>
+                                                        )}
                                                     </select>
                                                 </div>
                                                 <div className="space-y-1.5">

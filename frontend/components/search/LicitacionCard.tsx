@@ -141,7 +141,7 @@ export const LicitacionCard: React.FC<Props> = ({
     const isCancelado = statusUpper.includes("CANCELADO") || statusUpper.includes("DESIERTO") || statusUpper.includes("NULO");
 
     // FORCE EXTENDED VIEW IF CONTRATADO/ADJUDICADO OR HAS SIGNIFICANT DATA
-    const hasData = !!licitacion.ganador_nombre || !!licitacion.entidad_financiera || (!!licitacion.tipo_garantia && licitacion.tipo_garantia !== 'SIN_GARANTIA');
+    const hasData = !!licitacion.ganador_nombre || !!licitacion.entidades_financieras || (!!licitacion.tipo_garantia && licitacion.tipo_garantia !== "NO APLICA");
     const showExtendedDetails = isContratado || ((licitacion.monto_total_adjudicado || 0) > 0) || hasData;
 
     // BADGES
@@ -194,10 +194,10 @@ export const LicitacionCard: React.FC<Props> = ({
     };
 
     const renderBankBadge = () => {
-        if (!licitacion.entidad_financiera) return null;
+        if (!licitacion.entidades_financieras) return null;
         return (
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded bg-slate-100 text-slate-600 border border-slate-200 text-[10px] font-bold uppercase">
-                {getHighlightedText(licitacion.entidad_financiera, searchTerm)}
+                {getHighlightedText(licitacion.entidades_financieras, searchTerm)}
             </span>
         );
     };
@@ -485,7 +485,7 @@ export const LicitacionCard: React.FC<Props> = ({
                         </div>
                         <div className="flex-1 min-w-0">
                             <p className="text-[10px] text-slate-500 font-medium uppercase mb-0.5">Entidades Financieras</p>
-                            {licitacion.entidad_financiera ? renderBankBadge() : <p className="text-[10px] text-slate-400 italic">No especificada</p>}
+                            {licitacion.entidades_financieras ? renderBankBadge() : <p className="text-[10px] text-slate-400 italic">No especificada</p>}
                         </div>
                     </div>
                 )}

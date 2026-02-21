@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
     Building2,
     FileText,
@@ -12,10 +12,14 @@ import {
     MapPin,
     Tag,
     ShieldCheck,
-    Users
+    Users,
+    Activity,
+    ExternalLink,
+    Loader2
 } from "lucide-react";
-import type { Licitacion, Adjudicacion } from "@/types/licitacion";
+import type { Licitacion, Adjudicacion, EjecucionFinanciera, GarantiasResponse, HistorialAnual } from "@/types/licitacion";
 import { licitacionService } from "@/lib/services/licitacionService";
+import { integracionService } from "@/lib/services/integracionService";
 
 const PdfIcon = ({ className }: { className?: string }) => (
     <img
@@ -30,11 +34,87 @@ interface Props {
     basePath?: string;
 }
 
+// ─── Historial Table (replaces chart) ──────────────────────────────────────
+function HistorialChart({ historial }: { historial: HistorialAnual[] }) {
+    const [expanded, setExpanded] = React.useState(false);
+
+    // Sort descending (most recent first), show 3 or all
+    const sorted = [...historial].reverse();
+    const visible = expanded ? sorted : sorted.slice(0, 3);
+
+    const fmt = (n: number | undefined | null) => {
+        const val = typeof n === 'number' && isFinite(n) ? n : 0;
+        if (val === 0) return <span className="text-slate-400">S/ 0.00</span>;
+        return new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN', minimumFractionDigits: 2 }).format(val);
+    };
+
+    return (
+        <div className="w-full">
+            <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-white/10">
+                <table className="w-full min-w-[700px] text-left">
+                    <thead>
+                        <tr className="bg-slate-50 dark:bg-white/5 border-b border-slate-200 dark:border-white/10">
+                            <th className="py-2.5 px-4 text-[10px] font-bold uppercase text-slate-500 tracking-wider">Año</th>
+                            <th className="py-2.5 px-4 text-[10px] font-bold uppercase text-slate-500 tracking-wider text-right">PIA</th>
+                            <th className="py-2.5 px-4 text-[10px] font-bold uppercase text-slate-500 tracking-wider text-right">PIM</th>
+                            <th className="py-2.5 px-4 text-[10px] font-bold uppercase text-slate-500 tracking-wider text-right">Certificación</th>
+                            <th className="py-2.5 px-4 text-[10px] font-bold uppercase text-slate-500 tracking-wider text-right">Comp. Anual</th>
+                            <th className="py-2.5 px-4 text-[10px] font-bold uppercase text-slate-500 tracking-wider text-right">Devengado</th>
+                            <th className="py-2.5 px-4 text-[10px] font-bold uppercase text-slate-500 tracking-wider text-right">Girado</th>
+                            <th className="py-2.5 px-4 text-[10px] font-bold uppercase text-slate-500 tracking-wider text-right">Avance</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-white/5 bg-white dark:bg-[#111c44]">
+                        {visible.map(h => (
+                            <tr key={h.year} className="hover:bg-slate-50/70 dark:hover:bg-white/5 transition-colors">
+                                <td className="py-3 px-4 text-sm font-black text-slate-800 dark:text-white">{h.year}</td>
+                                <td className="py-3 px-4 text-xs text-slate-500 dark:text-slate-400 text-right font-mono">{fmt(h.pia)}</td>
+                                <td className="py-3 px-4 text-xs font-bold text-slate-700 dark:text-slate-200 text-right font-mono">{fmt(h.pim)}</td>
+                                <td className="py-3 px-4 text-xs text-slate-500 dark:text-slate-400 text-right font-mono">{fmt(h.certificado)}</td>
+                                <td className="py-3 px-4 text-xs text-slate-500 dark:text-slate-400 text-right font-mono">{fmt(h.compromiso_anual)}</td>
+                                <td className="py-3 px-4 text-xs font-bold text-blue-600 dark:text-blue-400 text-right font-mono">{fmt(h.devengado)}</td>
+                                <td className="py-3 px-4 text-xs font-bold text-emerald-600 dark:text-emerald-400 text-right font-mono">{fmt(h.girado)}</td>
+                                <td className="py-3 px-4 text-right">
+                                    <span className={`text-xs font-black ${h.avance_pct >= 80 ? 'text-emerald-600' :
+                                        h.avance_pct >= 40 ? 'text-amber-600' :
+                                            h.avance_pct > 0 ? 'text-blue-600' : 'text-slate-400'
+                                        }`}>
+                                        {h.avance_pct > 0 ? `${h.avance_pct}%` : '—'}
+                                    </span>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+
+            {/* Expand / Collapse button */}
+            {historial.length > 3 && (
+                <button
+                    onClick={() => setExpanded(e => !e)}
+                    className="mt-2 w-full flex items-center justify-center gap-1.5 py-2 text-[11px] font-bold text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-lg border border-slate-200 dark:border-white/10 transition-colors"
+                >
+                    {expanded
+                        ? <>↑ Mostrar solo los últimos 3 años</>
+                        : <>↓ Ver historial completo ({historial.length} años)</>}
+                </button>
+            )}
+        </div>
+    );
+}
+// ───────────────────────────────────────────────────────────────────────────
+
 export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: Props) {
+    const router = useRouter();
     // States
     const [licitacion, setLicitacion] = useState<Licitacion | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+
+    // Integration states
+    const [ejecucion, setEjecucion] = useState<EjecucionFinanciera | null>(null);
+    const [garantiasData, setGarantiasData] = useState<GarantiasResponse | null>(null);
+    const [loadingIntegracion, setLoadingIntegracion] = useState(false);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -57,26 +137,63 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
         if (id) fetchData();
     }, [id]);
 
+    // Fetch integration data after licitacion loads
+    useEffect(() => {
+        if (!licitacion || !licitacion.id_convocatoria) return;
+
+        const fetchIntegraciones = async () => {
+            setLoadingIntegracion(true);
+            try {
+                const [ejec, garant] = await Promise.allSettled([
+                    integracionService.getEjecucion(licitacion.id_convocatoria),
+                    integracionService.getGarantias(licitacion.id_convocatoria),
+                ]);
+
+                if (ejec.status === "fulfilled") setEjecucion(ejec.value);
+                if (garant.status === "fulfilled") setGarantiasData(garant.value);
+            } catch (err) {
+                console.error("Error fetching integration data:", err);
+            } finally {
+                setLoadingIntegracion(false);
+            }
+        };
+
+        fetchIntegraciones();
+    }, [licitacion]);
+
     const formatCurrency = (amount?: number, currency: string = "PEN") => {
         return new Intl.NumberFormat("es-PE", { style: "currency", currency: currency }).format(amount || 0);
     };
 
     const formatDate = (dateString?: string) => {
         if (!dateString) return "N/A";
-        // Fix: Use simple string split to avoid timezone conversion issues
         if (dateString.includes('T')) {
             const dateOnly = dateString.split('T')[0];
             const [year, month, day] = dateOnly.split('-');
             return `${day}/${month}/${year}`;
         }
-
-        // Assume YYYY-MM-DD
         const [year, month, day] = dateString.split('-');
         if (year && month && day) {
             return `${day}/${month}/${year}`;
         }
-
         return new Date(dateString).toLocaleDateString("es-PE", { day: "2-digit", month: "2-digit", year: "numeric" });
+    };
+
+    // Semaphore badge renderer
+    const renderSemaforoBadge = (estado: string, diasRestantes?: number | null) => {
+        const config: Record<string, { bg: string; text: string; label: string }> = {
+            verde: { bg: "bg-emerald-100 border-emerald-200", text: "text-emerald-700", label: "VIGENTE" },
+            ambar: { bg: "bg-amber-100 border-amber-200", text: "text-amber-700", label: `PRÓXIMA (${diasRestantes ?? '?'}d)` },
+            rojo: { bg: "bg-red-100 border-red-200", text: "text-red-700", label: "VENCIDA" },
+            gris: { bg: "bg-slate-100 border-slate-200", text: "text-slate-500", label: "SIN DATOS" },
+        };
+        const c = config[estado] || config.gris;
+        return (
+            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase border ${c.bg} ${c.text}`}>
+                <span className={`w-2 h-2 rounded-full ${estado === 'verde' ? 'bg-emerald-500' : estado === 'ambar' ? 'bg-amber-500' : estado === 'rojo' ? 'bg-red-500' : 'bg-slate-400'}`}></span>
+                {c.label}
+            </span>
+        );
     };
 
     if (loading) return (
@@ -89,21 +206,14 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
     );
 
     if (error || !licitacion) return (
-        <div className="min-h-screen bg-slate-50 dark:bg-[#0b122b] flex items-center justify-center p-10">
+        <div className="flex h-screen items-center justify-center bg-slate-50 dark:bg-[#0b122b]">
             <div className="text-center">
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Error</h3>
-                <p className="text-slate-500 mb-4">{error || "No se encontró la información solicitada."}</p>
-
-                {/* DEBUG INFO */}
-                <div className="mb-4 p-4 bg-red-50 text-red-700 text-xs font-mono text-left rounded border border-red-200 overflow-auto max-w-lg mx-auto">
-                    <p><strong>Debug Info:</strong></p>
-                    <p>Requested ID: "{id}" (Type: {typeof id})</p>
-                    <p>ID Length: {id?.length}</p>
-                </div>
-
-                <Link href={basePath} className="text-indigo-600 font-bold hover:underline">
+                <button
+                    onClick={() => router.push(basePath)}
+                    className="text-indigo-600 font-bold hover:underline"
+                >
                     &larr; Volver a resultados
-                </Link>
+                </button>
             </div>
         </div>
     );
@@ -115,13 +225,17 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
             <div className="mx-auto max-w-5xl space-y-6">
 
                 {/* Back Link */}
-                <Link href={basePath} className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-indigo-600 transition-colors font-medium">
+                {/* Back Link */}
+                <button
+                    onClick={() => router.back()}
+                    className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-indigo-600 transition-colors font-medium cursor-pointer"
+                >
                     <ChevronLeft className="w-4 h-4" />
                     Volver a resultados
-                </Link>
+                </button>
 
                 {/* Main Card */}
-                <div className="rounded-2xl border border-slate-200 bg-white p-6 md:p-8 shadow-sm dark:border-white/5 dark:bg-[#111c44] animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="rounded-2xl border border-slate-200 bg-white p-6 md:p-8 shadow-md dark:border-white/10 dark:bg-[#111c44] animate-in fade-in slide-in-from-bottom-4 duration-500 border-t-4 border-t-blue-500">
 
                     {/* Header */}
                     <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-8">
@@ -242,9 +356,130 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                     </div>
                 </div>
 
-                {/* Adjudicaciones Table */}
+                {/* ========== EJECUCIÓN FINANCIERA CARD (NEW) ========== */}
+                {adjudicaciones.length > 0 && (
+                    <div className="rounded-2xl border border-slate-200 bg-white p-6 md:p-8 shadow-md dark:border-white/10 dark:bg-[#111c44] animate-in fade-in slide-in-from-bottom-5 duration-500 delay-75 border-t-4 border-t-cyan-500">
+                        <div className="flex items-center gap-3 mb-6">
+                            <Activity className="w-5 h-5 text-blue-500" />
+                            <h3 className="text-lg font-bold text-slate-900 dark:text-white">Estado de Ejecución Financiera</h3>
+                            {loadingIntegracion && <Loader2 className="w-4 h-4 text-slate-400 animate-spin" />}
+                            {/* 5.1: Confidence badge */}
+                            {!loadingIntegracion && ejecucion && (
+                                <span className={`ml-auto inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border ${ejecucion.encontrado && (ejecucion.match_type === 'cui_ssi' || ejecucion.source === 'ssi_api')
+                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                    : ejecucion.encontrado
+                                        ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                        : 'bg-red-50 text-red-600 border-red-200'
+                                    }`}>
+                                    <span className={`w-2 h-2 rounded-full ${ejecucion.encontrado && (ejecucion.match_type === 'cui_ssi' || ejecucion.source === 'ssi_api')
+                                        ? 'bg-emerald-500'
+                                        : ejecucion.encontrado
+                                            ? 'bg-amber-500'
+                                            : 'bg-red-500'
+                                        }`} />
+                                    {ejecucion.encontrado && (ejecucion.match_type === 'cui_ssi' || ejecucion.source === 'ssi_api')
+                                        ? `Datos exactos · CUI ${ejecucion.cui} · ${ejecucion.year ?? '—'}`
+                                        : ejecucion.encontrado
+                                            ? `Aprox. ${ejecucion.match_score != null ? Math.round(ejecucion.match_score * 100) + '%' : ''} · ${ejecucion.year ?? '—'}`
+                                            : 'Sin datos MEF'}
+                                </span>
+                            )}
+                        </div>
+
+                        {loadingIntegracion ? (
+                            <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-xl">
+                                <Loader2 className="w-5 h-5 text-indigo-500 animate-spin" />
+                                <div>
+                                    <span className="text-sm text-slate-500 font-medium block">Consultando API del MEF...</span>
+                                    <span className="text-[10px] text-slate-400">La API del MEF puede tardar hasta 3 minutos en responder</span>
+                                </div>
+                            </div>
+                        ) : ejecucion ? (
+                            <div className="space-y-4">
+                                {/* Financial progress bar */}
+                                {/* Enhanced Financial Table */}
+                                <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-white/10 mb-6">
+                                    <table className="w-full min-w-[700px] text-left">
+                                        <thead>
+                                            <tr className="bg-slate-50 dark:bg-white/5 border-b border-slate-200 dark:border-white/10">
+                                                <th className="py-3 px-4 text-[10px] font-bold uppercase text-slate-500 tracking-wider">PIA</th>
+                                                <th className="py-3 px-4 text-[10px] font-bold uppercase text-slate-500 tracking-wider">PIM</th>
+                                                <th className="py-3 px-4 text-[10px] font-bold uppercase text-slate-500 tracking-wider">Certificación</th>
+                                                <th className="py-3 px-4 text-[10px] font-bold uppercase text-slate-500 tracking-wider">Comp. Anual</th>
+                                                <th className="py-3 px-4 text-[10px] font-bold uppercase text-slate-500 tracking-wider">Devengado</th>
+                                                <th className="py-3 px-4 text-[10px] font-bold uppercase text-slate-500 tracking-wider">Girado</th>
+                                                <th className="py-3 px-4 text-[10px] font-bold uppercase text-slate-500 tracking-wider text-right">Avance %</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="bg-white dark:bg-[#111c44]">
+                                            <tr>
+                                                <td className="py-4 px-4 text-xs font-semibold text-slate-600 dark:text-slate-400">
+                                                    {formatCurrency(ejecucion.pia)}
+                                                </td>
+                                                <td className="py-4 px-4 text-xs font-bold text-slate-900 dark:text-white">
+                                                    {formatCurrency(ejecucion.pim)}
+                                                </td>
+                                                <td className="py-4 px-4 text-xs font-medium text-slate-600 dark:text-slate-400">
+                                                    {formatCurrency(ejecucion.certificado)}
+                                                </td>
+                                                <td className="py-4 px-4 text-xs font-medium text-slate-600 dark:text-slate-400">
+                                                    {formatCurrency(ejecucion.compromiso_anual)}
+                                                </td>
+                                                <td className="py-4 px-4 text-sm font-bold text-blue-600">
+                                                    {formatCurrency(ejecucion.devengado)}
+                                                </td>
+                                                <td className="py-4 px-4 text-sm font-bold text-emerald-600">
+                                                    {formatCurrency(ejecucion.girado)}
+                                                </td>
+                                                <td className="py-4 px-4 text-right">
+                                                    {(() => {
+                                                        const avance = ejecucion.pim > 0 ? (ejecucion.devengado / ejecucion.pim) * 100 : 0;
+                                                        return (
+                                                            <span className={`text-sm font-black ${avance >= 80 ? 'text-emerald-600' : avance >= 40 ? 'text-amber-600' : 'text-slate-600'}`}>
+                                                                {avance.toFixed(1)}%
+                                                            </span>
+                                                        );
+                                                    })()}
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                {/* Progress Bar */}
+                                <div className="flex justify-between text-[10px] text-slate-400 font-bold uppercase mt-2">
+                                    <span>Avance de Ejecución (Sobre PIM)</span>
+                                </div>
+
+                                {!ejecucion.encontrado && (
+                                    <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-100 rounded-xl">
+                                        <span className="text-amber-600 text-xs font-bold">⚠ Ejecución financiera pendiente</span>
+                                        <span className="text-amber-500 text-[10px]">— Este contrato aún no registra pagos en el MEF</span>
+                                    </div>
+                                )}
+
+                                {/* Historial anual de ejecución (B) */}
+                                {ejecucion.historial && ejecucion.historial.length > 1 && (
+                                    <div className="mt-2 pt-4 border-t border-slate-100 dark:border-white/5">
+                                        <p className="text-[10px] uppercase font-bold text-slate-400 mb-3 tracking-wider">Historial de Ejecución por Año · CUI {ejecucion.cui}</p>
+                                        <div className="overflow-x-auto">
+                                            <HistorialChart historial={ejecucion.historial} />
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-100 rounded-xl">
+                                <span className="text-amber-600 text-xs font-bold">⚠ Ejecución financiera pendiente</span>
+                                <span className="text-amber-500 text-[10px]">— No se pudo consultar la API del MEF</span>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* ========== ADJUDICACIONES TABLE (MODIFIED) ========== */}
                 {adjudicaciones.length > 0 ? (
-                    <div className="rounded-2xl border border-slate-200 bg-white p-6 md:p-8 shadow-sm dark:border-white/5 dark:bg-[#111c44] animate-in fade-in slide-in-from-bottom-5 duration-500 delay-100">
+                    <div className="rounded-2xl border border-slate-200 bg-white p-6 md:p-8 shadow-md dark:border-white/10 dark:bg-[#111c44] animate-in fade-in slide-in-from-bottom-5 duration-500 delay-100 border-t-4 border-t-emerald-500">
                         <div className="flex items-center gap-3 mb-6">
                             <ShieldCheck className="w-5 h-5 text-emerald-500" />
                             <h3 className="text-lg font-bold text-slate-900 dark:text-white">Detalle de Adjudicaciones y Ganadores</h3>
@@ -257,7 +492,10 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                                         <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
                                             <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">Ganador / Proveedor</th>
                                             <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">Monto Adjudicado</th>
+                                            <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">Monto Girado (S/)</th>
+                                            <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">% Avance</th>
                                             <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">Garantía / Emitido Por</th>
+                                            <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">Estado Fianza</th>
                                             <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">Fecha</th>
                                             <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">Estado</th>
                                         </tr>
@@ -275,6 +513,36 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                                                     <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">
                                                         {formatCurrency(adj.monto_adjudicado, licitacion.moneda)}
                                                     </span>
+                                                </td>
+                                                {/* NEW: Monto Girado */}
+                                                <td className="py-4 px-4 text-center">
+                                                    {loadingIntegracion ? (
+                                                        <Loader2 className="w-4 h-4 text-slate-300 animate-spin mx-auto" />
+                                                    ) : ejecucion?.encontrado ? (
+                                                        <span className="text-xs font-bold text-emerald-600">{formatCurrency(ejecucion.girado)}</span>
+                                                    ) : (
+                                                        <span className="text-[10px] text-slate-400 italic">Pendiente</span>
+                                                    )}
+                                                </td>
+                                                {/* NEW: % Avance */}
+                                                <td className="py-4 px-4 text-center">
+                                                    {loadingIntegracion ? (
+                                                        <Loader2 className="w-4 h-4 text-slate-300 animate-spin mx-auto" />
+                                                    ) : ejecucion?.encontrado ? (
+                                                        <div className="flex flex-col items-center gap-1">
+                                                            <span className={`text-xs font-bold ${ejecucion.porcentaje_girado >= 80 ? 'text-emerald-600' : ejecucion.porcentaje_girado >= 40 ? 'text-amber-600' : 'text-slate-600'}`}>
+                                                                {ejecucion.porcentaje_girado}%
+                                                            </span>
+                                                            <div className="w-16 bg-slate-200 rounded-full h-1.5 overflow-hidden">
+                                                                <div
+                                                                    className={`h-full rounded-full transition-all ${ejecucion.porcentaje_girado >= 80 ? 'bg-emerald-500' : ejecucion.porcentaje_girado >= 40 ? 'bg-amber-500' : 'bg-slate-400'}`}
+                                                                    style={{ width: `${Math.min(ejecucion.porcentaje_girado, 100)}%` }}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <span className="text-[10px] text-slate-400 italic">—</span>
+                                                    )}
                                                 </td>
                                                 <td className="py-4 px-4 text-center">
                                                     <div className="flex flex-col gap-1 items-center">
@@ -300,6 +568,32 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                                                         )}
                                                     </div>
                                                 </td>
+                                                {/* NEW: Estado Fianza */}
+                                                <td className="py-4 px-4 text-center">
+                                                    {loadingIntegracion ? (
+                                                        <Loader2 className="w-4 h-4 text-slate-300 animate-spin mx-auto" />
+                                                    ) : garantiasData ? (
+                                                        <div className="flex flex-col items-center gap-1">
+                                                            {renderSemaforoBadge(
+                                                                garantiasData.estado_semaforo,
+                                                                garantiasData.garantias?.[0]?.dias_restantes
+                                                            )}
+                                                            {garantiasData.enlace_asbanc && (
+                                                                <a
+                                                                    href={garantiasData.enlace_asbanc}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="inline-flex items-center gap-1 text-[9px] text-blue-600 hover:text-blue-800 font-bold mt-1"
+                                                                >
+                                                                    <ExternalLink className="w-3 h-3" />
+                                                                    Validar ASBANC
+                                                                </a>
+                                                            )}
+                                                        </div>
+                                                    ) : (
+                                                        renderSemaforoBadge("gris")
+                                                    )}
+                                                </td>
                                                 <td className="py-4 px-4 text-xs font-medium text-slate-600 dark:text-slate-400 text-center">
                                                     {formatDate(adj.fecha_adjudicacion)}
                                                 </td>
@@ -324,9 +618,9 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                 )}
 
 
-                {/* Documentación y Consorcios Section (New Table) */}
+                {/* Documentación y Consorcios Section (MODIFIED: tooltip on Fianza button) */}
                 {adjudicaciones.length > 0 && (
-                    <div className="rounded-2xl border border-slate-200 bg-white p-6 md:p-8 shadow-sm dark:border-white/5 dark:bg-[#111c44] animate-in fade-in slide-in-from-bottom-5 duration-500 delay-200 mt-6">
+                    <div className="rounded-2xl border border-slate-200 bg-white p-6 md:p-8 shadow-md dark:border-white/10 dark:bg-[#111c44] animate-in fade-in slide-in-from-bottom-5 duration-500 delay-200 mt-6 border-t-4 border-t-violet-500">
                         <div className="flex items-center gap-3 mb-6">
                             <FileText className="w-5 h-5 text-indigo-500" />
                             <h3 className="text-lg font-bold text-slate-900 dark:text-white">Documentación Contractual y Consorcios</h3>
@@ -419,19 +713,49 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                                                         </div>
                                                     )}
                                                 </td>
+                                                {/* FIANZA column with OCDS tooltip */}
                                                 <td className="py-4 px-4 align-middle text-center w-[120px]">
                                                     {adj.url_pdf_cartafianza ? (
-                                                        <a
-                                                            href={adj.url_pdf_cartafianza}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="group inline-flex flex-col items-center justify-center gap-1"
-                                                        >
-                                                            <PdfIcon className="w-8 h-8 transition-transform group-hover:-translate-y-1" />
-                                                            <span className="bg-slate-900 text-white text-[9px] py-1 px-2 rounded font-bold whitespace-nowrap shadow-sm">
-                                                                Descargar PDF
-                                                            </span>
-                                                        </a>
+                                                        <div className="relative group/fianza inline-flex flex-col items-center justify-center gap-1">
+                                                            <a
+                                                                href={adj.url_pdf_cartafianza}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="inline-flex flex-col items-center justify-center gap-1"
+                                                            >
+                                                                <PdfIcon className="w-8 h-8 transition-transform group-hover/fianza:-translate-y-1" />
+                                                                <span className="bg-slate-900 text-white text-[9px] py-1 px-2 rounded font-bold whitespace-nowrap shadow-sm">
+                                                                    Descargar PDF
+                                                                </span>
+                                                            </a>
+                                                            {/* OCDS Tooltip on hover */}
+                                                            {garantiasData && garantiasData.garantias.length > 0 && (
+                                                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover/fianza:block z-50">
+                                                                    <div className="bg-slate-900 text-white text-[10px] py-2 px-3 rounded-lg shadow-xl whitespace-nowrap font-medium">
+                                                                        <div className="flex items-center gap-1.5 mb-1">
+                                                                            <ShieldCheck className="w-3 h-3 text-emerald-400" />
+                                                                            <span className="font-bold">Vencimiento oficial según OSCE:</span>
+                                                                        </div>
+                                                                        <div className="text-slate-300">
+                                                                            {formatDate(garantiasData.garantias[0]?.fecha_vencimiento)}
+                                                                        </div>
+                                                                        {garantiasData.garantias[0]?.monto_garantizado && (
+                                                                            <div className="text-slate-300 mt-0.5">
+                                                                                Monto: {formatCurrency(garantiasData.garantias[0].monto_garantizado)}
+                                                                            </div>
+                                                                        )}
+                                                                        <div className="mt-1">
+                                                                            {renderSemaforoBadge(
+                                                                                garantiasData.estado_semaforo,
+                                                                                garantiasData.garantias[0]?.dias_restantes
+                                                                            )}
+                                                                        </div>
+                                                                        {/* Arrow */}
+                                                                        <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-slate-900"></div>
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                     ) : (
                                                         <div className="inline-flex flex-col items-center justify-center gap-1 opacity-50 cursor-not-allowed">
                                                             <PdfIcon className="w-8 h-8 filter grayscale" />

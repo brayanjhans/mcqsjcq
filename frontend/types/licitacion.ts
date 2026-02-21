@@ -56,6 +56,7 @@ export interface Adjudicacion {
     url_pdf_contrato?: string;
     url_pdf_consorcio?: string;
     url_pdf_cartafianza?: string;
+    estado_item?: string;
 }
 
 export interface SearchFilters {
@@ -83,3 +84,61 @@ export interface ReportData {
     departamentos?: number;
     categorias?: string; // Comma separated or count
 }
+
+// --- Integration API types ---
+export interface HistorialAnual {
+    year: number;
+    pia: number;
+    pim: number;
+    certificado: number;
+    compromiso_anual: number;
+    devengado: number;
+    girado: number;
+    avance_pct: number;
+}
+
+export interface EjecucionFinanciera {
+    devengado: number;
+    girado: number;
+    pia: number;
+    pim: number;
+    certificado: number;
+    compromiso_anual: number;
+    monto_adjudicado: number;
+    porcentaje_girado: number;
+    encontrado: boolean;
+    error?: string | null;
+    ruc_consultado?: string;
+    year?: number;
+    id_contrato?: string;
+    cui?: string | null;
+    // Match confidence fields (5.1)
+    match_type?: string | null;
+    match_score?: number | null;
+    matched_name?: string | null;
+    source?: string | null;
+    // Historical yearly execution (B)
+    historial?: HistorialAnual[];
+}
+
+export interface GarantiaItem {
+    id?: string;
+    tipo?: string;
+    fecha_vencimiento?: string;
+    monto_garantizado?: number;
+    moneda?: string;
+    estado_semaforo: 'verde' | 'ambar' | 'rojo' | 'gris';
+    dias_restantes?: number | null;
+    descripcion?: string;
+    contrato_id?: string;
+}
+
+export interface GarantiasResponse {
+    garantias: GarantiaItem[];
+    error?: string | null;
+    estado_semaforo: 'verde' | 'ambar' | 'rojo' | 'gris';
+    entidad_financiera?: string;
+    enlace_asbanc?: string;
+    url_pdf_cartafianza?: string;
+}
+

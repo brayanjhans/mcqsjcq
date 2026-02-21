@@ -408,12 +408,12 @@ def get_consortium_breakdown(
             LicitacionesAdjudicaciones.id_contrato == DetalleConsorcios.id_contrato
         ).filter(
             or_(
-                LicitacionesAdjudicaciones.ganador_ruc.like(search_term),
-                LicitacionesAdjudicaciones.ganador_nombre.like(search_term),
-                LicitacionesCabecera.nomenclatura.like(search_term),
-                LicitacionesCabecera.descripcion.like(search_term),
-                DetalleConsorcios.nombre_miembro.like(search_term),
-                DetalleConsorcios.ruc_miembro.like(search_term)
+                LicitacionesAdjudicaciones.ganador_ruc.ilike(search_term),
+                LicitacionesAdjudicaciones.ganador_nombre.ilike(search_term),
+                LicitacionesCabecera.nomenclatura.ilike(search_term),
+                LicitacionesCabecera.descripcion.ilike(search_term),
+                DetalleConsorcios.nombre_miembro.ilike(search_term),
+                DetalleConsorcios.ruc_miembro.ilike(search_term)
             )
         ).distinct()
     

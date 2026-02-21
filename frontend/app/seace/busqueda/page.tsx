@@ -5,7 +5,7 @@ import { LicitacionCard } from "@/components/search/LicitacionCard";
 import { AutocompleteSearch } from "@/components/search/AutocompleteSearch";
 import type { Licitacion } from "@/types/licitacion";
 import { licitacionService } from "@/lib/services/licitacionService";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import {
     Search,
     ChevronUp,
@@ -83,10 +83,53 @@ function BusquedaContent() {
     const [totalPages, setTotalPages] = useState(0);
     const [totalItems, setTotalItems] = useState(0);
 
+    // URL Persistence Logic
+    const router = useRouter();
+    const pathname = usePathname();
+
+    // Debounced URL update to avoid browser history spam
+    useEffect(() => {
+        const timeoutId = setTimeout(() => {
+            const params = new URLSearchParams();
+
+            // Only add params if they have values
+            if (searchTerm) params.set('q', searchTerm);
+            if (currentPage > 1) params.set('page', currentPage.toString());
+            if (departamento) params.set('departamento', departamento);
+            if (estado) params.set('estado', estado);
+            if (categoria) params.set('categoria', categoria);
+            if (anio) params.set('anio', anio);
+            if (mes) params.set('mes', mes);
+            if (provincia) params.set('provincia', provincia);
+            if (distrito) params.set('distrito', distrito);
+            if (tipoGarantia) params.set('tipo_garantia', tipoGarantia);
+            if (aseguradora) params.set('aseguradora', aseguradora);
+            if (entidad) params.set('entidad', entidad);
+            if (tipoProcedimiento) params.set('tipo_procedimiento', tipoProcedimiento);
+
+            // Construct new URL
+            const newUrl = `${pathname}?${params.toString()}`;
+
+            // Check if URL actually changed to avoid redundant replace
+            if (newUrl !== window.location.pathname + window.location.search) {
+                router.replace(newUrl, { scroll: false });
+            }
+
+        }, 500); // 500ms delay
+
+        return () => clearTimeout(timeoutId);
+    }, [
+        searchTerm, currentPage, departamento, estado, categoria,
+        anio, mes, provincia, distrito, tipoGarantia,
+        aseguradora, entidad, tipoProcedimiento,
+        pathname, router
+    ]);
+
     // Initial Load: Fetch Global Filters & URL Params
     const searchParams = useSearchParams();
 
     useEffect(() => {
+        // ... (existing filter loading logic) ...
         const loadFilters = async () => {
             try {
                 const filters = await licitacionService.getFilters();
@@ -107,12 +150,58 @@ function BusquedaContent() {
         };
         loadFilters();
 
-        // Check URL params
+        // Restore State from URL
         const q = searchParams.get('q') || searchParams.get('search');
-        if (q) {
-            setSearchTerm(q);
-        }
-    }, [searchParams]);
+        if (q) setSearchTerm(q);
+
+        const pPage = searchParams.get('page');
+        if (pPage) setCurrentPage(Number(pPage));
+
+        const pDept = searchParams.get('departamento');
+        if (pDept) setDepartamento(pDept);
+
+        const pEstado = searchParams.get('estado');
+        if (pEstado) setEstado(pEstado);
+
+        const pCat = searchParams.get('categoria');
+        if (pCat) setCategoria(pCat);
+
+        const pAnio = searchParams.get('anio');
+        if (pAnio) setAnio(pAnio);
+
+        const pMes = searchParams.get('mes');
+        if (pMes) setMes(pMes);
+
+        const pProv = searchParams.get('provincia');
+        if (pProv) setProvincia(pProv);
+
+        const pDist = searchParams.get('distrito');
+        if (pDist) setDistrito(pDist);
+
+        const pGarantia = searchParams.get('tipo_garantia');
+        if (pGarantia) setTipoGarantia(pGarantia);
+
+        const pSeguro = searchParams.get('aseguradora');
+        if (pSeguro) setAseguradora(pSeguro);
+
+        const pEntidad = searchParams.get('entidad');
+        if (pEntidad) setEntidad(pEntidad);
+
+        const pProc = searchParams.get('tipo_procedimiento');
+        if (pProc) setTipoProcedimiento(pProc);
+
+    }, [searchParams]); // Depend only on searchParams for initial load logic (safe enough in Next)
+
+    // ... (rest of effects) ...
+    // Note: I will comment out the old searchParams check to avoid duplications
+    /* 
+    const q = searchParams.get('q') || searchParams.get('search');
+    if (q) {
+        setSearchTerm(q);
+    }
+    */
+
+    // Cascading: Load Provincias when Departamento changes
 
     // Cascading: Load Provincias when Departamento changes
     useEffect(() => {
@@ -212,6 +301,9 @@ function BusquedaContent() {
         setProvinciaOptions([]);
         setDistritoOptions([]);
         setCurrentPage(1);
+
+        // Clear URL immediately
+        router.replace(pathname, { scroll: false });
     };
 
     return (

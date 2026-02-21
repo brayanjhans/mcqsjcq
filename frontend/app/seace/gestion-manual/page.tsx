@@ -18,7 +18,8 @@ import {
     Briefcase,
     FileEdit,
     RefreshCcw,
-    Check
+    Check,
+    AlertCircle
 } from "lucide-react";
 import { LicitacionCard } from "@/components/search/LicitacionCard";
 import LicitacionModal from "@/components/search/LicitacionModal";
@@ -70,6 +71,7 @@ export default function GestionManualPage() {
     const [totalItems, setTotalItems] = useState(0);
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(0);
+    const [error, setError] = useState<string | null>(null);
 
     // Modal State
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -108,8 +110,10 @@ export default function GestionManualPage() {
             setLicitaciones(response.items);
             setTotalItems(response.total);
             setTotalPages(response.total_pages);
+            setError(null);
         } catch (error) {
             console.error("Error fetching licitaciones:", error);
+            setError("No se pudieron cargar los datos. Por favor, verifica tu conexión.");
         } finally {
             setLoading(false);
         }
@@ -164,8 +168,13 @@ export default function GestionManualPage() {
         }
     };
 
+    // Load filters only once on mount
     useEffect(() => {
         fetchFilters();
+    }, []);
+
+    // Fetch data when filters change
+    useEffect(() => {
         fetchLicitaciones();
     }, [searchTerm, estado, departamento, provincia, distrito, categoria, origenFilter, anio, mes, tipoGarantia, aseguradora, entidad, tipoProcedimiento, currentPage]);
 
@@ -551,6 +560,22 @@ export default function GestionManualPage() {
                     </div>
                 </div>
 
+                {/* Error State */}
+                {error && (
+                    <div className="p-4 mb-6 rounded-xl bg-red-50 border border-red-200 flex items-center justify-between text-red-700 animate-in fade-in slide-in-from-top-2">
+                        <div className="flex items-center gap-3">
+                            <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                            <span className="font-medium text-sm">{error}</span>
+                        </div>
+                        <button
+                            onClick={fetchLicitaciones}
+                            className="px-4 py-1.5 bg-white border border-red-200 rounded-lg text-xs font-bold hover:bg-red-50 transition-colors shadow-sm"
+                        >
+                            Reintentar
+                        </button>
+                    </div>
+                )}
+
                 {/* Results Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-4">
                     {licitaciones.map((item) => (
@@ -560,6 +585,7 @@ export default function GestionManualPage() {
                             showManualActions={true}
                             onEdit={handleEdit}
                             onDelete={handleDeleteClick}
+                            searchTerm={searchTerm}
                         />
                     ))}
                 </div>

@@ -24,13 +24,16 @@ def sanitizar(texto):
     return texto.encode('utf-8', 'ignore').decode('utf-8')
 
 # LIMPIEZA PREVENTIVA DE PIPELINE
-PIPELINE = [
     {"archivo": "descargador.py", "nombre": sanitizar("1. DESCARGA (SEACE)"), "critico": True},
     {"archivo": "cargador.py",    "nombre": sanitizar("2. CARGA (MySQL)"),    "critico": True},
+    
+    # --- Integration of MEF Daily Import (Full Mode) ---
+    {"archivo": "../scripts/import_mef_csv.py", "nombre": "2.5 IMPORTACIÓN MEF (2025)", "args": ["--year", "2025", "--all-rows"], "critico": False},
+    {"archivo": "../scripts/import_mef_csv.py", "nombre": "2.6 IMPORTACIÓN MEF (2026)", "args": ["--year", "2026", "--all-rows"], "critico": False},
+    
     {"archivo": "spider_garantias.py", "nombre": sanitizar("3. ENRIQUECIMIENTO (Bancos)"), "critico": False},
 
     {"archivo": "etl_consorcios_ai.py", "nombre": "4. INTELIGENCIA ARTIFICIAL (Consorcios)", "critico": False}
-]
 
 # Configuración Email (Con limpieza)
 SMTP_CFG = {
@@ -63,8 +66,13 @@ def ejecutar_script(info_script):
 
     inicio = time.time()
     try:
+        cmd = [sys.executable, ruta_script]
+        # Add arguments if present
+        if "args" in info_script and isinstance(info_script["args"], list):
+            cmd.extend(info_script["args"])
+
         resultado = subprocess.run(
-            [sys.executable, ruta_script],
+            cmd,
             capture_output=True,
             text=True,
             encoding='utf-8', 

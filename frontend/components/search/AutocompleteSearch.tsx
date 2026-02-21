@@ -1,7 +1,7 @@
 import { Search, Loader2, Building2, FileText, User, CreditCard } from "lucide-react";
 import React, { useState, useEffect, useRef } from "react";
 import { licitacionService } from "@/lib/services/licitacionService";
-import { useDebounce } from "@/lib/hooks/useDebounce"; // Assuming this hook exists or I'll implement a simple one inside
+// Filter removed
 
 // If useDebounce doesn't exist, I'll inline it or create it. 
 // For safety, I'll implement a simple internal logic or assume we can create the file if needed.
@@ -38,6 +38,11 @@ export const AutocompleteSearch: React.FC<AutocompleteSearchProps> = ({
     // Debounce logic
     useEffect(() => {
         const timer = setTimeout(async () => {
+            // Trigger main search if 3+ chars or empty (to clear)
+            if (query.length >= 3 || query.length === 0) {
+                onSearch(query);
+            }
+
             if (query.length >= 3) {
                 setLoading(true);
                 try {
@@ -53,7 +58,7 @@ export const AutocompleteSearch: React.FC<AutocompleteSearchProps> = ({
                 setSuggestions([]);
                 setIsOpen(false);
             }
-        }, 400); // 400ms debounce
+        }, 250); // 250ms debounce
 
         return () => clearTimeout(timer);
     }, [query]);

@@ -19,9 +19,64 @@ from app.models.user import User
 from typing import Optional
 from datetime import date, datetime
 import math
+import uuid
 
 router = APIRouter(prefix="/api/licitaciones", tags=["Licitaciones"])
 
+
+
+@router.get("/suggestions")
+def get_licitaciones_suggestions(
+    query: str = Query(..., min_length=3, description="Search term"),
+    limit: int = Query(10, le=50, description="Max results per type"),
+    db: Session = Depends(get_db)
+):
+    """
+    Get autocomplete suggestions for Search Bar.
+    """
+    query_str = f"%{query}%"
+    results = []
+    
+    # 1. Search in Compradores (Entidades)
+    compradores = db.query(LicitacionesCabecera.comprador).filter(
+        LicitacionesCabecera.comprador.ilike(query_str)
+    ).distinct().limit(limit).all()
+    
+    for c in compradores:
+        if c.comprador:
+            results.append({"value": c.comprador, "type": "Entidad"})
+
+    # 2. Search in Proveedores (Ganadores)
+    ganadores = db.query(LicitacionesAdjudicaciones.ganador_nombre).filter(
+        LicitacionesAdjudicaciones.ganador_nombre.ilike(query_str)
+    ).distinct().limit(limit).all()
+    
+    for g in ganadores:
+        if g.ganador_nombre:
+            results.append({"value": g.ganador_nombre, "type": "Proveedor"})
+            
+    # 3. Search in Procesos (Nomenclatura)
+    procesos = db.query(LicitacionesCabecera.nomenclatura).filter(
+        LicitacionesCabecera.nomenclatura.ilike(query_str)
+    ).distinct().limit(limit).all()
+    
+    for p in procesos:
+        if p.nomenclatura:
+             results.append({"value": p.nomenclatura, "type": "Proceso"})
+             
+    # 4. Search in Description (Generic)
+    # Only if we don't have many results yet
+    if len(results) < 5:
+        descripciones = db.query(LicitacionesCabecera.descripcion).filter(
+            LicitacionesCabecera.descripcion.ilike(query_str)
+        ).distinct().limit(limit).all()
+        for d in descripciones:
+            if d.descripcion:
+                # Truncate long descriptions for suggestion
+                val = (d.descripcion[:75] + '..') if len(d.descripcion) > 75 else d.descripcion
+                results.append({"value": val, "type": "Descripción"})
+
+    return results
 
 @router.get("", response_model=PaginatedLicitacionesSchema)
 def get_licitaciones(
@@ -71,55 +126,52 @@ def get_licitaciones(
     
     # Apply comprehensive search filter across ALL relevant fields
     if search:
-        search_term = f"%{search}%"
+        try:
+            print(f"DEBUG SEARCH: '{search}'")
+            # Split search into words for AND logic (keyword search)
+            keywords = search.strip().split()
+            print(f"DEBUG KEYWORDS: {keywords}")
+            if not keywords: # If search was just spaces, use the original search string
+                keywords = [search]
+
+            # Ensure join happens if we need it (checking all fields usually implies joining)
+            query = query.outerjoin(LicitacionesCabecera.adjudicaciones)
+            
+            for keyword in keywords:
+                term = f"%{keyword}%"
+                query = query.filter(
+                    or_(
+                        # === TABLA CABECERA ===
+                        LicitacionesCabecera.id_convocatoria.ilike(term),
+                        LicitacionesCabecera.ocid.ilike(term),
+                        LicitacionesCabecera.nomenclatura.ilike(term),
+                        LicitacionesCabecera.descripcion.ilike(term),
+                        LicitacionesCabecera.comprador.ilike(term),
+                        LicitacionesCabecera.categoria.ilike(term),
+                        LicitacionesCabecera.tipo_procedimiento.ilike(term),
+                        LicitacionesCabecera.estado_proceso.ilike(term),
+                        LicitacionesCabecera.ubicacion_completa.ilike(term),
+                        
+                        # === TABLA ADJUDICACIONES ===
+                        LicitacionesCabecera.adjudicaciones.any(
+                            or_(
+                                LicitacionesAdjudicaciones.ganador_nombre.ilike(term),
+                                LicitacionesAdjudicaciones.ganador_ruc.ilike(term),
+                                LicitacionesAdjudicaciones.entidad_financiera.ilike(term),
+                                LicitacionesAdjudicaciones.tipo_garantia.ilike(term),
+                                LicitacionesAdjudicaciones.estado_item.ilike(term),
+                            )
+                        )
+                    )
+                )
+        except Exception as e:
+            with open("backend_debug_log.txt", "a") as f:
+                f.write(f"Error in search filter: {str(e)}\n")
+            raise e
         
-        # LEFT OUTER JOIN with adjudicaciones to search in both tables
-        # This ensures we include licitaciones without adjudicaciones
-        query = query.outerjoin(LicitacionesCabecera.adjudicaciones)
-        adjudicacion_joined = True  # Mark that we've already joined
-        
-        query = query.filter(
-            or_(
-                # === TABLA CABECERA ===
-                # IDs y Códigos únicos
-                LicitacionesCabecera.id_convocatoria.like(search_term),
-                LicitacionesCabecera.ocid.like(search_term),
-                LicitacionesCabecera.nomenclatura.like(search_term),
-                
-                # Descripciones y Entidades
-                LicitacionesCabecera.descripcion.like(search_term),
-                LicitacionesCabecera.comprador.like(search_term),
-                
-                # Categorías y Procesos
-                LicitacionesCabecera.categoria.like(search_term),
-                LicitacionesCabecera.tipo_procedimiento.like(search_term),
-                LicitacionesCabecera.estado_proceso.like(search_term),
-                
-                # Ubicación geográfica
-                LicitacionesCabecera.departamento.like(search_term),
-                LicitacionesCabecera.provincia.like(search_term),
-                LicitacionesCabecera.distrito.like(search_term),
-                LicitacionesCabecera.ubicacion_completa.like(search_term),
-                
-                # Datos financieros y origen
-                LicitacionesCabecera.moneda.like(search_term),
-                LicitacionesCabecera.archivo_origen.like(search_term),
-                
-                # === TABLA ADJUDICACIONES ===
-                # IDs de adjudicación y contrato
-                LicitacionesAdjudicaciones.id_adjudicacion.like(search_term),
-                LicitacionesAdjudicaciones.id_contrato.like(search_term),
-                
-                # Información del ganador
-                LicitacionesAdjudicaciones.ganador_nombre.like(search_term),
-                LicitacionesAdjudicaciones.ganador_ruc.like(search_term),
-                
-                # Garantías y entidades financieras
-                LicitacionesAdjudicaciones.entidad_financiera.like(search_term),
-                LicitacionesAdjudicaciones.tipo_garantia.like(search_term),
-                LicitacionesAdjudicaciones.estado_item.like(search_term),
-            )
-        )
+    with open("backend_debug_log.txt", "w", encoding="utf-8") as f:
+        f.write(f"DEBUG After Search, count: {query.distinct().count()}\n")
+        f.write(f"DEBUG Params: {str({k: v for k, v in locals().items() if k not in ['db', 'query', 'ensure_adj_join']})}\n")
     
     # Alias Mapping
     if estado_proceso and not estado:
@@ -176,7 +228,7 @@ def get_licitaciones(
     if entidad_financiera:
         query, adjudicacion_joined = ensure_adj_join(query, adjudicacion_joined)
         query = query.filter(
-            LicitacionesAdjudicaciones.entidad_financiera.like(f"%{entidad_financiera}%")
+            LicitacionesAdjudicaciones.entidad_financiera.ilike(f"%{entidad_financiera}%")
         )
 
     if tipo_garantia:
@@ -269,7 +321,7 @@ def get_licitacion_detalle(
     if not licitacion:
         print(f"DEBUG: Exact match failed for '{id_clean}'. Retrying with LIKE...")
         licitacion = db.query(LicitacionesCabecera).filter(
-            LicitacionesCabecera.id_convocatoria.like(f"%{id_clean}%")
+            LicitacionesCabecera.id_convocatoria.ilike(f"%{id_clean}%")
         ).first()
     
     print(f"DEBUG: Resultado búsqueda: {licitacion}")
@@ -385,7 +437,7 @@ def create_licitacion(
     
     # Create header
     new_licitacion = LicitacionesCabecera(
-        id_convocatoria=str(int(datetime.now().timestamp())),  # Simple ID generation
+        id_convocatoria=str(uuid.uuid4()),  # UUID ID generation
         nomenclatura=licitacion.nomenclatura,
         ocid=licitacion.ocid,
         descripcion=licitacion.descripcion,
@@ -414,7 +466,7 @@ def create_licitacion(
         
         for adj_data in licitacion.adjudicaciones:
             # Generate unique ID for adjudication
-            adj_id = f"{new_licitacion.id_convocatoria}-ADJ-{int(datetime.now().timestamp())}"
+            adj_id = f"{new_licitacion.id_convocatoria}-ADJ-{str(uuid.uuid4())}"
             
             # Create adjudication
             new_adj = LicitacionesAdjudicaciones(
@@ -532,8 +584,7 @@ def update_licitacion(
         # 4. Create new adjudications and consorcios
         for adj_data in licitacion.adjudicaciones:
             # Generate unique ID for adjudication
-            # Add index to ensure uniqueness in loop
-            adj_id = f"{id_convocatoria}-ADJ-{int(datetime.now().timestamp())}-{licitacion.adjudicaciones.index(adj_data)}"
+            adj_id = f"{id_convocatoria}-ADJ-{str(uuid.uuid4())}"
             
             # Use provided id_contrato or defaults to None
             contrato_id_val = getattr(adj_data, 'id_contrato', None)

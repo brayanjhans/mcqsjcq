@@ -13,6 +13,10 @@ export function HeaderActions() {
     const router = useRouter();
     const [user, setUser] = useState<any>(null);
     const [darkMode, setDarkMode] = useState(false);
+    const [isUpdatingMef, setIsUpdatingMef] = useState(false);
+    const [updateSuccess, setUpdateSuccess] = useState(false);
+    const [mefStatusText, setMefStatusText] = useState('Actualizando...');
+    const [mefLastUpdated, setMefLastUpdated] = useState<string | null>(null);
 
     // Unified Dropdown State (Mutual Exclusion)
     const [activeDropdown, setActiveDropdown] = useState<'profile' | 'notifications' | null>(null);
@@ -24,6 +28,18 @@ export function HeaderActions() {
     const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
     const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
     const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
+    // Close dropdown on click outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            const target = event.target as HTMLElement;
+            if (activeDropdown && !target.closest('.relative')) {
+                setActiveDropdown(null);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [activeDropdown]);
 
     useEffect(() => {
         const loadUser = () => {
@@ -50,6 +66,83 @@ export function HeaderActions() {
         return () => window.removeEventListener('userUpdated', loadUser);
     }, []);
 
+    const fetchLastUpdated = async () => {
+        try {
+            const { default: integracionService } = await import('@/lib/services/integracionService');
+            const data = await integracionService.getMefLastUpdated();
+            if (data.last_updated) {
+                const date = new Date(data.last_updated);
+                setMefLastUpdated(date.toLocaleString('es-PE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }));
+            }
+        } catch (err) {
+            console.error("Error fetching MEF last updated date:", err);
+        }
+    };
+
+    // Check if MEF update is already running on mount
+    useEffect(() => {
+        const checkInitialStatus = async () => {
+            try {
+                const res = await fetch('/api/integraciones/update-mef/status');
+                if (res.ok) {
+                    const statusData = await res.json();
+                    if (statusData.is_running && !isUpdatingMef) {
+                        setIsUpdatingMef(true);
+                        setMefStatusText(statusData.current_step || 'Actualizando...');
+                        startPolling();
+                    }
+                }
+            } catch (err) {
+                console.error("Error checking initial MEF status:", err);
+            }
+        };
+
+        checkInitialStatus();
+        fetchLastUpdated();
+    }, []);
+
+    const startPolling = () => {
+        const pollInterval = setInterval(async () => {
+            try {
+                const res = await fetch('/api/integraciones/update-mef/status');
+                if (!res.ok) throw new Error("Failed to fetch status");
+
+                const statusData = await res.json();
+
+                if (statusData.current_step) {
+                    setMefStatusText(statusData.current_step);
+                }
+
+                if (!statusData.is_running && statusData.current_step !== '') {
+                    // Process finished
+                    clearInterval(pollInterval);
+                    setIsUpdatingMef(false);
+
+                    if (statusData.current_step.includes('Error')) {
+                        setUpdateSuccess(false);
+                        setMefStatusText('Error al actualizar');
+                        setTimeout(() => setMefStatusText('Actualizar MEF'), 5000);
+                    } else {
+                        setUpdateSuccess(true);
+                        setMefStatusText('Actualizado');
+                        fetchLastUpdated();
+                        setTimeout(() => {
+                            setUpdateSuccess(false);
+                            setMefStatusText('Actualizar MEF');
+                        }, 5000);
+                    }
+                }
+            } catch (err) {
+                console.error("Error polling MEF update status:", err);
+                clearInterval(pollInterval);
+                setIsUpdatingMef(false);
+                setMefStatusText('Error de conexión');
+                setTimeout(() => setMefStatusText('Actualizar MEF'), 5000);
+            }
+        }, 3000);
+        return pollInterval;
+    };
+
     const toggleTheme = () => {
         const newMode = !darkMode;
         setDarkMode(newMode);
@@ -67,9 +160,59 @@ export function HeaderActions() {
         window.location.href = '/';
     };
 
+    const handleUpdateMef = async () => {
+        if (isUpdatingMef) return;
+        setIsUpdatingMef(true);
+        setUpdateSuccess(false);
+        setMefStatusText('Iniciando...');
+
+        try {
+            // 1. Trigger the update (starts background process)
+            const { default: integracionService } = await import('@/lib/services/integracionService');
+            await integracionService.triggerMefUpdate();
+            startPolling();
+        } catch (error: any) {
+            if (error.response?.status === 409) {
+                // If it's already in progress (409 conflict), just start polling to catch up
+                startPolling();
+            } else {
+                console.error("Error starting MEF Update:", error);
+                setIsUpdatingMef(false);
+                setMefStatusText('Error al iniciar');
+                setTimeout(() => setMefStatusText('Actualizar MEF'), 3000);
+            }
+        }
+    };
+
     return (
         <>
             <div className="absolute top-6 right-6 z-50 flex items-center gap-4">
+                {/* MEF Update Button (Responsive) */}
+                <div className="relative flex flex-col items-center">
+                    <button
+                        onClick={handleUpdateMef}
+                        disabled={isUpdatingMef}
+                        className={`flex h-12 px-4 rounded-full backdrop-blur-md border shadow-lg items-center justify-center gap-2 transition-all 
+                            ${updateSuccess
+                                ? 'bg-emerald-500/90 border-emerald-400 text-white'
+                                : isUpdatingMef
+                                    ? 'bg-blue-500/80 border-blue-400 text-white cursor-wait'
+                                    : 'bg-white/50 dark:bg-slate-800/50 border-gray-200 dark:border-slate-700 text-slate-700 dark:text-blue-300 hover:bg-white dark:hover:bg-slate-800'
+                            }`}
+                        title="Actualizar datos del MEF (CSV 2025/2026)"
+                    >
+                        <i className={`fas ${updateSuccess ? 'fa-check' : 'fa-sync'} ${isUpdatingMef ? 'fa-spin' : ''}`}></i>
+                        <span className="hidden md:inline text-sm font-bold max-w-[200px] truncate text-center">
+                            {isUpdatingMef || updateSuccess || mefStatusText.includes('Error') ? mefStatusText : 'Actualizar MEF'}
+                        </span>
+                    </button>
+                    {mefLastUpdated && !isUpdatingMef && (
+                        <span className="absolute -bottom-5 text-[10px] text-slate-500 dark:text-slate-400 font-medium whitespace-nowrap">
+                            Datos del MEF al {mefLastUpdated}
+                        </span>
+                    )}
+                </div>
+
                 {/* Dark Mode Toggle (Desktop) */}
                 <button
                     onClick={toggleTheme}

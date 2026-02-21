@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import type { SearchFilters } from "@/types/licitacion";
 import { Search, X, Filter } from "lucide-react";
+import { licitacionService } from "@/lib/services/licitacionService";
 
 interface Props {
     onFilterChange: (filters: SearchFilters) => void;
@@ -75,7 +76,7 @@ export const SearchFiltersComponent: React.FC<Props> = ({
 
     const [showAdvanced, setShowAdvanced] = useState(false);
 
-    import { licitacionService } from "@/lib/services/licitacionService";
+
 
     // ... (inside component)
 
@@ -352,6 +353,5 @@ export const SearchFiltersComponent: React.FC<Props> = ({
                 </div>
             )}
         </div>
-        </div >
     );
 };

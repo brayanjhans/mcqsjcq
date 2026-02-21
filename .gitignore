@@ -25,6 +25,7 @@ Thumbs.db
 
 # Project specific
 deploy_package.zip
+app/cache/
 *.zip
 *.tar.gz
 *.rar
@@ -86,9 +87,27 @@ entidades_compradoras.txt
 test.mp3
 
 # Ignore all scripts in root scripts/ folder if they are just one-off tests
-# BUT KEEP repair_consortium_data.py
+# BUT KEEP import_mef_csv.py and repair_consortium_data.py
 scripts/*
 !scripts/repair_consortium_data.py
+!scripts/import_mef_csv.py
 
 # Ignore seace build artifacts in root if they appear there
 seace_main-*.js
+
+# Temporary output / chunk files
+safe_chunk_*.txt
+output_check.txt
+raw_debug_*.txt
+fts_output.json
+test_output.txt
+pip_install_log.txt
+schema_vps.txt
+vps_columns.txt
+
+# VPS one-off migration scripts (keep in gitignore)
+licitaciones_raw_vps.py
+nginx_vps.conf
+init_db.py
+optimize_indexes.py
+reset_password.py

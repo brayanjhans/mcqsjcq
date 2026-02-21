@@ -13,9 +13,11 @@ print(f"DEBUG_STARTUP: GROQ_API_KEY present? {'Yes' if os.getenv('GROQ_API_KEY')
 print(f"DEBUG_STARTUP: DATABASE_URL present? {'Yes' if os.getenv('DATABASE_URL') else 'No'}")
 
 import app.models # Ensure all models are registered
-from app.routers import auth, mqs, admin, scraping, tendencias, etl, formatos, users, support, test, notifications, reportes, exports, chatbot
+from app.routers import auth, mqs, admin, scraping, tendencias, etl, formatos, users, support, notifications, reportes, exports, chatbot
 from app.routers import dashboard_raw as dashboard
 from app.routers import licitaciones_raw as licitaciones
+from app.routers import integraciones
+from app.routers.integraciones import start_mef_scheduler, stop_mef_scheduler
 from app.services.notification_scheduler import start_scheduler, stop_scheduler
 
 # Create FastAPI app
@@ -43,7 +45,6 @@ app.add_middleware(
 )
 
 # Include routers - New system
-app.include_router(test.router)  # Test router first
 app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(mqs.router)
@@ -61,6 +62,7 @@ app.include_router(reportes.router)
 app.include_router(scraping.router)
 app.include_router(etl.router)
 app.include_router(exports.router)
+app.include_router(integraciones.router)  # MEF + OCDS integrations
 
 
 # ====== Startup/Shutdown Events ======
@@ -69,7 +71,11 @@ app.include_router(exports.router)
 async def startup_event():
     """Iniciar scheduler de notificaciones al arranque"""
     """Iniciar scheduler de notificaciones al arranque"""
+    print("DEBUG: Force reload due to route missing")
     # start_scheduler()
+    
+    # Iniciar scheduler de actulización automática del MEF (cada 8hs)
+    start_mef_scheduler()
     
     # Capture Main Event Loop for Sync-to-Async Bridge (Notifications -> Chatbot)
     # try:
@@ -84,6 +90,7 @@ async def startup_event():
 def shutdown_event():
     """Detener scheduler al apagar"""
     stop_scheduler()
+    stop_mef_scheduler()
 
 
 @app.get("/")

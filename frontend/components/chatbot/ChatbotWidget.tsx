@@ -44,7 +44,7 @@ export default function ChatbotWidget() {
         {
             id: 'welcome',
             role: 'assistant',
-            content: '¡Hola! Soy **AURA**, tu copiloto de desarrollo y asistente de datos. ¿En qué puedo ayudarte hoy sobre `garantias_seace`?',
+            content: '¡Hola! Soy **AURA**, tu copiloto de desarrollo y asistente de datos. ¿En qué puedo ayudarte hoy sobre `Garantías SEACE`?',
         },
     ]);
     const [input, setInput] = useState('');

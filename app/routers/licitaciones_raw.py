@@ -27,42 +27,34 @@ def get_search_suggestions(
     """
     try:
         query_upper = query.upper().strip()
+        # Restore wildcard search for comprehensive matches (substrings)
+        # Keeping UNION ALL + LIMIT to maintain performance
         search_pattern = f"%{query_upper}%"
         
         suggestions = []
         
         # 1. Search Entidades, Nomenclaturas, Descripciones, Ubicaciones
+        # MySQL requires parentheses for LIMIT within UNION
         sql_entidad = text("""
-            SELECT DISTINCT UPPER(TRIM(comprador)) 
-            FROM licitaciones_cabecera 
-            WHERE UPPER(comprador) LIKE :pattern
-            UNION
-            SELECT DISTINCT TRIM(nomenclatura) 
-            FROM licitaciones_cabecera 
-            WHERE UPPER(nomenclatura) LIKE :pattern
-            UNION
-            SELECT DISTINCT ocid 
-            FROM licitaciones_cabecera 
-            WHERE UPPER(ocid) LIKE :pattern
-            UNION
-            SELECT DISTINCT UPPER(TRIM(departamento)) 
-            FROM licitaciones_cabecera 
-            WHERE UPPER(departamento) LIKE :pattern
-            UNION
-            SELECT DISTINCT SUBSTRING(descripcion FROM 1 FOR 60) 
-            FROM licitaciones_cabecera 
-            WHERE UPPER(descripcion) LIKE :pattern
-            LIMIT 8
+            (SELECT TRIM(comprador) FROM licitaciones_cabecera WHERE comprador LIKE :pattern LIMIT 5)
+            UNION ALL
+            (SELECT TRIM(nomenclatura) FROM licitaciones_cabecera WHERE nomenclatura LIKE :pattern LIMIT 5)
+            UNION ALL
+            (SELECT ocid FROM licitaciones_cabecera WHERE ocid LIKE :pattern LIMIT 5)
+            UNION ALL
+            (SELECT TRIM(departamento) FROM licitaciones_cabecera WHERE departamento LIKE :pattern LIMIT 3)
+            UNION ALL
+            (SELECT SUBSTRING(descripcion FROM 1 FOR 60) FROM licitaciones_cabecera WHERE descripcion LIKE :pattern LIMIT 3)
         """)
         entidad_rows = db.execute(sql_entidad, {"pattern": search_pattern}).fetchall()
         for row in entidad_rows:
             if row[0]:
-                # Infer type for better UI UX
                 val = row[0]
                 type_label = "General"
-                if len(val) == 2 and val.isdigit(): type_label = "Departamento" # false positive safety, likely won't hit
-                elif "MUNICIPALIDAD" in val or "GOBIERNO" in val or "MINISTERIO" in val: type_label = "Entidad"
-                elif "-" in val and any(c.isdigit() for c in val): type_label = "Código" # OCID/Noms usually have dashes/nums
+                val_upper = str(val).upper()
+                if len(val) == 2 and val.isdigit(): type_label = "Departamento"
+                elif "MUNICIPALIDAD" in val_upper or "GOBIERNO" in val_upper or "MINISTERIO" in val_upper: type_label = "Entidad"
+                elif "-" in val and any(c.isdigit() for c in val): type_label = "Código"
                 elif len(val) > 20 and " " in val: type_label = "Descripción"
                 else: type_label = "Ubicación/Otro"
                 
@@ -70,20 +62,17 @@ def get_search_suggestions(
 
         # 2. Search RUCs and Proveedores (Adjudicaciones)
         sql_details = text("""
-            SELECT DISTINCT provider, type_label FROM (
-                SELECT UPPER(TRIM(ganador_nombre)) as provider, 'Proveedor' as type_label
-                FROM licitaciones_adjudicaciones 
-                WHERE UPPER(ganador_nombre) LIKE :pattern
-                UNION
-                SELECT ganador_ruc as provider, 'RUC' as type_label
-                FROM licitaciones_adjudicaciones 
-                WHERE ganador_ruc LIKE :pattern
-                UNION
-                SELECT UPPER(TRIM(entidad_financiera)) as provider, 'Banco' as type_label
-                FROM licitaciones_adjudicaciones 
-                WHERE UPPER(entidad_financiera) LIKE :pattern
+            SELECT provider, type_label FROM (
+                (SELECT TRIM(ganador_nombre) as provider, 'Proveedor' as type_label FROM licitaciones_adjudicaciones WHERE ganador_nombre LIKE :pattern LIMIT 5)
+                UNION ALL
+                (SELECT ganador_ruc as provider, 'RUC' as type_label FROM licitaciones_adjudicaciones WHERE ganador_ruc LIKE :pattern LIMIT 5)
+                UNION ALL
+                (SELECT TRIM(entidad_financiera) as provider, 'Banco' as type_label FROM licitaciones_adjudicaciones WHERE entidad_financiera LIKE :pattern LIMIT 3)
+                UNION ALL
+                (SELECT TRIM(nombre_miembro) as provider, 'Consorciado' as type_label FROM detalle_consorcios WHERE nombre_miembro LIKE :pattern LIMIT 10)
+                UNION ALL
+                (SELECT ruc_miembro as provider, 'RUC Consorciado' as type_label FROM detalle_consorcios WHERE ruc_miembro LIKE :pattern LIMIT 5)
             ) as sub
-            LIMIT 10
         """)
         detail_rows = db.execute(sql_details, {"pattern": search_pattern}).fetchall()
         for row in detail_rows:
@@ -303,6 +292,20 @@ def get_licitaciones(
                 
             except Exception as e:
                 print(f"Relational Search Error: {e}")
+
+            # B3. Search Nomenclatura, Descripcion & OCID (Specific Fallback for Substrings)
+            # Fulltext might miss "SM-3" if tokens are split, or fail on stopwords like "DE"/"EN" in BOOLEAN MODE. 
+            # LIKE ensures we find it.
+            try:
+                cab_sql = text("""
+                    SELECT id_convocatoria FROM licitaciones_cabecera 
+                    WHERE nomenclatura LIKE :search OR descripcion LIKE :search OR ocid LIKE :search
+                    LIMIT :limit
+                """)
+                cab_ids = db.execute(cab_sql, {"search": search_like, "limit": limit_subquery}).scalars().all()
+                found_ids.update(cab_ids)
+            except Exception as e:
+                print(f"Cabecera Search Error: {e}")
             
             # C. Apply Filter
             if found_ids:
@@ -493,8 +496,6 @@ def get_licitaciones(
         """)
         
         total = db.execute(count_sql, params).scalar() or 0
-        print(f"DEBUG: get_licitaciones total_count={total}")
-        
         # Get paginated data
         offset = (page - 1) * limit
         data_sql = text(f"""
@@ -1051,7 +1052,12 @@ def create_licitacion(licitacion: LicitacionCreate, db: Session = Depends(get_db
             """)
             
             for adj in licitacion.adjudicaciones:
-                adj_id = str(uuid.uuid4())
+                # Use provided ID or generate new one
+                if adj.id_adjudicacion and adj.id_adjudicacion.strip():
+                    adj_id = adj.id_adjudicacion.strip()
+                else:
+                    adj_id = str(uuid.uuid4())
+                    
                 fecha_adj = clean_date(adj.fecha_adjudicacion)
 
                 db.execute(sql_adj, {
@@ -1221,7 +1227,12 @@ def update_licitacion(id: str, licitacion: LicitacionCreate, db: Session = Depen
             """)
             
             for adj in licitacion.adjudicaciones:
-                adj_id = str(uuid.uuid4()) # New ID for re-inserted items
+                # Use provided ID or generate new one
+                if adj.id_adjudicacion and adj.id_adjudicacion.strip():
+                    adj_id = adj.id_adjudicacion.strip()
+                else:
+                    adj_id = str(uuid.uuid4()) # New ID for re-inserted items
+
                 fecha_adj = clean_date(adj.fecha_adjudicacion)
                 
                 db.execute(sql_adj, {
