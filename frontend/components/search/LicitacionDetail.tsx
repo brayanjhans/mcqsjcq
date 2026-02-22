@@ -459,7 +459,7 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                                 )}
 
                                 {/* Historial anual de ejecución (B) */}
-                                {ejecucion.historial && ejecucion.historial.length > 1 && (
+                                {ejecucion.historial && ejecucion.historial.length > 0 && (
                                     <div className="mt-2 pt-4 border-t border-slate-100 dark:border-white/5">
                                         <p className="text-[10px] uppercase font-bold text-slate-400 mb-3 tracking-wider">Historial de Ejecución por Año · CUI {ejecucion.cui}</p>
                                         <div className="overflow-x-auto">
