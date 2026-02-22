@@ -35,7 +35,11 @@ function NotificacionesPageContent() {
     // Update filter if URL changes
     React.useEffect(() => {
         setFilter(getInitialFilter());
-    }, [tabParam]);
+        setSelectedIds([]); // Clear selections when changing tabs
+    }, [tabParam, filter]);
+
+    // Selection State
+    const [selectedIds, setSelectedIds] = useState<number[]>([]);
 
     // Use the real hook
     const {
@@ -77,6 +81,30 @@ function NotificacionesPageContent() {
 
     const deleteNotification = (id: number) => {
         apiDeleteNotification(id);
+        setSelectedIds(prev => prev.filter(selId => selId !== id)); // Remove from selection if deleted individually
+    };
+
+    const deleteSelected = async () => {
+        if (selectedIds.length === 0) return;
+        // Fast sequential deletion using existing hook
+        for (const id of selectedIds) {
+            apiDeleteNotification(id);
+        }
+        setSelectedIds([]);
+    };
+
+    const toggleSelection = (id: number) => {
+        setSelectedIds(prev =>
+            prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+        );
+    };
+
+    const toggleAll = () => {
+        if (selectedIds.length === items.length) {
+            setSelectedIds([]);
+        } else {
+            setSelectedIds(items.map((n: any) => n.id));
+        }
     };
 
     const formatCurrency = (val?: number) => new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN', maximumFractionDigits: 0 }).format(val || 0);
@@ -127,13 +155,24 @@ function NotificacionesPageContent() {
                         <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Notificaciones</h1>
                         <p className="text-sm text-slate-500 mt-1 dark:text-slate-400">Historial de cambios en procesos</p>
                     </div>
-                    <button
-                        onClick={markAllAsRead}
-                        className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-2 rounded-lg shadow-sm shadow-blue-500/20 transition-all flex items-center gap-2"
-                    >
-                        <CheckCheck className="w-4 h-4" />
-                        Marcar todos leídos
-                    </button>
+                    <div className="flex gap-2">
+                        {selectedIds.length > 0 && (
+                            <button
+                                onClick={deleteSelected}
+                                className="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs font-bold px-4 py-2 rounded-lg transition-all flex items-center gap-2"
+                            >
+                                <Trash2 className="w-4 h-4" />
+                                Eliminar seleccionados ({selectedIds.length})
+                            </button>
+                        )}
+                        <button
+                            onClick={markAllAsRead}
+                            className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-2 rounded-lg shadow-sm shadow-blue-500/20 transition-all flex items-center gap-2"
+                        >
+                            <CheckCheck className="w-4 h-4" />
+                            Marcar todos leídos
+                        </button>
+                    </div>
                 </div>
 
                 {/* Filters */}
@@ -162,8 +201,16 @@ function NotificacionesPageContent() {
                 <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden dark:bg-[#111c44] dark:border-white/5">
 
                     {/* Table Header */}
-                    <div className="hidden md:grid grid-cols-12 gap-4 p-4 border-b border-slate-100 text-[11px] font-bold text-slate-400 uppercase tracking-wider dark:border-white/5">
-                        <div className="col-span-5">Proceso</div>
+                    <div className="hidden md:grid grid-cols-[auto_1fr] md:grid-cols-12 gap-4 p-4 border-b border-slate-100 text-[11px] font-bold text-slate-400 uppercase tracking-wider dark:border-white/5 items-center">
+                        <div className="col-span-5 flex items-center gap-3">
+                            <input
+                                type="checkbox"
+                                className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                                checked={items.length > 0 && selectedIds.length === items.length}
+                                onChange={toggleAll}
+                            />
+                            <span>Proceso</span>
+                        </div>
                         <div className="col-span-2">Detalles</div>
                         <div className="col-span-3 text-center">Cambio de Estado</div>
                         <div className="col-span-1 text-center">Fecha</div>
@@ -177,12 +224,18 @@ function NotificacionesPageContent() {
                                 <div key={notif.id} className={`p-4 md:grid md:grid-cols-12 md:gap-4 items-center group transition-colors hover:bg-slate-50/50 ${notif.estado === 'NO_LEIDO' ? 'bg-blue-50/10 dark:bg-blue-900/10' : ''}`}>
 
                                     {/* Licitacion Info */}
-                                    <div className="col-span-5 flex gap-3 mb-4 md:mb-0">
-                                        <div className="pt-1.5 shrink-0">
+                                    <div className="col-span-5 flex items-start gap-3 mb-4 md:mb-0">
+                                        <div className="pt-1 shrink-0 flex items-center gap-2">
+                                            <input
+                                                type="checkbox"
+                                                className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                                                checked={selectedIds.includes(notif.id)}
+                                                onChange={() => toggleSelection(notif.id)}
+                                            />
                                             {notif.estado === 'NO_LEIDO' ? (
-                                                <div className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-sm shadow-blue-500/50"></div>
+                                                <div className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-sm shadow-blue-500/50 mt-1"></div>
                                             ) : (
-                                                <div className="w-2.5 h-2.5 rounded-full border border-slate-300"></div>
+                                                <div className="w-2.5 h-2.5 rounded-full border border-slate-300 mt-1"></div>
                                             )}
                                         </div>
                                         <div className="space-y-1">
