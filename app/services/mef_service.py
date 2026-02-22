@@ -139,6 +139,45 @@ def _build_year_list(primary_year: int) -> list[int]:
     return years
 
 
+def _get_historial(db: Session, cui: str) -> list[dict]:
+    if not cui:
+        return []
+    try:
+        rows = db.execute(text("""
+            SELECT 
+                ano_eje,
+                COALESCE(SUM(monto_pia), 0) as pia,
+                COALESCE(SUM(monto_pim), 0) as pim,
+                COALESCE(SUM(monto_certificado), 0) as certificado,
+                COALESCE(SUM(monto_comprometido_anual), 0) as compromiso_anual,
+                COALESCE(SUM(monto_devengado), 0) as devengado,
+                COALESCE(SUM(monto_girado), 0) as girado
+            FROM mef_ejecucion
+            WHERE producto_proyecto = :cui
+            GROUP BY ano_eje
+            ORDER BY ano_eje DESC
+        """), {"cui": cui}).fetchall()
+        
+        historial = []
+        for r in rows:
+            pim = float(r[2])
+            dev = float(r[5])
+            historial.append({
+                "year": int(r[0]),
+                "pia": float(r[1]),
+                "pim": pim,
+                "certificado": float(r[3]),
+                "compromiso_anual": float(r[4]),
+                "devengado": dev,
+                "girado": float(r[6]),
+                "avance_pct": round((dev / pim * 100), 1) if pim > 0 else 0,
+            })
+        return historial
+    except Exception as e:
+        print(f"[MEF-LOCAL] Error fetching historial for {cui}: {e}")
+        return []
+
+
 def get_ejecucion_by_cui(db: Session, cui: str, years: list[int]) -> dict:
     """
     Query local mef_ejecucion table for financial execution by CUI.
@@ -177,6 +216,7 @@ def get_ejecucion_by_cui(db: Session, cui: str, years: list[int]) -> dict:
                     "registros": result[6],
                     "cui": cui,
                     "year_found": year,
+                    "historial": _get_historial(db, cui),
                 }
 
         except Exception as e:
@@ -231,6 +271,7 @@ def _route_search(db: Session, route_code: str, years: list[int]) -> dict | None
                     "cui": result[7],
                     "match_type": "route",
                     "year_found": year,
+                    "historial": _get_historial(db, result[7]),
                 }
         except Exception as e:
             print(f"[MEF-LOCAL] Route search error year {year}: {e}")
@@ -358,6 +399,7 @@ def _fts_search(db: Session, search_term: str, original_description: str, years:
                         "match_type": "fuzzy",
                         "year_found": year,
                         "match_score": round(best_score, 2),
+                        "historial": _get_historial(db, best_match[7]),
                     }
         except Exception as e:
             print(f"[MEF-LOCAL] FTS producto search error year {year}: {e}")
@@ -443,6 +485,7 @@ def _fts_search(db: Session, search_term: str, original_description: str, years:
                         "match_type": "fuzzy_meta",
                         "year_found": year,
                         "match_score": round(best_score, 2),
+                        "historial": _get_historial(db, best_match[7]),
                     }
         except Exception as e:
             print(f"[MEF-LOCAL] FTS meta search error year {year}: {e}")
@@ -527,4 +570,5 @@ def _empty_result(error: str = None, cui: str = None) -> dict:
         "error": error,
         "registros": 0,
         "cui": cui,
+        "historial": [],
     }
