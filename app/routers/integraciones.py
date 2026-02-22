@@ -87,9 +87,8 @@ def auto_update_mef():
         download_and_import_mef(now.year)
 
 def _get_next_interval_hours() -> int:
-    """Return 4 during business hours (8-18), 12 outside."""
-    hour = datetime.now().hour
-    return 4 if 8 <= hour < 18 else 12
+    """Return 4 always to guarantee 24/7 updates as requested."""
+    return 4
 
 def start_mef_scheduler():
     """Start the MEF auto-update scheduler with smart interval (called from main.py)"""
@@ -102,7 +101,7 @@ def start_mef_scheduler():
             replace_existing=True
         )
         mef_scheduler.start()
-        print(f"[MEF-UPDATE] Auto-update scheduler started (interval={_get_next_interval_hours()}h based on time of day)")
+        print(f"[MEF-UPDATE] Auto-update scheduler started (interval=4h 24/7)")
 
 def stop_mef_scheduler():
     """Stop the MEF auto-update scheduler"""
