@@ -46,20 +46,25 @@ def extract_project_type(text: str) -> str | None:
 
 
 def extract_cui(description: str) -> str | None:
-    """Extract CUI code from a licitacion description.
-    
-    CUI modernos (Invierte.pe) tienen 7 o 8 dígitos.
-    Números de 5-6 dígitos son SNIP antiguos y se ignoran.
-    """
+    """Extract CUI code from a licitacion description (7+ digits)."""
     if not description:
         return None
     matches = CUI_PATTERN.findall(description)
     for m in matches:
-        # Strip thousand separators (dots in Spanish format)
         digits = re.sub(r'[^\d]', '', m)
         if len(digits) >= 7:  # Valid CUI: 7+ digits
             return digits
-    # Don't fall back to SNIP numbers as CUI — they point to wrong projects
+    return None
+
+def extract_snip(description: str) -> str | None:
+    """Extract SNIP code from a licitacion description (5-6 digits)."""
+    if not description:
+        return None
+    matches = SNIP_PATTERN.findall(description)
+    for m in matches:
+        digits = re.sub(r'[^\d]', '', m)
+        if 5 <= len(digits) <= 6:  # Valid SNIP: 5-6 digits
+            return digits
     return None
 
 
@@ -233,6 +238,13 @@ def _route_search(db: Session, route_code: str, years: list[int]) -> dict | None
     return None
 
 
+def extract_numbers(text: str) -> set[str]:
+    """Extract all multi-digit numbers (like codes, lengths) from text."""
+    if not text:
+        return set()
+    return set(re.findall(r'\b\d{3,}\b', text))
+
+
 def _fts_search(db: Session, search_term: str, original_description: str, years: list[int],
                 departamento: str = None) -> dict | None:
     """
@@ -255,6 +267,7 @@ def _fts_search(db: Session, search_term: str, original_description: str, years:
     
     # Extract project type from the SEACE description for mismatch penalty
     orig_type = extract_project_type(original_description)
+    orig_nums = extract_numbers(original_description)
     
     for year in years:
         try:
@@ -314,6 +327,15 @@ def _fts_search(db: Session, search_term: str, original_description: str, years:
                     proj_type = extract_project_type(proj_name)
                     if orig_type and proj_type and orig_type != proj_type:
                         final_score -= 0.30
+                        
+                    # 1.3: Number matching bonus/penalty
+                    if orig_nums:
+                        proj_nums = extract_numbers(proj_name)
+                        shared_nums = orig_nums.intersection(proj_nums)
+                        if shared_nums:
+                            final_score += 0.20  # Bonus for exact number match
+                        else:
+                            final_score -= 0.15  # Penalty for missing numbers
                     
                     if final_score > best_score:
                         best_score = final_score
@@ -391,6 +413,15 @@ def _fts_search(db: Session, search_term: str, original_description: str, years:
                     meta_type = extract_project_type(meta_name)
                     if orig_type and meta_type and orig_type != meta_type:
                         final_score -= 0.30
+                        
+                    # 1.3: Number matching bonus/penalty
+                    if orig_nums:
+                        meta_nums = extract_numbers(meta_name)
+                        shared_nums = orig_nums.intersection(meta_nums)
+                        if shared_nums:
+                            final_score += 0.20
+                        else:
+                            final_score -= 0.15
                     
                     if final_score > best_score:
                         best_score = final_score
@@ -454,7 +485,18 @@ def get_ejecucion_financiera(db: Session, ruc: str, year: int, description: str 
         if result and result.get("encontrado") and result.get("pim", 0) > 0:
             return result
 
-    # ── Step 3: Route code search on local DB (for road projects) ──
+    # ── Step 3: Local DB SNIP exact match ──
+    if description:
+        snip = extract_snip(description)
+        if snip:
+            print(f"[MEF-LOCAL] SNIP extracted: {snip}. Trying direct local DB lookup...")
+            local_snip = get_ejecucion_by_cui(db, snip, years)
+            if local_snip["encontrado"] and local_snip.get("pim", 0) > 0:
+                local_snip["match_score"] = 1.0
+                local_snip["match_type"] = "snip_exact"
+                return local_snip
+
+    # ── Step 4: Route code search on local DB (for road projects) ──
     if description:
         route = extract_route_code(description)
         if route:
@@ -462,7 +504,7 @@ def get_ejecucion_financiera(db: Session, ruc: str, year: int, description: str 
             if result:
                 return result
 
-    # ── Step 4: FULLTEXT local DB filtered by departamento (last resort) ──
+    # ── Step 5: FULLTEXT local DB filtered by departamento (last resort) ──
     if description:
         search_term = clean_search_text(description)
         if len(search_term) > 5:
