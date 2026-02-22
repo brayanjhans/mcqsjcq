@@ -20,6 +20,7 @@ import {
 import type { Licitacion, Adjudicacion, EjecucionFinanciera, GarantiasResponse, HistorialAnual } from "@/types/licitacion";
 import { licitacionService } from "@/lib/services/licitacionService";
 import { integracionService } from "@/lib/services/integracionService";
+import CountUp from "react-countup";
 
 const PdfIcon = ({ className }: { className?: string }) => (
     <img
@@ -68,18 +69,30 @@ function HistorialChart({ historial }: { historial: HistorialAnual[] }) {
                         {visible.map(h => (
                             <tr key={h.year} className="hover:bg-slate-50/70 dark:hover:bg-white/5 transition-colors">
                                 <td className="py-3 px-4 text-sm font-black text-slate-800 dark:text-white">{h.year}</td>
-                                <td className="py-3 px-4 text-xs text-slate-500 dark:text-slate-400 text-right font-mono">{fmt(h.pia)}</td>
-                                <td className="py-3 px-4 text-xs font-bold text-slate-700 dark:text-slate-200 text-right font-mono">{fmt(h.pim)}</td>
-                                <td className="py-3 px-4 text-xs text-slate-500 dark:text-slate-400 text-right font-mono">{fmt(h.certificado)}</td>
-                                <td className="py-3 px-4 text-xs text-slate-500 dark:text-slate-400 text-right font-mono">{fmt(h.compromiso_anual)}</td>
-                                <td className="py-3 px-4 text-xs font-bold text-blue-600 dark:text-blue-400 text-right font-mono">{fmt(h.devengado)}</td>
-                                <td className="py-3 px-4 text-xs font-bold text-emerald-600 dark:text-emerald-400 text-right font-mono">{fmt(h.girado)}</td>
+                                <td className="py-3 px-4 text-xs text-slate-500 dark:text-slate-400 text-right font-mono">
+                                    <CountUp end={h.pia} prefix="S/ " decimals={2} duration={1} separator="," />
+                                </td>
+                                <td className="py-3 px-4 text-xs font-bold text-slate-700 dark:text-slate-200 text-right font-mono">
+                                    <CountUp end={h.pim} prefix="S/ " decimals={2} duration={1.2} separator="," />
+                                </td>
+                                <td className="py-3 px-4 text-xs text-slate-500 dark:text-slate-400 text-right font-mono">
+                                    <CountUp end={h.certificado} prefix="S/ " decimals={2} duration={1} separator="," />
+                                </td>
+                                <td className="py-3 px-4 text-xs text-slate-500 dark:text-slate-400 text-right font-mono">
+                                    <CountUp end={h.compromiso_anual} prefix="S/ " decimals={2} duration={1} separator="," />
+                                </td>
+                                <td className="py-3 px-4 text-xs font-bold text-blue-600 dark:text-blue-400 text-right font-mono">
+                                    <CountUp end={h.devengado} prefix="S/ " decimals={2} duration={1.5} separator="," />
+                                </td>
+                                <td className="py-3 px-4 text-xs font-bold text-emerald-600 dark:text-emerald-400 text-right font-mono">
+                                    <CountUp end={h.girado} prefix="S/ " decimals={2} duration={2} separator="," />
+                                </td>
                                 <td className="py-3 px-4 text-right">
                                     <span className={`text-xs font-black ${h.avance_pct >= 80 ? 'text-emerald-600' :
                                         h.avance_pct >= 40 ? 'text-amber-600' :
                                             h.avance_pct > 0 ? 'text-blue-600' : 'text-slate-400'
                                         }`}>
-                                        {h.avance_pct > 0 ? `${h.avance_pct}%` : '—'}
+                                        {h.avance_pct > 0 ? <CountUp end={h.avance_pct} decimals={1} duration={2} suffix="%" /> : '—'}
                                     </span>
                                 </td>
                             </tr>
@@ -197,10 +210,30 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
     };
 
     if (loading) return (
-        <div className="min-h-screen bg-slate-50 dark:bg-[#0b122b] flex items-center justify-center p-10">
-            <div className="flex flex-col items-center gap-3">
-                <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-                <p className="text-slate-500 font-medium text-sm">Cargando detalles...</p>
+        <div className="min-h-screen bg-slate-50 dark:bg-[#0b122b] p-4 sm:p-6 lg:p-8 transition-colors duration-300">
+            <div className="mx-auto max-w-5xl space-y-6">
+                <div className="h-5 w-36 bg-slate-200 dark:bg-slate-800 rounded-md animate-pulse"></div>
+                <div className="rounded-2xl border border-slate-200 bg-white p-6 md:p-8 shadow-md dark:border-white/10 dark:bg-[#111c44] animate-pulse">
+                    <div className="flex flex-col md:flex-row gap-4 mb-8">
+                        <div className="flex-1 space-y-4">
+                            <div className="flex gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-slate-200 dark:bg-slate-800"></div>
+                                <div className="space-y-2 pt-1">
+                                    <div className="h-6 w-48 bg-slate-200 dark:bg-slate-800 rounded"></div>
+                                    <div className="h-3 w-24 bg-slate-200 dark:bg-slate-800 rounded"></div>
+                                </div>
+                            </div>
+                            <div className="h-20 w-full bg-slate-100 dark:bg-slate-800/50 rounded-xl"></div>
+                        </div>
+                        <div className="w-full md:w-56 h-28 bg-slate-100 dark:bg-slate-800/50 rounded-2xl"></div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 py-8 border-t border-slate-100 dark:border-white/5">
+                        <div className="space-y-3"><div className="h-4 w-32 bg-slate-200 dark:bg-slate-800 rounded"></div><div className="h-12 w-full bg-slate-100 dark:bg-slate-800/50 rounded-lg"></div></div>
+                        <div className="space-y-3"><div className="h-4 w-32 bg-slate-200 dark:bg-slate-800 rounded"></div><div className="h-12 w-full bg-slate-100 dark:bg-slate-800/50 rounded-lg"></div></div>
+                        <div className="space-y-3"><div className="h-4 w-32 bg-slate-200 dark:bg-slate-800 rounded"></div><div className="h-12 w-full bg-slate-100 dark:bg-slate-800/50 rounded-lg"></div></div>
+                    </div>
+                </div>
             </div>
         </div>
     );
@@ -274,7 +307,13 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                         <div className="w-full md:w-auto p-5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700">
                             <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Monto Estimado</p>
                             <p className="text-2xl font-black text-indigo-600 dark:text-indigo-400">
-                                {formatCurrency(licitacion.monto_estimado, licitacion.moneda)}
+                                <CountUp
+                                    end={licitacion.monto_estimado || 0}
+                                    prefix={licitacion.moneda === "USD" ? "$ " : "S/ "}
+                                    decimals={2}
+                                    duration={1.5}
+                                    separator=","
+                                />
                             </p>
                             <div className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-700">
                                 <div className="flex justify-between items-center gap-4 text-xs">
@@ -338,7 +377,15 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                             <div className="space-y-3 pl-6">
                                 <div className="flex justify-between items-center p-2 rounded bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5">
                                     <span className="text-xs font-medium text-slate-500">Monto Adjudicado</span>
-                                    <span className="text-sm font-bold text-emerald-600">{formatCurrency(licitacion.monto_total_adjudicado, licitacion.moneda)}</span>
+                                    <span className="text-sm font-bold text-emerald-600">
+                                        <CountUp
+                                            end={licitacion.monto_total_adjudicado || 0}
+                                            prefix={licitacion.moneda === "USD" ? "$ " : "S/ "}
+                                            decimals={2}
+                                            duration={2}
+                                            separator=","
+                                        />
+                                    </span>
                                 </div>
                                 <div className="grid grid-cols-2 gap-2">
                                     <div className="bg-slate-50 dark:bg-white/5 p-2 rounded border border-slate-100 dark:border-white/5">
@@ -387,11 +434,11 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                         </div>
 
                         {loadingIntegracion ? (
-                            <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-xl">
-                                <Loader2 className="w-5 h-5 text-indigo-500 animate-spin" />
-                                <div>
-                                    <span className="text-sm text-slate-500 font-medium block">Consultando API del MEF...</span>
-                                    <span className="text-[10px] text-slate-400">La API del MEF puede tardar hasta 3 minutos en responder</span>
+                            <div className="animate-pulse space-y-4">
+                                <div className="h-28 bg-slate-100 dark:bg-slate-800/50 rounded-xl w-full border border-slate-200 dark:border-slate-800"></div>
+                                <div className="flex justify-between items-center px-2">
+                                    <div className="h-3 bg-slate-200 dark:bg-slate-800 rounded w-48"></div>
+                                    <div className="h-3 bg-slate-200 dark:bg-slate-800 rounded w-24"></div>
                                 </div>
                             </div>
                         ) : ejecucion ? (
@@ -414,29 +461,29 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                                         <tbody className="bg-white dark:bg-[#111c44]">
                                             <tr>
                                                 <td className="py-4 px-4 text-xs font-semibold text-slate-600 dark:text-slate-400">
-                                                    {formatCurrency(ejecucion.pia)}
+                                                    <CountUp end={ejecucion.pia} prefix="S/ " decimals={2} duration={1} separator="," />
                                                 </td>
                                                 <td className="py-4 px-4 text-xs font-bold text-slate-900 dark:text-white">
-                                                    {formatCurrency(ejecucion.pim)}
+                                                    <CountUp end={ejecucion.pim} prefix="S/ " decimals={2} duration={1.2} separator="," />
                                                 </td>
                                                 <td className="py-4 px-4 text-xs font-medium text-slate-600 dark:text-slate-400">
-                                                    {formatCurrency(ejecucion.certificado)}
+                                                    <CountUp end={ejecucion.certificado} prefix="S/ " decimals={2} duration={1} separator="," />
                                                 </td>
                                                 <td className="py-4 px-4 text-xs font-medium text-slate-600 dark:text-slate-400">
-                                                    {formatCurrency(ejecucion.compromiso_anual)}
+                                                    <CountUp end={ejecucion.compromiso_anual} prefix="S/ " decimals={2} duration={1} separator="," />
                                                 </td>
                                                 <td className="py-4 px-4 text-sm font-bold text-blue-600">
-                                                    {formatCurrency(ejecucion.devengado)}
+                                                    <CountUp end={ejecucion.devengado} prefix="S/ " decimals={2} duration={1.5} separator="," />
                                                 </td>
                                                 <td className="py-4 px-4 text-sm font-bold text-emerald-600">
-                                                    {formatCurrency(ejecucion.girado)}
+                                                    <CountUp end={ejecucion.girado} prefix="S/ " decimals={2} duration={2} separator="," />
                                                 </td>
                                                 <td className="py-4 px-4 text-right">
                                                     {(() => {
                                                         const avance = ejecucion.pim > 0 ? (ejecucion.devengado / ejecucion.pim) * 100 : 0;
                                                         return (
                                                             <span className={`text-sm font-black ${avance >= 80 ? 'text-emerald-600' : avance >= 40 ? 'text-amber-600' : 'text-slate-600'}`}>
-                                                                {avance.toFixed(1)}%
+                                                                <CountUp end={avance} decimals={1} duration={2} suffix="%" />
                                                             </span>
                                                         );
                                                     })()}
