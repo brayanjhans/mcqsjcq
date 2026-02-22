@@ -122,17 +122,16 @@ def clean_search_text(text_input: str, limit: int | None = 12) -> str:
 def _build_year_list(primary_year: int) -> list[int]:
     """Build ordered list of years to try.
     
-    Priority: contract year first (most likely to have the budget allocation),
-    then current year (for active monitoring), then adjacent years.
-    This prevents 2024 contracts from showing 2026 data when 2024 execution is what matters.
+    Priority: current year first (as users usually want to see active execution),
+    then contract year, then adjacent years.
     """
     current_year = datetime.now().year
-    years = [primary_year]  # Contract year is the primary reference
-    if current_year != primary_year:
-        years.append(current_year)  # Current year for active monitoring
+    years = [current_year]  # Current year is primary reference for real-time monitoring
+    if primary_year != current_year:
+        years.append(primary_year)  # Contract year as fallback
     
-    # Add adjacent years as fallback
-    for y in [primary_year + 1, current_year - 1, primary_year - 1]:
+    # Add adjacent years as extended fallback
+    for y in [current_year - 1, primary_year + 1, primary_year - 1]:
         if y not in years and y >= 2020:
             years.append(y)
     
@@ -215,6 +214,7 @@ def get_ejecucion_by_cui(db: Session, cui: str, years: list[int]) -> dict:
                     "error": None,
                     "registros": result[6],
                     "cui": cui,
+                    "match_type": "cui_exact",
                     "year_found": year,
                     "historial": _get_historial(db, cui),
                 }

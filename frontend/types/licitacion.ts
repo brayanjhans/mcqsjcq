@@ -110,6 +110,7 @@ export interface EjecucionFinanciera {
     error?: string | null;
     ruc_consultado?: string;
     year?: number;
+    year_found?: number;
     id_contrato?: string;
     cui?: string | null;
     // Match confidence fields (5.1)

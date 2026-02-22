@@ -365,22 +365,22 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                             {loadingIntegracion && <Loader2 className="w-4 h-4 text-slate-400 animate-spin" />}
                             {/* 5.1: Confidence badge */}
                             {!loadingIntegracion && ejecucion && (
-                                <span className={`ml-auto inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border ${ejecucion.encontrado && (ejecucion.match_type === 'cui_ssi' || ejecucion.source === 'ssi_api')
+                                <span className={`ml-auto inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border ${ejecucion.encontrado && (ejecucion.match_type === 'cui_ssi' || ejecucion.match_type === 'cui_exact' || ejecucion.match_type === 'snip_exact' || ejecucion.source === 'ssi_api')
                                     ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                                     : ejecucion.encontrado
                                         ? 'bg-amber-50 text-amber-700 border-amber-200'
                                         : 'bg-red-50 text-red-600 border-red-200'
                                     }`}>
-                                    <span className={`w-2 h-2 rounded-full ${ejecucion.encontrado && (ejecucion.match_type === 'cui_ssi' || ejecucion.source === 'ssi_api')
+                                    <span className={`w-2 h-2 rounded-full ${ejecucion.encontrado && (ejecucion.match_type === 'cui_ssi' || ejecucion.match_type === 'cui_exact' || ejecucion.match_type === 'snip_exact' || ejecucion.source === 'ssi_api')
                                         ? 'bg-emerald-500'
                                         : ejecucion.encontrado
                                             ? 'bg-amber-500'
                                             : 'bg-red-500'
                                         }`} />
-                                    {ejecucion.encontrado && (ejecucion.match_type === 'cui_ssi' || ejecucion.source === 'ssi_api')
-                                        ? `Datos exactos · CUI ${ejecucion.cui} · ${ejecucion.year ?? '—'}`
+                                    {ejecucion.encontrado && (ejecucion.match_type === 'cui_ssi' || ejecucion.match_type === 'cui_exact' || ejecucion.match_type === 'snip_exact' || ejecucion.source === 'ssi_api')
+                                        ? `Datos exactos · CUI ${ejecucion.cui} · ${ejecucion.year_found ?? ejecucion.year ?? '—'}`
                                         : ejecucion.encontrado
-                                            ? `Aprox. ${ejecucion.match_score != null ? Math.round(ejecucion.match_score * 100) + '%' : ''} · ${ejecucion.year ?? '—'}`
+                                            ? `Aprox. ${ejecucion.match_score != null ? Math.round(ejecucion.match_score * 100) + '%' : ''} · ${ejecucion.year_found ?? ejecucion.year ?? '—'}`
                                             : 'Sin datos MEF'}
                                 </span>
                             )}
