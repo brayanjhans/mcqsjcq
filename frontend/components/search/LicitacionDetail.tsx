@@ -69,18 +69,30 @@ function HistorialChart({ historial }: { historial: HistorialAnual[] }) {
                         {visible.map(h => (
                             <tr key={h.year} className="hover:bg-slate-50/70 dark:hover:bg-white/5 transition-colors">
                                 <td className="py-3 px-4 text-sm font-black text-slate-800 dark:text-white">{h.year}</td>
-                                <td className="py-3 px-4 text-xs text-slate-500 dark:text-slate-400 text-right font-mono">{fmt(h.pia)}</td>
-                                <td className="py-3 px-4 text-xs font-bold text-slate-700 dark:text-slate-200 text-right font-mono">{fmt(h.pim)}</td>
-                                <td className="py-3 px-4 text-xs text-slate-500 dark:text-slate-400 text-right font-mono">{fmt(h.certificado)}</td>
-                                <td className="py-3 px-4 text-xs text-slate-500 dark:text-slate-400 text-right font-mono">{fmt(h.compromiso_anual)}</td>
-                                <td className="py-3 px-4 text-xs font-bold text-blue-600 dark:text-blue-400 text-right font-mono">{fmt(h.devengado)}</td>
-                                <td className="py-3 px-4 text-xs font-bold text-emerald-600 dark:text-emerald-400 text-right font-mono">{fmt(h.girado)}</td>
+                                <td className="py-3 px-4 text-xs text-slate-500 dark:text-slate-400 text-right font-mono">
+                                    <CountUp end={h.pia} prefix="S/ " decimals={2} duration={1} separator="," />
+                                </td>
+                                <td className="py-3 px-4 text-xs font-bold text-slate-700 dark:text-slate-200 text-right font-mono">
+                                    <CountUp end={h.pim} prefix="S/ " decimals={2} duration={1.2} separator="," />
+                                </td>
+                                <td className="py-3 px-4 text-xs text-slate-500 dark:text-slate-400 text-right font-mono">
+                                    <CountUp end={h.certificado} prefix="S/ " decimals={2} duration={1} separator="," />
+                                </td>
+                                <td className="py-3 px-4 text-xs text-slate-500 dark:text-slate-400 text-right font-mono">
+                                    <CountUp end={h.compromiso_anual} prefix="S/ " decimals={2} duration={1} separator="," />
+                                </td>
+                                <td className="py-3 px-4 text-xs font-bold text-blue-600 dark:text-blue-400 text-right font-mono">
+                                    <CountUp end={h.devengado} prefix="S/ " decimals={2} duration={1.5} separator="," />
+                                </td>
+                                <td className="py-3 px-4 text-xs font-bold text-emerald-600 dark:text-emerald-400 text-right font-mono">
+                                    <CountUp end={h.girado} prefix="S/ " decimals={2} duration={2} separator="," />
+                                </td>
                                 <td className="py-3 px-4 text-right">
                                     <span className={`text-xs font-black ${h.avance_pct >= 80 ? 'text-emerald-600' :
                                         h.avance_pct >= 40 ? 'text-amber-600' :
                                             h.avance_pct > 0 ? 'text-blue-600' : 'text-slate-400'
                                         }`}>
-                                        {h.avance_pct > 0 ? `${h.avance_pct.toFixed(1)}%` : '—'}
+                                        {h.avance_pct > 0 ? <CountUp end={h.avance_pct} decimals={1} duration={2} suffix="%" /> : '—'}
                                     </span>
                                 </td>
                             </tr>
@@ -449,29 +461,29 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                                         <tbody className="bg-white dark:bg-[#111c44]">
                                             <tr>
                                                 <td className="py-4 px-4 text-xs font-semibold text-slate-600 dark:text-slate-400">
-                                                    {formatCurrency(ejecucion.pia)}
+                                                    <CountUp end={ejecucion.pia} prefix="S/ " decimals={2} duration={1} separator="," />
                                                 </td>
                                                 <td className="py-4 px-4 text-xs font-bold text-slate-900 dark:text-white">
-                                                    {formatCurrency(ejecucion.pim)}
+                                                    <CountUp end={ejecucion.pim} prefix="S/ " decimals={2} duration={1.2} separator="," />
                                                 </td>
                                                 <td className="py-4 px-4 text-xs font-medium text-slate-600 dark:text-slate-400">
-                                                    {formatCurrency(ejecucion.certificado)}
+                                                    <CountUp end={ejecucion.certificado} prefix="S/ " decimals={2} duration={1} separator="," />
                                                 </td>
                                                 <td className="py-4 px-4 text-xs font-medium text-slate-600 dark:text-slate-400">
-                                                    {formatCurrency(ejecucion.compromiso_anual)}
+                                                    <CountUp end={ejecucion.compromiso_anual} prefix="S/ " decimals={2} duration={1} separator="," />
                                                 </td>
                                                 <td className="py-4 px-4 text-sm font-bold text-blue-600">
-                                                    {formatCurrency(ejecucion.devengado)}
+                                                    <CountUp end={ejecucion.devengado} prefix="S/ " decimals={2} duration={1.5} separator="," />
                                                 </td>
                                                 <td className="py-4 px-4 text-sm font-bold text-emerald-600">
-                                                    {formatCurrency(ejecucion.girado)}
+                                                    <CountUp end={ejecucion.girado} prefix="S/ " decimals={2} duration={2} separator="," />
                                                 </td>
                                                 <td className="py-4 px-4 text-right">
                                                     {(() => {
                                                         const avance = ejecucion.pim > 0 ? (ejecucion.devengado / ejecucion.pim) * 100 : 0;
                                                         return (
                                                             <span className={`text-sm font-black ${avance >= 80 ? 'text-emerald-600' : avance >= 40 ? 'text-amber-600' : 'text-slate-600'}`}>
-                                                                {avance.toFixed(1)}%
+                                                                <CountUp end={avance} decimals={1} duration={2} suffix="%" />
                                                             </span>
                                                         );
                                                     })()}
