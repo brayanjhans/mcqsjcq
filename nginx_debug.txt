@@ -1,0 +1,118 @@
+--- BUSCANDO CONF NGINX DE MCQS-JCQ.COM ---
+
+--- CONTENIDO DE /etc/nginx/ssl-certificates/api.mcqs-jcq.com.crt ---
+
+--- CONTENIDO DE /etc/nginx/ssl-certificates/mcqs-jcq.com.crt ---
+
+--- CONTENIDO DE /etc/nginx/ssl-certificates/api.mcqs-jcq.com.key ---
+
+--- CONTENIDO DE /etc/nginx/ssl-certificates/mcqs-jcq.com.key ---
+
+--- CONTENIDO DE /etc/nginx/sites-enabled/mcqs-jcq.com.conf.backup3 ---
+  listen 80;
+  listen [::]:80;
+  listen 443 quic;
+  listen 443 ssl;
+  listen [::]:443 quic;
+  listen [::]:443 ssl;
+  server_name mcqs-jcq.com www.mcqs-jcq.com;
+    proxy_pass http://127.0.0.1:8000/api/;
+    proxy_pass http://127.0.0.1:3000;
+
+--- CONTENIDO DE /etc/nginx/sites-enabled/api.mcqs-jcq.com.conf ---
+  listen 80;
+  listen [::]:80;
+  listen 443 quic;
+  listen 443 ssl;
+  listen [::]:443 quic;
+  listen [::]:443 ssl;
+  server_name api.mcqs-jcq.com;
+    proxy_pass http://127.0.0.1:8000;
+
+--- CONTENIDO DE /etc/nginx/sites-enabled/mcqs-jcq.com.conf.backup ---
+  listen 80;
+  listen [::]:80;
+  listen 443 quic;
+  listen 443 ssl;
+  listen [::]:443 quic;
+  listen [::]:443 ssl;
+  server_name mcqs-jcq.com www1.mcqs-jcq.com;
+  root /home/mcqs-jcq/htdocs/mcqs-jcq.com/frontend/out;
+    proxy_pass http://127.0.0.1:8000/api/;
+    proxy_pass http://127.0.0.1:3000/seace/;
+    proxy_pass http://127.0.0.1:3002/;
+
+--- CONTENIDO DE /etc/nginx/sites-enabled/api.mcqs-jcq.com.conf.backup ---
+  listen 80;
+  listen [::]:80;
+  listen 443 quic;
+  listen 443 ssl;
+  listen [::]:443 quic;
+  listen [::]:443 ssl;
+  server_name api.mcqs-jcq.com;
+  root /home/api-user/htdocs/api.mcqs-jcq.com;
+    proxy_pass http://127.0.0.1:8000;
+    proxy_ssl_server_name on;
+    proxy_pass_request_headers on;
+
+--- CONTENIDO DE /etc/nginx/sites-enabled/mcqs-jcq.com.conf ---
+  listen 80;
+  listen [::]:80;
+  listen 443 ssl;
+  listen [::]:443 ssl;
+  server_name mcqs-jcq.com www.mcqs-jcq.com;
+    proxy_pass http://127.0.0.1:3000;
+    proxy_pass http://127.0.0.1:8000/api/;
+
+--- CONTENIDO DE /etc/nginx/sites-enabled/mcqs-jcq.com.conf.backup2 ---
+  listen 80;
+  listen [::]:80;
+  listen 443 quic;
+  listen 443 ssl;
+  listen [::]:443 quic;
+  listen [::]:443 ssl;
+  server_name mcqs-jcq.com www.mcqs-jcq.com;
+    root /home/mcqs-jcq/htdocs/mcqs-jcq.com/frontend;
+    proxy_pass http://127.0.0.1:8000/api/;
+    proxy_pass http://127.0.0.1:3000;
+
+--- CONTENIDO DE /etc/nginx/sites-enabled/mcqs-jcq.com.conf.bak ---
+  listen 80;
+  listen [::]:80;
+  listen 443 quic;
+  listen 443 ssl;
+  listen [::]:443 quic;
+  listen [::]:443 ssl;
+  server_name mcqs-jcq.com www.mcqs-jcq.com;
+    proxy_pass http://127.0.0.1:8000/api/;
+    proxy_pass http://127.0.0.1:3000;
+
+--- DETALLES DEL FRONTEND PM2 ---
++--- frontend-prod
+namespace : default
+version : N/A
+pid : 1503
+pm2 id : 0
+status : online
+mode : fork
+restarted : 0
+uptime : 5m
+memory usage : 55.4mb 
+error log : /root/.pm2/logs/frontend-prod-error.log
+watching : no
+PID file : /root/.pm2/pids/frontend-prod-0.pid
+
++--- api-mcqs
+namespace : default
+version : N/A
+pid : 1509
+pm2 id : 1
+status : online
+mode : fork
+restarted : 0
+uptime : 5m
+memory usage : 24.6mb 
+error log : /root/.pm2/logs/api-mcqs-error.log
+watching : no
+PID file : /root/.pm2/pids/api-mcqs-1.pid
+
