@@ -99,6 +99,11 @@ export function HeaderActions() {
 
         checkInitialStatus();
         fetchLastUpdated();
+
+        // Sondeo automático cada 5 minutos para refrescar la fecha de actualización 
+        // en caso de que el planificador ETL (BackgroundScheduler) actúe en el VPS
+        const intervalId = setInterval(fetchLastUpdated, 5 * 60 * 1000);
+        return () => clearInterval(intervalId);
     }, []);
 
     const startPolling = () => {
