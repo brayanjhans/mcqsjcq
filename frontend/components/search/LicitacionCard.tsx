@@ -399,19 +399,17 @@ export const LicitacionCard: React.FC<Props> = ({
                     </div>
                 </div>
 
-                {/* 8. Tipo de Garantia (EXTENDED) - MOVED TO FIRST POSITION */}
-                {showExtendedDetails && (
-                    <div className="flex gap-3">
-                        <div className="w-4 flex justify-center pt-0.5 shrink-0">
-                            {/* SHIELD Check Icon  */}
-                            <ShieldCheck className="w-4 h-4 text-slate-400" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                            <p className="text-[10px] text-slate-500 font-medium uppercase mb-0.5">Tipo de Garantía</p>
-                            {renderGuaranteeBadges() || <p className="text-[10px] text-slate-400 italic">No especificada</p>}
-                        </div>
+                {/* 8. Tipo de Garantia */}
+                <div className="flex gap-3">
+                    <div className="w-4 flex justify-center pt-0.5 shrink-0">
+                        {/* SHIELD Check Icon  */}
+                        <ShieldCheck className="w-4 h-4 text-slate-400" />
                     </div>
-                )}
+                    <div className="flex-1 min-w-0">
+                        <p className="text-[10px] text-slate-500 font-medium uppercase mb-0.5">Tipo de Garantía</p>
+                        {renderGuaranteeBadges() || <p className="text-[10px] text-slate-400 italic">No especificada</p>}
+                    </div>
+                </div>
 
                 {/* 7. Ganador (EXTENDED - Always show structure if extended, N/A if missing) */}
                 {showExtendedDetails && (
@@ -477,18 +475,16 @@ export const LicitacionCard: React.FC<Props> = ({
                     </div>
                 )}
 
-                {/* 10. Financiera (EXTENDED) */}
-                {showExtendedDetails && (
-                    <div className="flex gap-3">
-                        <div className="w-4 flex justify-center pt-0.5 shrink-0">
-                            <Landmark className="w-4 h-4 text-slate-400" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                            <p className="text-[10px] text-slate-500 font-medium uppercase mb-0.5">Entidades Financieras</p>
-                            {licitacion.entidades_financieras ? renderBankBadge() : <p className="text-[10px] text-slate-400 italic">No especificada</p>}
-                        </div>
+                {/* 10. Financiera */}
+                <div className="flex gap-3">
+                    <div className="w-4 flex justify-center pt-0.5 shrink-0">
+                        <Landmark className="w-4 h-4 text-slate-400" />
                     </div>
-                )}
+                    <div className="flex-1 min-w-0">
+                        <p className="text-[10px] text-slate-500 font-medium uppercase mb-0.5">Entidades Financieras</p>
+                        {licitacion.entidades_financieras ? renderBankBadge() : <p className="text-[10px] text-slate-400 italic">No especificada</p>}
+                    </div>
+                </div>
 
             </div>
 
