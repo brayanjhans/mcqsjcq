@@ -284,6 +284,21 @@ def get_licitaciones(
                         consortium_members.append(DetalleConsorcioSchema.model_validate(c))
             
             item_schema.miembros_consorcio = consortium_members
+            
+            # --- AGREGAR ENTIDADES FINANCIERAS Y TIPO DE GARANTÍA A LA LISTA ---
+            entidades_set = set()
+            garantias_set = set()
+            
+            if item.adjudicaciones:
+                for adj in item.adjudicaciones:
+                    if adj.entidad_financiera:
+                        entidades_set.add(adj.entidad_financiera)
+                    if adj.tipo_garantia and adj.tipo_garantia != 'SIN_GARANTIA':
+                        garantias_set.add(adj.tipo_garantia)
+                        
+            item_schema.entidades_financieras = " | ".join(sorted(entidades_set)) if entidades_set else None
+            item_schema.tipo_garantia = ",".join(sorted(garantias_set)) if garantias_set else None
+            
             results.append(item_schema)
 
     return PaginatedLicitacionesSchema(
