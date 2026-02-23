@@ -146,6 +146,8 @@ class LicitacionListSchema(BaseModel):
     monto_estimado: Optional[Decimal] = None
     fecha_publicacion: Optional[date] = None
     estado_proceso: Optional[str] = None
+    entidades_financieras: Optional[str] = None
+    tipo_garantia: Optional[str] = None
     miembros_consorcio: List[DetalleConsorcioSchema] = []
 
     model_config = ConfigDict(from_attributes=True)

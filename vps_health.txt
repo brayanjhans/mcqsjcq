@@ -1,0 +1,25 @@
+--- BUSCANDO SUBPROCESOS DE PYTHON ---
+root         797  0.1  0.3 790104 55564 ?        Ssl  Feb21   2:25 /usr/bin/python3 /usr/bin/fail2ban-server -xf start
+root         821  0.0  0.1  32892 20736 ?        Ss   Feb21   0:00 /usr/bin/python3 /usr/bin/networkd-dispatcher --run-startup-triggers
+root        1073  0.0  0.1 110340 22912 ?        Ssl  Feb21   0:00 /usr/bin/python3 /usr/share/unattended-upgrades/unattended-upgrade-shutdown --wait-for-signal
+root       41689  0.4  0.1  35552 25600 ?        Ss   09:55   0:02 /home/admin/public_html/api/venv/bin/python3 /home/admin/public_html/api/venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
+root       41691  0.0  0.0  19988 12672 ?        S    09:55   0:00 /home/admin/public_html/api/venv/bin/python3 -c from multiprocessing.resource_tracker import main;main(7)
+root       41692  1.4  0.9 746860 157120 ?       Sl   09:55   0:09 /home/admin/public_html/api/venv/bin/python3 -c from multiprocessing.spawn import spawn_main; spawn_main(tracker_fd=8, pipe_handle=10) --multiprocessing-fork
+root       41693  1.8  0.9 892944 154176 ?       Sl   09:55   0:11 /home/admin/public_html/api/venv/bin/python3 -c from multiprocessing.spawn import spawn_main; spawn_main(tracker_fd=8, pipe_handle=14) --multiprocessing-fork
+root       41694  1.3  0.9 818172 151968 ?       Sl   09:55   0:08 /home/admin/public_html/api/venv/bin/python3 -c from multiprocessing.spawn import spawn_main; spawn_main(tracker_fd=8, pipe_handle=18) --multiprocessing-fork
+root       41695  1.4  0.9 820940 156336 ?       Sl   09:55   0:09 /home/admin/public_html/api/venv/bin/python3 -c from multiprocessing.spawn import spawn_main; spawn_main(tracker_fd=8, pipe_handle=22) --multiprocessing-fork
+root       42247  0.0  0.0   7664  3456 ?        Ss   10:06   0:00 bash -c ps aux | grep python
+root       42249  0.0  0.0   6868  2304 ?        S    10:06   0:00 grep python
+
+--- REVISANDO DISCO Y MEMORIA ---
+               total        used        free      shared  buff/cache   available
+Mem:           15992        8038        1132         150        7390        7953
+Swap:           2047           0        2047
+Filesystem      Size  Used Avail Use% Mounted on
+tmpfs           1.6G  1.2M  1.6G   1% /run
+/dev/sda1       193G   42G  152G  22% /
+tmpfs           7.9G     0  7.9G   0% /dev/shm
+tmpfs           5.0M     0  5.0M   0% /run/lock
+/dev/sda16      881M   66M  753M   9% /boot
+/dev/sda15      105M  6.2M   99M   6% /boot/efi
+tmpfs           1.6G   12K  1.6G   1% /run/user/0

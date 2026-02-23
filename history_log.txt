@@ -1,0 +1,9 @@
+curl -s "https://mef-proxy.jhans-mef-proxy.workers.dev/ebstd/SiafWsSSIPublica/api/busqueda/busInvNombreSSI?val=2314890"
+curl -s "https://mef-proxy.jhans-mef-proxy.workers.dev/ebstd/SiafWsSSIPublica/api/busqueda/busInvNombreSSI?val=2314890"
+Invoke-WebRequest -Uri "https://mef-proxy.jhans-mef-proxy.workers.dev/ebstd/SiafWsSSIPublica/api/busqueda/busInvNombreSSI?val=2314890" | Select-Object -ExpandProperty Content
+curl -s "https://mef-proxy.jhans-mef-proxy.workers.dev/ebstd/SiafWsSSIPublica/api/busqueda/busInvNombreSSI?val=2314890" | Out-String
+$env:PYTHONPATH="."; .\venv\Scripts\python -c "import requests; r = requests.get('https://ofi5.mef.gob.pe/ebstd/SiafWsSSIPublica.svc?singleWsdl'); print(r.status_code); print(r.text[:500])"
+$env:PYTHONPATH="."; .\venv\Scripts\python -c "import requests; print((requests.get('https://mef-proxy.jhans-mef-proxy.workers.dev/ebstd/SiafWsSSIPublica.svc?wsdl', timeout=10).text)[:1000])"
+$env:PYTHONPATH="."; .\venv\Scripts\python -c "import os; f=os.path.expandvars(r'%APPDATA%\Microsoft\Windows\PowerShell\PSReadLine\ConsoleHost_history.txt'); [print(line.strip()[:200]) for line in open(f, encoding='utf-8') if 'curl' in line and 'SiafWsSSIPublica' in line]"
+$env:PYTHONPATH="."; .\venv\Scripts\python -c "import os; f=os.path.expandvars(r'%APPDATA%\Microsoft\Windows\PowerShell\PSReadLine\ConsoleHost_history.txt'); [print(line.strip()) for line in open(f, encoding='utf-8') if 'SiafWsSSIPublica' in line]"
+$env:PYTHONPATH="."; .\venv\Scripts\python -c "import os; f=os.path.expandvars(r'%APPDATA%\Microsoft\Windows\PowerShell\PSReadLine\ConsoleHost_history.txt'); out = [line.strip() for line in open(f, encoding='utf-8') if 'SiafWsSSIPublica' in line]; open('history_log.txt', 'w', encoding='utf-8').write('\n'.join(out))"

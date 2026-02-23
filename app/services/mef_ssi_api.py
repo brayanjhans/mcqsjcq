@@ -13,9 +13,14 @@ Endpoints used:
 - traeDetInvSSI   : Project details (sector, entidad, funcion)
 """
 import requests
-import difflib
+from app.database import SessionLocal
+from sqlalchemy import text
+import urllib3
+import os
 import unicodedata
 import re
+
+urllib3.disable_warnings()
 from typing import Optional
 
 SSI_BASE = "https://ofi5.mef.gob.pe/invierteWS/Dashboard"
@@ -34,7 +39,10 @@ def _post(endpoint: str, payload: dict) -> Optional[list | dict]:
     """Make a POST request to the SSI API and return parsed JSON."""
     try:
         url = f"{SSI_BASE}/{endpoint}"
-        r = requests.post(url, data=payload, headers=SSI_HEADERS, timeout=TIMEOUT)
+        proxy_url = os.environ.get("IPROYAL_PROXY_URL")
+        proxies = {"http": proxy_url, "https": proxy_url} if proxy_url else None
+        
+        r = requests.post(url, data=payload, headers=SSI_HEADERS, timeout=TIMEOUT, proxies=proxies, verify=False)
         if r.status_code == 200 and r.text.strip():
             return r.json()
         return None
@@ -97,20 +105,63 @@ def get_ejecucion_by_cui_ssi(cui: str) -> Optional[dict]:
         )
     )
 
+    # Fetch monthly execution history for the CUI
+    data_mes = _post("traeDevengSSI", {"id": cui, "tipo": "MES"})
+    monthly_by_year = {}
+    if data_mes and isinstance(data_mes, list):
+        for m in data_mes:
+            year = int(m.get("NUM_ANIO", 0))
+            if year not in monthly_by_year:
+                monthly_by_year[year] = []
+            monthly_by_year[year].append({
+                "mes": int(m.get("COD_MES", 0)),
+                "pia": float(m.get("MTO_PIA", 0) or 0),
+                "pim": float(m.get("MTO_PIM", 0) or 0),
+                "certificado": float(m.get("MTO_CERT", 0) or 0),
+                "compromiso_anual": float(m.get("MTO_COMPROM", 0) or 0),
+                "devengado": float(m.get("MTO_DEVEN", 0) or 0),
+                "girado": float(m.get("MTO_GIRADO", 0) or 0),
+            })
+        
+        # Consultamos el girado anual real de la BD local
+        girado_anual_db = {}
+        try:
+            db = SessionLocal()
+            rows = db.execute(text("SELECT ano_eje, SUM(monto_girado) FROM mef_ejecucion WHERE producto_proyecto LIKE :cui GROUP BY ano_eje"), {"cui": f"{cui}%"}).fetchall()
+            for r in rows:
+                girado_anual_db[int(r[0])] = float(r[1] or 0)
+            db.close()
+        except:
+            pass
+
+        # Sort months within each year chronologically and distribute girado
+        for y in monthly_by_year:
+            monthly_by_year[y] = sorted(monthly_by_year[y], key=lambda x: x["mes"])
+            g_restante = girado_anual_db.get(y, 0.0)
+            if g_restante > 0:
+                for m in monthly_by_year[y]:
+                    # Asignamos girado hasta cubrir el devengado del mes
+                    if m["devengado"] > 0 and g_restante > 0:
+                        g_asignar = min(m["devengado"], g_restante)
+                        m["girado"] = g_asignar
+                        g_restante -= g_asignar
+
     # Build historial: all years sorted chronologically (for table display)
     historial = []
     for r in sorted(year_rows, key=lambda x: int(x.get("NUM_ANIO", 0))):
+        y_val = int(r.get("NUM_ANIO", 0))
         pim_h = float(r.get("MTO_PIM", 0) or 0)
         dev_h = float(r.get("MTO_DEVEN", 0) or 0)
         historial.append({
-            "year": int(r.get("NUM_ANIO", 0)),
+            "year": y_val,
             "pia": float(r.get("MTO_PIA", 0) or 0),
             "pim": pim_h,
             "certificado": float(r.get("MTO_CERT", 0) or 0),
             "compromiso_anual": float(r.get("MTO_COMPROM", 0) or 0),
             "devengado": dev_h,
-            "girado": float(r.get("MTO_GIRADO", 0) or 0),
+            "girado": girado_anual_db.get(y_val, float(r.get("MTO_GIRADO", 0) or 0)),
             "avance_pct": round((dev_h / pim_h * 100), 1) if pim_h > 0 else 0,
+            "meses": monthly_by_year.get(y_val, []),
         })
 
     for row in year_rows_sorted:
@@ -124,7 +175,7 @@ def get_ejecucion_by_cui_ssi(cui: str) -> Optional[dict]:
                 "certificado": float(row.get("MTO_CERT", 0) or 0),
                 "compromiso_anual": float(row.get("MTO_COMPROM", 0) or 0),
                 "devengado": float(row.get("MTO_DEVEN", 0) or 0),
-                "girado": float(row.get("MTO_GIRADO", 0) or 0),
+                "girado": girado_anual_db.get(year, float(row.get("MTO_GIRADO", 0) or 0)),
                 "encontrado": True,
                 "error": None,
                 "registros": 1,

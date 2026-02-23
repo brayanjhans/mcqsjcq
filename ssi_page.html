@@ -1,0 +1,1827 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta name="keywords" content="">
+    <meta name="description" content="">
+    <title>Aplicativo Inform&#225;tico del SSI</title>
+
+    <link rel="shortcut icon" href="#" />
+    <!--ESTILOS-->
+    <link href="/ssi/Content/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="/ssi/Content/css/jquery-ui.min.css" rel="stylesheet" />
+    <link href="/ssi/Content/css/font-awesome.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="/ssi/Content/repssi/style_ssi_mob.css">
+    <link rel="stylesheet" href="/ssi/Content/repssi/style_ssi.css" media="(min-width: 64em)" />
+
+    <!--SCRIPTS-->
+    <script src="/ssi/Scripts/js/jquery.min.js"></script>
+    <script src="/ssi/Scripts/js/popper.min.js"></script>
+    <script src="/ssi/Scripts/js/bootstrap.min.js"></script>
+
+    <script src="/ssi/Scripts/js/jquery-ui.min.js"></script>
+    <script src="/ssi/Scripts/js/chart.min.js"></script>
+    <script src="/ssi/Scripts/js/printThis.js"></script> 
+
+</head>
+<body  onload="detectDevice()">
+    <form id="form1" name="form1">
+        <div id="divContainer">
+            
+
+
+
+<div class="container">
+    <header>
+        <table class="table mb-0">
+            <tr>
+                <td width="50%" class="pb-0" style="border: none; text-align:left;">
+                    <img src="/ssi/Content/img/logo_f12b_1_ini.png" class="img_logo">
+                </td>
+
+                <td width="50%" class="pb-0" style="border: none; text-align:right;">
+                    <img src="/ssi/Content/img/logo_invpub.jpg" class="img_logo">
+                </td>
+            </tr>
+            <tr>
+                <td colspan="2" class="pt-0" style="border: none; text-align:center;">
+                    <img src="/ssi/Content/img/titulo_ssi_ini.png" class="img_titulo">
+                </td>
+            </tr>
+        </table>
+    </header>
+
+    <div class="row ">
+        <div class="col-12 " align="center">
+            <table class="table mb-1">
+                <tr>
+                    <td colspan="2" class=" pt-0 ">
+                        <ul class="nav nav-fill">
+                            <li class="nav-item "> &nbsp </li>
+                            <li class="nav-item "> &nbsp </li>
+                            <li class="nav-item "> &nbsp </li>
+                            <li class="nav-item "> &nbsp </li>
+                            <li class="nav-item "> &nbsp </li>
+                            <li class="nav-item "> &nbsp </li>
+                            <li class="nav-item pb-1" style="background-color:#D9D9D9; ">
+                                <a href="/invierte/#!/login/repssi" target="_blank" class="fil_oper">
+                                    Acceso a Operadores
+                                </a>
+                            </li>
+                        </ul>
+                    </td>
+                </tr>
+                <tr Style="background-color:#D9D9D9;  ">
+                    <td colspan="2" class=" p-1 m-1 fil_buscar">
+                        &nbsp&nbsp  Opciones de búsqueda
+                    </td>
+                </tr>
+                <tr>
+                    <td width="50%" style="border: none; ">
+                        <ul class="nav nav-fill">
+                            <li class="nav-item ">
+                                <div class="d-flex mb-2 ">
+                                    <input id="txt_cu" type="text" class="p-0 txt_bus" placeholder="Cód. SNIP o CUI" size="18" maxlength="7">
+                                    <span class="pt-1 align-items-start btn_bus" type="button" onclick="ConsProyInv()">
+                                        &nbsp <i class="fa fa-search"></i> &nbsp
+                                    </span>
+                                </div>
+                            </li>
+                            <li class="nav-item">
+                                <div class="d-flex ">
+                                    <input type="text" class="p-0 txt_bus" placeholder="Búsqueda por nombre" size="18" readonly
+                                           data-bs-toggle="modal" data-bs-target="#modBuscNom">
+                                    <span class="pt-1 align-items-start btn_bus" type="button" data-bs-toggle="modal" data-bs-target="#modBuscNom">
+                                        &nbsp <i class="fa fa-search"></i> &nbsp
+                                    </span>
+                                </div>
+                            </li>
+                        </ul>
+                    </td>
+                    <td width="50%" style="border: none; ">
+                        <ul class="nav nav-fill">
+                            <li class="nav-item ">
+                                <div class="d-flex mb-2">
+                                    <a href="https://ofi5.mef.gob.pe/geoinvierteportals/" target="_blank">
+                                        <img class="img_geoinv" src="/ssi/Content/img/geoinvierte.png" />
+                                    </a>
+
+                                    <span class="pt-1 align-items-start btn_bus" type="button">
+                                        &nbsp <i class="fa fa-search"></i> &nbsp
+                                    </span>
+
+                                </div>
+                            </li>
+                            <li class="nav-item">
+                                <div class="d-flex">
+                                    <img class="img_geoinv" src="/ssi/Content/img/resumen.png" data-bs-toggle="modal" data-bs-target="#divResumenCont" />
+                                    <span class="p-1 txt_bus">
+                                        Vista Resumen
+                                    </span>
+                                </div>
+                            </li>
+                            <li class="nav-item">
+                                <div class="d-flex ">
+                                    <span class="pt-1 align-items-start btn_bus" type="button" data-bs-toggle="modal" data-bs-target="#modDescarga" title="Búsqueda Agregada">
+                                        &nbsp <i class="fa fa-bars"></i> &nbsp
+                                    </span>
+                                </div>
+                            </li>
+                        </ul>
+                    </td>
+                </tr>
+            </table>
+
+            <nav class="navbar navbar-expand  ">
+                <ul class="nav nav-pills nav-fill w-100" role="tablist">
+                    <li class="nav-item">
+                        <span class="nav-link active" id="btn_gral" data-bs-toggle="pill" data-bs-target="#m_datos01" type="button" role="tab" style="text-align:center;">
+                            <img id="img_datgral" src="/ssi/Content/img/datgral_link_ini.png" class="img_tabs" data-toggle="tooltip" data-placement="right" title="Datos Generales">
+                        </span>
+                    </li>
+                    <li class="nav-item">
+                        <span class="nav-link" id="btn_finan" data-bs-toggle="pill" data-bs-target="#m_datos02" type="button" role="tab" style="text-align:center;">
+                            <img id="img_financ" src="/ssi/Content/img/financ_link_ini.png" class="img_tabs" data-toggle="tooltip" data-placement="right" title="Ejecución Financiera">
+                        </span>
+                    </li>
+                    <li class="nav-item">
+                        <span class="nav-link pb-0 mb-0" id="btn_desactiv" data-bs-toggle="pill" data-bs-target="" type="button" role="tab" style="text-align:center;">
+                            <img id="img_desactiv" src="/ssi/Content/img/vacio.png" class="img_desact" data-toggle="tooltip" data-placement="right" title="Riesgo de Desactivación">
+                        </span>
+                        <span class="nav-link m-0 p-0" id="txt_desactiv" style="text-align: center; font-size: .7rem; font-weight: bold; color: red; ">
+                            Faltan 30 días
+                        </span>
+                    </li>
+                    <li class="nav-item">
+                        <span class="nav-link" id="btn_seace" data-bs-toggle="pill" data-bs-target="#m_datos03" type="button" role="tab" style="text-align:left;">
+                            <img id="img_contrat" src="/ssi/Content/img/contrat_link_ini.png" class="img_tabs" data-toggle="tooltip" data-placement="right" title="Contrataciones">
+                        </span>
+                    </li>
+                    <li class="nav-item">
+                        <span class="nav-link" id="btn_infob" data-bs-toggle="pill" data-bs-target="#m_datos04" type="button" role="tab" style="text-align:left;">
+                            <img id="img_infobr" src="/ssi/Content/img/infobr_link_ini.png" class="img_tabs" data-toggle="tooltip" data-placement="right" title="InfObras">
+                        </span>
+                    </li>
+                    <li class="nav-item">
+                        <span class="nav-link" id="btn_alertas" data-bs-toggle="modal" data-bs-target="#modAlertassi" type="button" role="tab" style="text-align:left;">
+                            <img id="img_alertas" src="/ssi/Content/img/call_link.png" class="img_tabs" data-toggle="tooltip" data-placement="right" title="Alertas">
+                        </span>
+
+
+
+                    </li>
+                </ul>
+            </nav>
+
+        </div>
+    </div>
+
+    <div id="div_princ">
+        <div class="col-xs-12 ">
+            <div class="row m-1 ">
+                <table class="table tabla_cab ">
+                    <tr style="border-top: 3px solid white;">
+                        <td width="18%" class="fil_infgral p-1">CÓDIGO ÚNICO</td>
+                        <td id="td_cu" width="15%" class="fil_infgral02 p-1"></td>
+                        <td width="13%" class="fil_infgral p-1" style="border-left: 2px solid white;">CÓDIGO SNIP</td>
+                        <td id="td_snip" width="20%" class="fil_infgral02 p-1"></td>
+                        <td width="20%" class="fil_infgral p-1" style="border-left: 2px solid white;">FECHA DE REGISTRO</td>
+                        <td id="td_fecreg" width="14%" class="fil_infgral02 p-1" style=" text-align:center;"></td>
+                    </tr>
+                    <tr style="border-top: 2px solid white;  ">
+                        <td colspan="2" class="fil_infgral p-1" style=" vertical-align:middle;">NOMBRE DE LA INVERSIÓN</td>
+                        <td id="td_nominv" colspan="4" class="fil_infgral02 p-1" style=" vertical-align:middle;"></td>
+                    </tr>
+                    <tr style="border-top: 2px solid white; ">
+                        <td class="fil_infgral p-1" style=" vertical-align:middle;">ESTADO DE LA INVERSIÓN</td>
+                        <td id="td_estcu" class="fil_infgral02 p-1" style=" vertical-align:middle;"></td>
+                        <td class="fil_infgral p-1" style="border-left: 2px solid white; vertical-align:middle;">TIPO DE INVERSIÓN</td>
+                        <td id="td_tipinv" class="fil_infgral02 p-1" style=" vertical-align:middle;"></td>
+                        <td class="fil_infgral p-1" style="border-left: 2px solid white;">
+                            ¿SE ENCUENTRA PROGRAMADO EN EL PMI?
+                        </td>
+                        <td id="td_indpmi" class="fil_infgral02 p-1" style=" vertical-align:middle; text-align:center;"> </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab panes -->
+    <div class="tab-content">
+        <div id="m_datos01" class="tab-pane fade" role="tabpanel">
+            <div class="div_ssi mb-4 col-xs-12 ">
+                <div class="row m-1 ">
+                    <table class="table mb-1 tab_border">
+                        <tr class=" tit_fase" style="border-top: hidden;   ">
+                            <td colspan="2"> &nbsp I. INSTITUCIONALIDAD </td>
+                        </tr>
+                        <tr class="fil_infdet ">
+                            <td width="35%" class="p-3 pt-2 pr-2 pb-2 "> OPMI</td>
+                            <td width="65%" id="td_opmi" class="fil_infdet02   "> </td>
+                        </tr>
+                        <tr class="fil_infdet">
+                            <td class="p-3 pt-2 pr-2 pb-2 ">  UNIDAD FORMULADORA (UF)</td>
+                            <td id="td_uf" class="fil_infdet02  "> </td>
+                        </tr>
+                        <tr class="fil_infdet " style=" border-bottom: 1px solid #F2F2F2;">
+                            <td class="p-3 pt-2 pr-2 pb-2 "> UNIDAD EJECUTORA DE INVERSIONES (UEI)</td>
+                            <td id="td_uei" class="fil_infdet02 "> </td>
+                        </tr>
+                    </table>
+
+                </div>
+            </div>
+            <div id="div_fye" class="div_ssi mb-4 col-xs-12 ">
+                <div class="row m-1 table-responsive">
+                    <table id="tb_fye" class="table mb-1" style=" border-radius: 1em 1em 0em 0em;  overflow:hidden;">
+                        <tr class=" tit_fase" style="border-top: hidden;   ">
+                            <td colspan="5"> &nbsp II. DATOS DE LA FASE DE FORMULACIÓN Y EVALUACIÓN </td>
+                        </tr>
+
+                        <tr class="fil_infdet ">
+                            <td width="25%" class=" p-3 pt-2 pr-2 pb-2" style=" vertical-align:middle; ">  SITUACIÓN</td>
+                            <td width="25%" id="td_situinv" class="fil_infdet02  "> </td>
+                            <td style=" border-left: 4px solid #F7F7F7; vertical-align:middle;"> COSTO DE INVERSIÓN VIABLE / APROBADO (S/)(a)</td>
+                            <td id="td_mtoviab" colspan="2" class="fil_infdet02 " style=" vertical-align:middle; "> </td>
+                        </tr>
+                        <tr class="fil_infdet ">
+                            <td width="25%" class=" p-3 pt-2 pr-2 pb-2" style=" vertical-align:middle; ">  FECHA DE VIABILIDAD/APROBACIÓN</td>
+                            <td width="25%" id="td_fecviab" class="fil_infdet02  "> </td>
+                            <td style=" border-left: 4px solid #F7F7F7;"> COSTO DE CONTROL CONCURRENTE (S/)(b)</td>
+                            <td id="td_ccc_fye" class="fil_infdet02 "></td>
+                        </tr>
+                        <tr class="fil_infdet">
+                            <td class="  p-3 pt-2 pr-2 pb-2"> LA INVERSIÓN CORRESPONDE A UN DECRETO DE EMERGENCIA</td>
+                            <td id="td_emergds" class="fil_infdet02  " style=" vertical-align:middle; "> </td>
+                            <td style=" border-left: 4px solid #F7F7F7; vertical-align:middle;"> COSTO TOTAL DE INVERSIÓN VIABLE / APROBADO (S/)(a+b)</td>
+                            <td id="td_totviab" colspan="2" class="fil_infdet02 " style=" vertical-align:middle; "> </td>
+                        </tr>
+                        <tr class="fil_infdet " style=" border-bottom: 1px solid #F2F2F2;">
+                            <td width="25%" class=" p-3 pt-2 pr-2 pb-2" style=" vertical-align:middle; ">  CADENA FUNCIONAL</td>
+                            <td width="25%" id="td_cadfun" class="fil_infdet02 p-1"> </td>
+                            <td width="25%" style=" border-left: 4px solid #F7F7F7; vertical-align:middle;"> BENEFICIARIOS (HABITANTES)</td>
+                            <td width="13%" id="td_benif" class="fil_infdet02" style=" vertical-align:middle; "> </td>
+                            <td width="12%" id="td_mapa" class="fil_infdet02 " style=" text-align:center; vertical-align:middle;"> UBICACIÓN   </td>
+                        </tr>
+
+                    </table>
+                </div>
+            </div>
+            <div class="div_ssi mb-4 col-xs-12 ">
+                <div class="row m-1 table-responsive">
+                    <table class="table mb-1" style=" border-radius: 1em 1em 0em 0em;  overflow:hidden;">
+                        <tr class=" tit_fase" style="border-top: hidden;   ">
+                            <td colspan="6"> &nbsp III. DATOS DE LA FASE EJECUCIÓN </td>
+                        </tr>
+                        <tr class="fil_infdet ">
+                            <td width="25%" class="p-3 pt-2 pr-2 pb-2">  ¿TIENE EXPEDIENTE TÉCNICO O DOCUMENTO EQUIVALENTE?</td>
+                            <td width="25%" id="td_indet" class="fil_infdet02 "> </td>
+                            <td width="25%" style=" border-left: 4px solid #F7F7F7;"> COSTO DE INVERSIÓN ACTUALIZADO (S/) (a)</td>
+                            <td width="25%" id="val_cta" class="fil_infdet02 "></td>
+                        </tr>
+                        <tr class="fil_infdet">
+                            <td class="p-3 pt-2 pr-2 pb-2"> ¿TIENE REGISTRO DE SEGUIMIENTO?</td>
+                            <td id="td_indseg" class="fil_infdet02"></td>
+                            <td style=" border-left: 4px solid #F7F7F7;"> COSTO DE CONTROL CONCURRENTE (S/)(b)</td>
+                            <td id="td_concurr" class="fil_infdet02 "></td>
+                        </tr>
+                        <tr class="fil_infdet">
+                            <td class="p-3 pt-2 pr-2 pb-2">  REGISTRO DE CIERRE</td>
+                            <td id="td_f9" class="fil_infdet02 "></td>
+                            <td style=" border-left: 4px solid #F7F7F7;"> COSTO DE CONTROVERSIAS (S/) (c)</td>
+                            <td id="td_laudo" class="fil_infdet02 "></td>
+                        </tr>
+                        <tr class="fil_infdet">
+                            <td class="p-3 pt-2 pr-2 pb-2">  FECHA DE INICIO DE EJECUCIÓN</td>
+                            <td id="fec_iniejec" class="fil_infdet02 p-1"></td>
+                            <td style=" border-left: 4px solid #F7F7F7;"> MONTO DE CARTA FIANZA (S/) (d)</td>
+                            <td id="td_carfza" class="fil_infdet02 "></td>
+                        </tr>
+                        <tr class="fil_infdet">
+                            <td class="p-3 pt-2 pr-2 pb-2">  FECHA DE FIN DE EJECUCIÓN</td>
+                            <td id="fec_finejec" class="fil_infdet02 p-1"></td>
+                            <td style=" border-left: 4px solid #F7F7F7;">COSTO TOTAL DE LA INVERSIÓN ACTUALIZADO (S/) (a+b+c+d)</td>
+                            <td id="td_mtototal" class="fil_infdet02 "></td>
+                        </tr>
+
+                    </table>
+                </div>
+            </div>
+            <div class="div_ssi mb-4 col-xs-12 ">
+                <div class="row m-1 table-responsive">
+                    <table class="table mb-1" style=" border-radius: 1em 1em 0em 0em;  overflow:hidden;">
+                        <tr class=" tit_fase" style="border-top: hidden;   ">
+                            <td colspan="6"> &nbsp IV. CONTRIBUCION AL CIERRE DE BRECHAS </td>
+                        </tr>
+                        <tr class="fil_infdet ">
+                            <td width="25%" class="p-3 pt-2 pr-2 pb-2"> NOMBRE DEL INDICADOR</td>
+                            <td width="25%" id="td_indcie" class="fil_infdet02 "> </td>
+                            <td width="25%" style=" border-left: 4px solid #F7F7F7;" title="Validación en el Cierre de la Inversión"> ESTADO</td>
+                            <td width="25%" id="td_estind" class="fil_infdet02 "></td>
+                        </tr>
+                        <tr class="fil_infdet">
+                            <td class="p-3 pt-2 pr-2 pb-2"> UNIDAD DE MEDIDA</td>
+                            <td id="td_umind" class="fil_infdet02"></td>
+                            <td style=" border-left: 4px solid #F7F7F7;" title="Validación en el Cierre de la Inversión"> VALOR DE LA CONTRIBUCION</td>
+                            <td id="td_valcie" class="fil_infdet02 "></td>
+                        </tr>
+                        <tr class="fil_infdet">
+                            <td class="p-3 pt-2 pr-2 pb-2"> FECHA DE EVALUACION</td>
+                            <td id="td_feceval" class="fil_infdet02"></td>
+                            <td style=" border-left: 4px solid #F7F7F7;" title="Validación en el Cierre de la Inversión"> ETAPA DE VERIFICACION</td>
+                            <td id="td_etaverif" class="fil_infdet02 "></td>
+                        </tr>
+
+                    </table>
+                </div>
+            </div>
+
+            <div id="div_foniprel" class="div_ssi mb-4 col-xs-12 ">
+                <div class="row m-1 table-responsive">
+                    <table class="table mb-1" style=" border-radius: 1em 1em 0em 0em;  overflow:hidden;">
+                        <tr class=" tit_fase" style="border-top: hidden;   ">
+                            <td colspan="4"> &nbsp V. CONVOCATORIAS FONIPREL</td>
+                        </tr>
+                        <tbody id="tb_foniprel">
+                            <tr class="fil_infdet ">
+                                <td width="25%" class="p-3 pt-2 pr-2 pb-2">  CONVOCATORIA</td>
+                                <td width="25%" id="td_convfoni" class="fil_infdet02 ">  </td>
+                                <td width="25%" style=" border-left: 4px solid #F7F7F7;"> EXPEDIENTE</td>
+                                <td width="25%" id="td_expfoni" class="fil_infdet02 ">  </td>
+                            </tr>
+                            <tr class="fil_infdet">
+                                <td class="p-3 pt-2 pr-2 pb-2"> PRESENTACIÓN</td>
+                                <td id="td_presfoni" class="fil_infdet02 ">  </td>
+                                <td style=" border-left: 4px solid #F7F7F7;"> PRIORIDAD</td>
+                                <td id="td_priofoni" class="fil_infdet02 ">  </td>
+                            </tr>
+                            <tr class="fil_infdet">
+                                <td class="p-3 pt-2 pr-2 pb-2"> COSTO DE INVERSIÓN VIABLE (S/)</td>
+                                <td id="td_mtoviabfoni" class="fil_infdet02 ">  </td>
+                                <td style=" border-left: 4px solid #F7F7F7;"> MONTO DEL CONFINANCIAMIENTO (S/)</td>
+                                <td id="td_confinanfoni" class="fil_infdet02 ">   </td>
+                            </tr>
+                            <tr class="fil_infdet " style=" border-bottom: 1px solid #F2F2F2;">
+                                <td class="p-3 pt-2 pr-2 pb-2">EVALUACIÓN</td>
+                                <td id="td_evalfoni" class="fil_infdet02 "> </td>
+                                <td style=" border-left: 4px solid #F7F7F7;"> GANADOR</td>
+                                <td id="td_indfoni" class="fil_infdet02 ">   </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div id="div_paraliza" class="div_ssi mb-4 col-xs-12 ">
+                <div id="d_lis_paral" class="row m-1 table-responsive">
+                    <table class="table mb-1" style=" border-radius: 1em 1em 0em 0em;  overflow:hidden;">
+                        <tr class="tit_fase" style="border-top: hidden;   ">
+                            <td colspan="4"> &nbsp VI. REGISTRO DE OBRAS PARALIZADAS  (LEY N° 31589 Y SUS MODIFICATORIAS)</td>
+                        </tr>
+                        <tr class="fil_infdet ">
+                            <td width="25%" class="p-3 pt-2 pr-2 pb-2">  FECHA DE REGISTRO</td>
+                            <td width="25%" id="td_fec_reg_par" class="fil_infdet02 ">  </td>
+                            <td width="25%" style=" border-left: 4px solid #F7F7F7;">CÓDIGO INFOBRAS</td>
+                            <td width="25%" id="td_codpar" class="fil_infdet02 ">  </td>
+                        </tr>
+                        <tr class="fil_infdet">
+                            <td class="p-3 pt-2 pr-2 pb-2" style=" border-left: 4px solid #F7F7F7;"> DESCRIPCIÓN DE LA OBRA</td>
+                            <td colspan="3" id="td_desobra" class="fil_infdet02 ">  </td>
+                        </tr>
+                        <tr class="fil_infdet ">
+                            <td class="p-3 pt-2 pr-2 pb-2"> MODALIDAD</td>
+                            <td id="td_modalpar" colspan="3" class="fil_infdet02 ">  </td>
+                        </tr>
+                        <tr class="fil_infdet">
+                            <td width="25%" class="p-3 pt-2 pr-2 pb-2">  AVANCE FÍSICO</td>
+                            <td width="25%" id="td_avanfispar" class="fil_infdet02 ">  </td>
+                            <td width="25%" style=" border-left: 4px solid #F7F7F7;">FECHA DE PARALIZACIÓN</td>
+                            <td width="25%" id="td_fecparal" class="fil_infdet02 ">  </td>
+                        </tr>
+                        <tr class="fil_infdet " style=" border-bottom: 1px solid #F2F2F2;">
+                            <td width="25%" class="p-3 pt-2 pr-2 pb-2"> MOTIVOS DE PARALIZACIÓN</td>
+                            <td width="75%" colspan="3" id="td_motivopar" class="fil_infdet02 "> </td>
+                        </tr>
+                        <tr class="fil_infdet">
+                            <td width="25%" class="p-3 pt-2 pr-2 pb-2">  INFORME DE ESTADO SITUACIONAL</td>
+                            <td width="25%" id="td_informe_par" class="fil_infdet02 ">  </td>
+                            <td width="25%" style=" border-left: 4px solid #F7F7F7;">RESOLUCIÓN QUE APRUEBA LA LISTA PRIORIZADA</td>
+                            <td width="25%" id="td_resol_par" class="fil_infdet02 ">  </td>
+                        </tr>
+                        <tr class="fil_infdet " style=" border-bottom: 1px solid #F2F2F2;">
+                            <td width="25%" class="p-3 pt-2 pr-2 pb-2">SITUACIÓN DE LA OBRA PARALIZADA </td>
+                            <td width="75%" colspan="3" id="td_est_situac" class="fil_infdet02 "> </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <div id="div_oci" class="div_ssi mb-4 col-xs-12 ">
+                <div class="row m-1 table-responsive">
+                    <table class="table mb-1 tab_border">
+                        <tr class="tit_fase" style="border-top: hidden;   ">
+                            <td colspan="4"> &nbsp VII. INFORMES DE CONTROL </td>
+                        </tr>
+                    </table>
+                    <table class="table mb-1 tab_border">
+                        <thead>
+                            <tr class="tit_tabla" style="vertical-align:middle;">
+                                <th width="15%" style="font-weight: normal;"> Tipo de Informe</th>
+                                <th width="10%" style="font-weight: normal;"> N°  de Informe</th>
+                                <th width="40%" style="font-weight: normal;"> Asunto</th>
+                                <th width="15%" style="font-weight: normal;"> Fecha de Emisión</th>
+                                <th width="10%" style="font-weight: normal;"> Resumen Ejecutivo</th>
+                                <th width="10%" style="font-weight: normal;"> Ver Informe</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tb_oci">
+                            <tr class=" fil_hisfinan">
+                                <td style="font-weight:bold;"> </td>
+                                <td> </td>
+                                <td> </td>
+                                <td> </td>
+                                <td> <a href="" target="_blank"><img class="img_histf" src="img/pdf.png" /></a> </td>
+                                <td> <a href="" target="_blank"><img class="img_histf" src="img/pdf.png" /></a> </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div id="m_datos02" class="tab-pane fade" role="tabpanel">
+            <div class="div_ssi mb-4 col-xs-12 ">
+                <div class="row m-1">
+                    <table class="table mb-1" style=" border-radius: 1em 1em 0em 0em;  overflow:hidden;">
+                        <tr class="tit_fase" style="border-top: hidden;   ">
+                            <td colspan="4" id="des_inf_finan"> &nbsp I. INFORMACIÓN FINANCIERA (S/) </td>
+                        </tr>
+                        <tr class="fil_inffinan ">
+                            <td width="25%" class="p-3 pt-2 pr-2 pb-2">  COSTO TOTAL DE LA INVERSIÓN ACTUALIZADO (a)</td>
+                            <td width="25%" id="td_mtototal2" class="fil_inffinan02 "></td>
+                            <td width="25%" id="des_pim" style=" border-left: 4px solid #F7F7F7;"> PIM 2024 (c)</td>
+                            <td width="25%" id="val_pim" class="fil_inffinan02 "></td>
+                        </tr>
+                        <tr class="fil_inffinan">
+                            <td id="des_avanacum" class=" p-3 pt-2 pr-2 pb-2"> DEVENGADO ACUMULADO AL 2024 (b)</td>
+                            <td id="val_efin" class="fil_inffinan02 "></td>
+                            <td id="des_avan" style=" border-left: 4px solid #F7F7F7;"> DEVENGADO EN EL 2024 (d)</td>
+                            <td id="val_avan" class="fil_inffinan02 "></td>
+                        </tr>
+                        <tr class="fil_inffinan ">
+                            <td class=" p-3 pt-2 pr-2 pb-2"> AVANCE FINANCIERO ACUMULADO (b/a)</td>
+                            <td id="por_avanacum" class="fil_inffinan02 "></td>
+                            <td id="des_avanfinan" style=" border-left: 4px solid #F7F7F7;"> AVANCE FINANCIERO 2024 (d/c)</td>
+                            <td id="por_avananio" class="fil_inffinan02 "></td>
+                        </tr>
+                        <tr class="fil_inffinan">
+                            <td class="p-3 pt-2 pr-2 pb-2">SALDO POR EJECUTAR (a-b)</td>
+                            <td id="sdo_ejecacum" class="fil_inffinan02 "> </td>
+                            <td id="des_sdoanio" style=" border-left:4px solid #F7F7F7;"> SALDO POR DEVENGAR 2024 (c-d)</td>
+                            <td id="sdo_ejecanio" class="fil_inffinan02 "></td>
+                        </tr>
+                        <tr class="fil_inffinan " style=" border-bottom: 1px solid #E5E5E5;">
+                            <td class=" p-3 pt-2 pr-2 pb-2">FECHA DEL PRIMER DEVENGADO</td>
+                            <td id="pridev" class="fil_inffinan02 "> </td>
+                            <td style=" border-left: 4px solid #F7F7F7;"> FECHA DEL ÚLTIMO DEVENGADO</td>
+                            <td id="ultdev" class="fil_inffinan02 "></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            <div class="div_ssi mb-4 col-xs-12 ">
+                <div class="row m-1 table-responsive">
+                    <table class="table mb-1" style=" border-radius: 1em 1em 0em 0em;  overflow:hidden;">
+                        <tr class="tit_fase" style="border-top: hidden;   ">
+                            <td colspan="4"> &nbsp II. HISTÓRICO DE DEVENGADO DE LA INVERSIÓN (S/) </td>
+                        </tr>
+                    </table>
+                    <table class="table  mb-1" style=" border-radius: 1em 1em 0em 0em;  overflow:hidden;">
+                        <thead>
+                            <tr class="tit_tabla" style="vertical-align:middle;">
+                                <th width="7%" style="font-weight: normal;"> AÑO</th>
+                                <th width="17%" style="font-weight: normal;"> PIA</th>
+                                <th width="16%" style="font-weight: normal;"> PIM</th>
+                                <th width="16%" style="font-weight: normal;"> CERTIFICACIÓN</th>
+                                <th width="16%" style="font-weight: normal;"> COMPROMISO ANUAL</th>
+                                <th width="16%" style="font-weight: normal;"> DEVENGADO</th>
+                                <th width="10%" style="font-weight: normal;"> ORIGEN</th>
+                                <th width="2%" class="p-1" data-bs-toggle="modal" data-bs-target="#modDevMes" style="text-align:right; ">
+                                    <img class="img_histf" src="/ssi/Content/img/suma1.png" data-toggle="tooltip" data-placement="right" title="Información financiera mensual" />
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="tb_hist_anual">
+                            <tr class="fil_hisfinan">
+                                <td style="font-weight:bold; ">  </td>
+                                <td> </td>
+                                <td> </td>
+                                <td> </td>
+                                <td> </td>
+                                <td> </td>
+                                <td></td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="col-md-12 ">
+                        <div id="div05" class="order-1 mr-2">
+                            <canvas id="canvas02"></canvas>
+                        </div>
+                        <div id="legend02" class="d_leyenda order-2 "></div>
+                    </div>
+                </div>
+            </div>
+            <div class="div_ssi mb-4 col-xs-12 ">
+                <div class="row m-1 table-responsive">
+                    <table class="table mb-1" style=" border-radius: 1em 1em 0em 0em;  overflow:hidden;">
+                        <tr class="tit_fase" style="border-top: hidden;   ">
+                            <td colspan="4"> &nbsp III. HISTÓRICO DE DEVENGADO POR ESPECÍFICA (S/) </td>
+                        </tr>
+                    </table>
+                    <table class="table mb-1" style=" border-radius: 1em 1em 0em 0em;  overflow:hidden;">
+                        <thead>
+                            <tr class="  tit_tabla" style="vertical-align:middle;">
+                                <th width="40%" style="font-weight: normal;"> ESPECÍFICA DE GASTO</th>
+                                <th width="10%" id="esp_an01" style="font-weight: normal;"> 2022</th>
+                                <th width="10%" id="esp_an02" style="font-weight: normal;"> 2023</th>
+                                <th width="10%" id="esp_an03" style="font-weight: normal;"> 2024</th>
+                                <th width="10%" id="esp_an04" style="font-weight: normal;"> 2025</th>
+                                <th width="10%" id="esp_an05" style="font-weight: normal;"> 2026</th>
+                                <th width="10%" style="font-weight: normal;"> TOTAL</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tb_hist_especif">
+                            <tr class="fil_hisfinan">
+                                <td style="font-weight:bold; text-align:left;"> </td>
+                                <td> </td>
+                                <td> </td>
+                                <td> </td>
+                                <td> </td>
+                                <td> </td>
+                                <td> </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="div_ssi mb-4 col-xs-12 ">
+                <div class="row m-1 ">
+                    <table class="table mb-1" style=" border-radius: 1em 1em 0em 0em;  overflow:hidden;">
+                        <tr class="tit_fase" style="border-top: hidden;   ">
+                            <td colspan="4"> &nbsp IV. DETALLE POR UNIDAD EJECUTORA PRESUPUESTAL (S/) </td>
+                        </tr>
+                    </table>
+                    <table class="table mb-1" style=" border-radius: 1em 1em 0em 0em;  overflow:hidden;">
+                        <thead>
+                            <tr class="tit_tabla" style="vertical-align:middle;">
+                                <th width="54%" style="font-weight: normal;"> UNIDADES EJECUTORAS</th>
+                                <th width="30%" style="font-weight: normal;"> DEVENGADO ACUMULADO</th>
+                                <th width="16%" colspan="2" style="font-weight: normal;"> DETALLE</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tb_uep">
+                            <tr class=" fil_hisfinan">
+                                <td style="font-weight:bold;"> </td>
+                                <td> </td>
+                                <td>
+                                    <img class="img_histf" src="img/detuep1.png" data-toggle="tooltip" data-placement="left"
+                                         title="Información financiera por fuente de financiamiento" />
+                                </td>
+                                <td>
+                                    <img class="img_histf" src="img/detuep2.png" data-toggle="tooltip" data-placement="bottom"
+                                         title="Información financiera año de ejecución" />
+                                </td>
+
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+
+        </div>
+        <div id="m_datos03" class="tab-pane fade" role="tabpanel">
+            <div id="dv_seace_1" class="div_ssi mb-4 col-xs-12 ">
+                <div class="row m-1 table-responsive">
+                    <table class="table mb-1 tab_border">
+                        <tr class="tit_fase" style="border-top: hidden;   ">
+                            <td colspan="4"> &nbsp I. OBRA </td>
+                        </tr>
+                    </table>
+                    <table class="table mb-1 tab_border">
+                        <thead>
+                            <tr class="tit_tabla" style="vertical-align:middle;">
+                                <th width="8%" style="font-weight: normal;"> N° DE ITEM</th>
+                                <th width="25%" style="font-weight: normal;"> DESCRIPCIÓN DE ITEM</th>
+                                <th width="12%" style="font-weight: normal;"> CONTRATISTA</th>
+                                <th width="13%" style="font-weight: normal;"> N° CONTRATO</th>
+                                <th width="10%" style="font-weight: normal;"> FECHA DE SUSCRIPCIÓN</th>
+                                <th width="12%" style="font-weight: normal;"> MONTO CONTRATADO TOTAL (S/)</th>
+                                <th width="15%" style="font-weight: normal;"> MONTO CONTRATADO ITEM TOTAL (S/)</th>
+                                <th width="5%" style="font-weight: normal;"> VER CONTRATO</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tb_seaceobra">
+                            <tr class=" fil_hisfinan">
+                                <td style="font-weight:bold;"> </td>
+                                <td> </td>
+                                <td> </td>
+                                <td> </td>
+                                <td> </td>
+                                <td> </td>
+                                <td> </td>
+                                <td> <a href="" target="_blank"><img class="img_histf" src="img/pdf.png" /></a> </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div id="dv_seace_2" class="div_ssi mb-4 col-xs-12 ">
+                <div class="row m-1 table-responsive">
+                    <table class="table mb-1 tab_border">
+                        <tr class="tit_fase" style="border-top: hidden;   ">
+                            <td colspan="4"> &nbsp II. SERVICIO </td>
+                        </tr>
+                    </table>
+                    <table class="table mb-1 tab_border">
+                        <thead>
+                            <tr class="tit_tabla" style="vertical-align:middle;">
+                                <th width="8%" style="font-weight: normal;"> N° DE ITEM</th>
+                                <th width="25%" style="font-weight: normal;"> DESCRIPCIÓN DE ITEM</th>
+                                <th width="12%" style="font-weight: normal;"> CONTRATISTA</th>
+                                <th width="13%" style="font-weight: normal;"> N° CONTRATO</th>
+                                <th width="10%" style="font-weight: normal;"> FECHA DE SUSCRIPCIÓN</th>
+                                <th width="12%" style="font-weight: normal;"> MONTO CONTRATADO TOTAL (S/)</th>
+                                <th width="15%" style="font-weight: normal;"> MONTO CONTRATADO ITEM TOTAL (S/)</th>
+                                <th width="5%" style="font-weight: normal;"> VER CONTRATO</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tb_seaceserv"> </tbody>
+                    </table>
+                </div>
+            </div>
+            <div id="dv_seace_3" class="div_ssi mb-4 col-xs-12 ">
+                <div class="row m-1 table-responsive">
+                    <table class="table mb-1 tab_border">
+                        <tr class="tit_fase" style="border-top: hidden;   ">
+                            <td colspan="4"> &nbsp III. BIENES </td>
+                        </tr>
+                    </table>
+                    <table class="table mb-1 tab_border">
+                        <thead>
+                            <tr class="tit_tabla" style="vertical-align:middle;">
+                                <th width="8%" style="font-weight: normal;"> N° DE ITEM</th>
+                                <th width="25%" style="font-weight: normal;"> DESCRIPCIÓN DE ITEM</th>
+                                <th width="12%" style="font-weight: normal;"> CONTRATISTA</th>
+                                <th width="13%" style="font-weight: normal;"> N° CONTRATO</th>
+                                <th width="10%" style="font-weight: normal;"> FECHA DE SUSCRIPCIÓN</th>
+                                <th width="12%" style="font-weight: normal;"> MONTO CONTRATADO TOTAL (S/)</th>
+                                <th width="15%" style="font-weight: normal;"> MONTO CONTRATADO ITEM TOTAL (S/)</th>
+                                <th width="5%" style="font-weight: normal;"> VER CONTRATO</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tb_seacebien"> </tbody>
+                    </table>
+                </div>
+            </div>
+            <div id="dv_seace_4" class="div_ssi mb-4 col-xs-12 ">
+                <div class="row m-1 table-responsive">
+                    <table class="table mb-1 tab_border">
+                        <tr class="tit_fase" style="border-top: hidden;   ">
+                            <td colspan="4"> &nbsp IV. CONSULTORÍA DE OBRA </td>
+                        </tr>
+                    </table>
+                    <table class="table mb-1 tab_border">
+                        <thead>
+                            <tr class="tit_tabla" style="vertical-align:middle;">
+                                <th width="8%" style="font-weight: normal;"> N° DE ITEM</th>
+                                <th width="25%" style="font-weight: normal;"> DESCRIPCIÓN DE ITEM</th>
+                                <th width="12%" style="font-weight: normal;"> CONTRATISTA</th>
+                                <th width="13%" style="font-weight: normal;"> N° CONTRATO</th>
+                                <th width="10%" style="font-weight: normal;"> FECHA DE SUSCRIPCIÓN</th>
+                                <th width="12%" style="font-weight: normal;"> MONTO CONTRATADO TOTAL (S/)</th>
+                                <th width="15%" style="font-weight: normal;"> MONTO CONTRATADO ITEM TOTAL (S/)</th>
+                                <th width="5%" style="font-weight: normal;"> VER CONTRATO</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tb_seaceconsul"> </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="dv_oxi_1" class="div_ssi mb-4 col-xs-12 ">
+                <div class="row m-1 table-responsive">
+                    <table class="table mb-1 tab_border">
+                        <tr class="tit_fase" style="border-top: hidden;   ">
+                            <td colspan="4"> &nbsp V. CONVENIOS DE OBRAS POR IMPUESTOS </td>
+                        </tr>
+                    </table>
+                    <table class="table mb-1 tab_border">
+                        <thead>
+                            <tr class="tit_tabla" style="vertical-align:middle;">
+                                <th width="10%" style="font-weight: normal;">
+                                    AÑO BUENA PRO <sup data-toggle="tooltip" data-placement="right" title="Acto administrativo mediante el cual la Entidad Pública adjudica la ejecución de una inversión y/o actividad de operación y/o mantenimiento a una Empresa Privada, en el marco del mecanismo de Obras por Impuestos, luego de culminado el proceso de selección">(i)</sup>
+                                </th>
+                                <th width="25%" style="font-weight: normal;">
+                                    EMPRESA PRIVADA <sup data-toggle="tooltip" data-placement="right" title="Persona jurídica de derecho privado, cuyo capital es íntegramente (100 %) de origen privado, y que no se encuentra sujeta a los sistemas administrativos del sector público financiero ni al régimen de Contrataciones con el Estado. En el marco del mecanismo de Obras por Impuestos, la Empresa Privada suscribe el Convenio de Inversión con la Entidad Pública y asume la responsabilidad del financiamiento, así como de la ejecución de las inversiones y/o de las actividades de operación y/o mantenimiento, según corresponda">(ii)</sup>
+                                </th>
+                                <th width="20%" style="font-weight: normal;"> TIPO DOCUMENTO</th>
+                                <th width="17%" style="font-weight: normal;"> FECHA</th>
+                                <th width="20%" style="font-weight: normal;">
+                                    MONTO TOTAL INVERSION  <sup data-toggle="tooltip" data-placement="right" title="Es el monto establecido en el Convenio de Inversión y sus adendas, financiado por la Empresa Privada y reconocido por la Entidad Pública en el CIPRL o CIPGN">(iv)</sup> (S/)
+                                </th>
+                                <th width="8%" style="font-weight: normal;"> VER DOCUMENTO</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tb_oxi_conv"> </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="dv_oxi_2" class="div_ssi mb-4 col-xs-12 ">
+                <div class="row m-1 table-responsive">
+                    <table class="table mb-1 tab_border">
+                        <tr class="tit_fase" style="border-top: hidden;   ">
+                            <td colspan="4"> &nbsp VI. CONTRATOS DE SUPERVISION OXI </td>
+                        </tr>
+                    </table>
+                    <table class="table mb-1 tab_border">
+                        <thead>
+                            <tr class="tit_tabla" style="vertical-align:middle;">
+                                <th width="10%" style="font-weight: normal;">
+                                    AÑO BUENA PRO <sup data-toggle="tooltip" data-placement="right" title="Acto administrativo mediante el cual la Entidad Pública adjudica la ejecución de una inversión y/o actividad de operación y/o mantenimiento a una Empresa Privada, en el marco del mecanismo de Obras por Impuestos, luego de culminado el proceso de selección">(i)</sup>
+                                </th>
+                                <th width="25%" style="font-weight: normal;">
+                                    ENTIDAD PRIVADA SUPERVISORA <sup data-toggle="tooltip" data-placement="right" title="Persona natural o jurídica contratada por la Entidad Pública para supervisar la elaboración del Expediente Técnico y/o la correcta y oportuna ejecución de las Inversiones. Es responsable solidario con la Empresa Privada de la calidad de la inversión y/o actividad de operación y/o mantenimiento">(iii)</sup>
+                                </th>
+                                <th width="20%" style="font-weight: normal;"> TIPO DOCUMENTO</th>
+                                <th width="17%" style="font-weight: normal;"> FECHA</th>
+                                <th width="20%" style="font-weight: normal;">
+                                    MONTO TOTAL INVERSION  <sup data-toggle="tooltip" data-placement="right" title="Es el monto establecido en el Convenio de Inversión y sus adendas, financiado por la Empresa Privada y reconocido por la Entidad Pública en el CIPRL o CIPGN">(iv)</sup> (S/)
+                                </th>
+                                <th width="8%" style="font-weight: normal;"> VER DOCUMENTO</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tb_oxi_ctto"> </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="dv_oxi_3" class="div_ssi mb-4 col-xs-12 ">
+                <div class="row m-1 table-responsive">
+                    <table class="table mb-1 tab_border">
+                        <tr class="tit_fase" style="border-top: hidden;   ">
+                            <td colspan="4"> &nbsp VII. OTROS DOCUMENTOS OXI </td>
+                        </tr>
+                    </table>
+                    <table class="table mb-1 tab_border">
+                        <thead>
+                            <tr class="tit_tabla" style="vertical-align:middle;">
+                                <th width="10%" style="font-weight: normal;">
+                                    AÑO BUENA PRO <sup data-toggle="tooltip" data-placement="right" title="Acto administrativo mediante el cual la Entidad Pública adjudica la ejecución de una inversión y/o actividad de operación y/o mantenimiento a una Empresa Privada, en el marco del mecanismo de Obras por Impuestos, luego de culminado el proceso de selección">(i)</sup>
+                                </th>
+                                <th width="60%" style="font-weight: normal;">
+                                    EMPRESA FINANCISTA <sup data-toggle="tooltip" data-placement="right" title="Persona jurídica contratada por la Entidad Pública para supervisar la elaboración del Expediente Técnico y/o la correcta y oportuna ejecución de las Inversiones. Es responsable solidario con la Empresa Privada de la calidad de la inversión y/o actividad de operación y/o mantenimiento">(iii)</sup>
+                                </th>
+                                <th width="20%" style="font-weight: normal;"> TIPO DOCUMENTO</th>
+                                
+                                <th width="10%" style="font-weight: normal;"> VER DOCUMENTO</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tb_oxi_otros"> </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+        <div id="m_datos04" class="tab-pane fade" role="tabpanel">
+            <div class="div_ssi mb-4 col-xs-12 ">
+                <div id="div_infobras" class="row m-1 table-responsive">
+                    <table class="table mb-1 tab_border">
+                        <tr class="tit_fase" style="border-top: hidden; ">
+                            <td colspan="4"> &nbsp I. OBRA 1 </td>
+                        </tr>
+                    </table>
+                    <table class="table mb-3 tab_border">
+                        <thead>
+                            <tr class="tit_tabla" style="text-align:left;">
+                                <th colspan="4" style="font-weight: normal;"> 1. DATOS GENERALES</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="fil_infdet ">
+                                <td width="25%" class="p-3 pt-2 pr-2 pb-2">  CÓDIGO INFOBRAS</td>
+                                <td width="75%" colspan="3" class="fil_infdet02 ">  </td>
+                            </tr>
+                            <tr class="fil_infdet">
+                                <td class="p-3 pt-2 pr-2 pb-2" style=" border-left: 4px solid #F7F7F7;"> NOMBRE DE LA OBRA</td>
+                                <td colspan="3" class="fil_infdet02 ">  </td>
+                            </tr>
+                            <tr class="fil_infdet ">
+                                <td class="p-3 pt-2 pr-2 pb-2"> MODALIDAD DE EJECUCIÓN</td>
+                                <td colspan="3" class="fil_infdet02 ">  </td>
+                            </tr>
+                            <tr class="fil_infdet ">
+                                <td width="25%" class="p-3 pt-2 pr-2 pb-2"> UBICACIÓN DE LA OBRA</td>
+                                <td width="75%" colspan="3" class="fil_infdet02 "> </td>
+                            </tr>
+                            <tr class="fil_infdet ">
+                                <td class="p-3 pt-2 pr-2 pb-2">UNIDAD EJECUTORA DE INVERSIONES</td>
+                                <td colspan="3" class="fil_infdet02 ">  </td>
+                            </tr>
+                            <tr class="fil_infdet ">
+                                <td width="25%" class="p-3 pt-2 pr-2 pb-2"> ESTADO DE LA OBRA</td>
+                                <td width="75%" colspan="3" class="fil_infdet02 "> </td>
+                            </tr>
+                            <tr class="fil_infdet " style=" border-bottom: 1px solid #F2F2F2;">
+                                <td width="25%" class="p-3 pt-2 pr-2 pb-2">  MONTO DE CONTRATO EN S/.</td>
+                                <td width="25%" class="fil_infdet02 ">  </td>
+                                <td width="25%" style=" border-left: 4px solid #F7F7F7;">FECHA DE INICIO DE OBRA</td>
+                                <td width="25%" class="fil_infdet02 ">  </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <table class="table mb-1 tab_border">
+                        <thead>
+                            <tr class="tit_tabla" style="text-align:left;">
+                                <th colspan="7" style="font-weight: normal;"> 2. AVANCE FÍSICO DE LA OBRA</th>
+                            </tr>
+                            <tr class="avan_infob" style=" vertical-align:middle; ">
+                                <th width="10%" rowspan="2"> N°</th>
+                                <th width="15%" rowspan="2" style="border-left: 2px solid #F7F7F7; "> PERIODO  DE VALORIZACIÓN</th>
+                                <th width="15%" rowspan="2" style="border-left: 2px solid #F7F7F7; "> FECHA DE REGISTRO</th>
+                                <th colspan="2" style="border-left: 2px solid #F7F7F7; border-bottom: 2px solid #F7F7F7; "> AVANCE FÍSICO ACUMULADO (%)</th>
+                                <th colspan="2" style="border-left: 2px solid #F7F7F7; border-bottom: 2px solid #F7F7F7;"> AVANCE VALORIZADO ACUMULADO (S/)</th>
+                            </tr>
+                            <tr class="avan_infob" style=" vertical-align:middle; ">
+                                <th width="15%" style="border-left: 2px solid #F7F7F7; "> PROGRAMADO</th>
+                                <th width="15%" style="border-left: 2px solid #F7F7F7; "> REAL</th>
+                                <th width="15%" style="border-left: 2px solid #F7F7F7; "> PROGRAMADO</th>
+                                <th width="15%" style="border-left: 2px solid #F7F7F7; "> REAL</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class=" fil_hisfinan">
+                                <td style="font-weight:bold;"> </td>
+                                <td>  </td>
+                                <td> </td>
+                                <td> </td>
+                                <td> </td>
+                                <td> </td>
+                                <td> </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="  alert alert-info col-md-12 ">
+        <strong>Consideraciones:</strong>
+        <ul>
+            <li><small id="fec_act_ssi" class="text-justify">La información es actualizada diariamente. <b>Última actualización: </b>. </small> </li>
+            <li><small class="text-justify">Montos expresados en <b>soles</b>.</small></li>
+            <li><small class="text-justify">Cualquier modificación realizada durante el día en los formatos, se visualizará en este módulo al día siguiente.</small></li>
+            <li><small class="text-justify">La sección, <b>Datos Generales</b>, extrae información del Banco de Inversiones del Sistema Nacional de Programación Multianual y Gestión de Inversiones (Invierte.pe)</small></li>
+            <li><small class="text-justify">La sección, <b>Contrataciones</b>, extrae información del Sistema Electrónico de Contrataciones del Estado (SEACE) operado por el Organismo Especializado para las Contrataciones Públicas Eficientes (OECE).</small></li>
+            <li><small class="text-justify">La sección, <b>Contrataciones</b>, extrae información del mecanismo de Obras por Impuestos (OxI) que remiten las Entidades Públicas/Empresas Privadas a la Dirección General de Política de Promoción de la Inversión Privada (DGPPIP).</small></li>
+            <li><small class="text-justify">La sección, <b>Ejecución Financiera</b>, extrae información del <b>Portal de Transparencia Económica - Consulta Amigable</b> (Presupuesto y Ejecución de Gasto).</small></li>
+            <li><small id="mes_fonafe" class="text-justify">La sección, <b>Ejecución Financiera</b>, de las inversiones a cargo de las empresas públicas bajo el ámbito del Fondo Nacional de Financiamiento de la Actividad Empresarial del Estado (FONAFE) es compartida por dicha entidad, y actualizada mensualmente. <b>Última actualización: mes de marzo.</b> </small></li>
+            <li><small class="text-justify">La sección, <b>INFObras</b>, extrae información del Sistema de Información de Obras Públicas (Infobras) operado por la Contraloría General de la República (CGR).</small></li>
+            <li><small class="text-justify">El Ministerio de Economía y Finanzas es responsable de la información de las secciones <b>Datos Generales</b> y <b>Ejecución Financiera</b>.</small></li>
+            <li><small class="text-justify">La trazabilidad de la información de las inversiones en las bases de datos del MEF, OECE y CGR está en proceso. Por ello, la información de las secciones <b>Contrataciones</b> e <b>INFObras</b> es referencial.</small></li>
+        </ul>
+    </div>
+</div>
+
+
+<!-- Modal -->
+<div class="modal fade" id="modEncuesta" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-body">
+                <table class="table mb-1 tab_border">
+                    <tr class="tit_fase ">
+                        <td width="90%" style="text-align:center;"> ENCUESTA </td>
+                        <td width="10%" style="text-align:right;"> <img class="img_cerrar" src="/ssi/Content/img/cerrar1.png" data-bs-dismiss="modal" /> </td>
+
+                    </tr>
+                </table>
+                <div class="table-responsive">
+                    <table class="table mb-0">
+                        <tr>
+                            <td class="pt-0" style="border: none; text-align:center;">
+                                <a href="https://forms.gle/bLhKfaa4F9Xg9csx8" target="_blank">
+                                    <img src="/ssi/Content/img/encuesta_ssi.jpg" class="img_encuesta">
+                                </a>
+                            </td>
+                        </tr>
+                    </table>
+
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modDevMes" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-body">
+                <table class="table mb-1 tab_border">
+                    <tr class="tit_fase ">
+                        <td width="90%" style="text-align:center;"> DEVENGADO MENSUALIZADO (S/) </td>
+                        <td width="10%" style="text-align:right;"> <img class="img_cerrar" src="/ssi/Content/img/cerrar1.png" data-bs-dismiss="modal" /> </td>
+
+                    </tr>
+                </table>
+                <div class="table-responsive">
+                    <table class="table mb-1 tab_border">
+                        <thead>
+                            <tr class="tit_tabla" style="vertical-align:middle;">
+                                <th width="7%" style="font-weight: normal;"> Año</th>
+                                <th width="7%" style="font-weight: normal;"> Ene</th>
+                                <th width="7%" style="font-weight: normal;"> Feb</th>
+                                <th width="7%" style="font-weight: normal;"> Mar</th>
+                                <th width="7%" style="font-weight: normal;"> Abr</th>
+                                <th width="7%" style="font-weight: normal;"> May</th>
+                                <th width="7%" style="font-weight: normal;"> Jun</th>
+                                <th width="7%" style="font-weight: normal;"> Jul</th>
+                                <th width="7%" style="font-weight: normal;"> Ago</th>
+                                <th width="7%" style="font-weight: normal;"> Set</th>
+                                <th width="7%" style="font-weight: normal;"> Oct</th>
+                                <th width="8%" style="font-weight: normal;"> Nov</th>
+                                <th width="8%" style="font-weight: normal;"> Dic </th>
+                                <th width="7%" style="font-weight: normal;"> Origen </th>
+                            </tr>
+                        </thead>
+                        <tbody id="tb_devmes">
+                            <tr class="fil_hisfinan">
+                                <td> </td>
+                                <td> </td>
+                                <td> </td>
+                                <td> </td>
+                                <td> </td>
+                                <td> </td>
+                                <td> </td>
+                                <td> </td>
+                                <td> </td>
+                                <td> </td>
+                                <td> </td>
+                                <td> </td>
+                                <td> </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modFteFinan" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-body">
+                <table class="table mb-1 tab_border">
+                    <tr class="tit_fase ">
+                        <td width="90%" style="text-align:center;"> INFORMACIÓN FINANCIERA POR FUENTE DE FINANCIAMIENTO (S/) </td>
+                        <td width="10%" style="text-align:right;"> <img class="img_cerrar" src="/ssi/Content/img/cerrar1.png" data-bs-dismiss="modal" /> </td>
+
+                    </tr>
+                </table>
+                <div class="table-responsive">
+                    <table class="table mb-1 tab_border">
+                        <thead>
+                            <tr class="tit_tabla" style="vertical-align:middle;">
+                                <th width="40%" style="font-weight: normal;"> FUENTE FINANCIERA</th>
+                                <th width="20%" style="font-weight: normal;"> AÑO</th>
+                                <th width="20%" style="font-weight: normal;"> PIM</th>
+                                <th width="20%" style="font-weight: normal;"> DEV</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tb_ftefin">
+                            <tr class="fil_hisfinan">
+                                <td> </td>
+                                <td> </td>
+                                <td> </td>
+                                <td> </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modDevUEP" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-body">
+                <table class="table mb-1 tab_border">
+                    <tr class="tit_fase ">
+                        <td width="90%" style="text-align:center;"> INFORMACIÓN FINANCIERA POR AÑO DE EJECUCION (S/)</td>
+                        <td width="10%" style="text-align:right;"> <img class="img_cerrar" src="/ssi/Content/img/cerrar1.png" data-bs-dismiss="modal" /> </td>
+
+                    </tr>
+                </table>
+                <div class="table-responsive">
+                    <table class="table mb-1 tab_border">
+                        <thead>
+                            <tr class="tit_tabla" style="vertical-align:middle;">
+                                <th rowspan="2" style="font-weight: normal;"> AÑO</th>
+                                <th rowspan="2" style="font-weight: normal;"> PIA</th>
+                                <th rowspan="2" style="font-weight: normal;"> PIM</th>
+                                <th rowspan="2" style="font-weight: normal;"> CERTIFICADO</th>
+                                <th rowspan="2" style="font-weight: normal;"> COMPROMISO ANUAL</th>
+                                <th rowspan="2" style="font-weight: normal;"> DEVENGADO</th>
+                                <th colspan="12" style="font-weight: normal;"> DEVENGADO MENSUALIZADO</th>
+                            </tr>
+                            <tr class="tit_tabla" style="vertical-align:middle;">
+                                <th style="font-weight: normal;"> Ene</th>
+                                <th style="font-weight: normal;"> Feb</th>
+                                <th style="font-weight: normal;"> Mar</th>
+                                <th style="font-weight: normal;"> Abr</th>
+                                <th style="font-weight: normal;"> May</th>
+                                <th style="font-weight: normal;"> Jun</th>
+                                <th style="font-weight: normal;">Jul</th>
+                                <th style="font-weight: normal;"> Ago</th>
+                                <th style="font-weight: normal;"> Set</th>
+                                <th style="font-weight: normal;"> Oct</th>
+                                <th style="font-weight: normal;"> Nov</th>
+                                <th style="font-weight: normal;"> Dic</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tb_devuep">
+                            <tr class="fil_hisfinan">
+                                <td> </td>
+                                <td> </td>
+                                <td> </td>
+                                <td> </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modBuscNom" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"> Búsqueda por nombre </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <table class="table ">
+                    <tr class="mb-0" style="border: hidden; ">
+                        <td width="70%" class="mb-0">
+                            <input id="txtNomInv" type="text" class="txt_busnom" placeholder="Digitar descripción de la Inversión">
+                        </td>
+                        <td width="30%" class="mb-0" style="text-align: center;">
+                            <button id="btn_buscinv" type="button" class="btn_bus" onclick="ConsBuscNom()">
+                                <i class="fa fa-search"></i>&nbsp Buscar
+                            </button>
+                        </td>
+                    </tr>
+                </table>
+                <div id="d_invers" class="table-responsive">
+                    <table id="tab_invers" class="table table-bordered table-hover tab_border">
+                        <thead>
+                            <tr class="tit_tabla" style="vertical-align:middle;">
+                                <th width="10%" style="font-weight: normal;"> Código único</th>
+                                <th width="10%" style="font-weight: normal;"> Código SNIP</th>
+                                <th width="60%" style="font-weight: normal;"> Nombre de la inversión</th>
+                                <th width="10%" style="font-weight: normal;"> Estado</th>
+                                <th width="10%" style="font-weight: normal;"> Situación</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tb_invers">
+                        </tbody>
+                    </table>
+                </div>
+                <div id="d_invers2" class="table-responsive">
+                    <table class="table table-bordered table-hover tab_border">
+                        <thead>
+                            <tr class="tit_tabla" style="vertical-align:middle;">
+                                <th width="10%" style="font-weight: normal;"> Código único</th>
+                                <th width="10%" style="font-weight: normal;"> Código SNIP</th>
+                                <th width="60%" style="font-weight: normal;"> Nombre de la inversión</th>
+                                <th width="10%" style="font-weight: normal;"> Estado</th>
+                                <th width="10%" style="font-weight: normal;"> Situación</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr style="border-top: 2px solid #F7F7F7;">
+                                <td> </td>
+                                <td> </td>
+                                <td> </td>
+                                <td> </td>
+                                <td> </td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modDescarga" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"> Búsqueda Agregada </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <table class="table ">
+                    <tr class="mb-0" style="border: hidden; ">
+                        <td colspan="4" class="mb-0">
+                            <label for="nivgob" style="font-weight:bold; "> &nbsp NIVEL DE GOBIERNO:</label>
+                            <ul class="nav nav-fill">
+                                <li class="nav-item ">
+                                    <input type="radio" id="opt_gn" name="opt_niv" value="GN" checked />
+                                    Gobierno Nacional
+                                </li>
+                                <li class="nav-item ">
+                                    <input type="radio" id="opt_gr" name="opt_niv" value="GR" />
+                                    Gobierno Regional
+                                </li>
+                                <li class="nav-item ">
+                                    <input type="radio" id="opt_gl" name="opt_niv" value="GL" />
+                                    Gobierno Local
+                                </li>
+                            </ul>
+                        </td>
+                    </tr>
+                    <tr id="fil_sector" class="mb-0" style="border: hidden; ">
+                        <td class="mb-0">
+                            <label for="sector_bus" style="color:#42BEAD;">&nbsp Sector:</label><br />
+                            <select name="sector_bus" id="cbo_sect" style="font-size:12px;">
+                                <option value="" disabled selected>Seleccione sector</option>
+                            </select>
+                        </td>
+                        <td colspan="3" class="mb-0" style="text-align: left;">
+                            <br />
+                            <span class="pt-1 align-items-start btn_bus" type="button" onclick="Busqueda_Agregada_GN()">
+                                &nbsp <i class="fa fa-search"></i> &nbsp
+                            </span>
+                        </td>
+                    </tr>
+                    <tr id="fil_gore" class="mb-0" style="border: hidden; ">
+                        <td class="mb-0">
+                            <label for="gore_bus" style="color:#42BEAD;">&nbsp Región:</label><br />
+                            <select name="gore_bus" id="cbo_gore" style="font-size:12px;">
+                                <option value="" disabled selected>Seleccione Región</option>
+                            </select>
+                        </td>
+                        <td colspan="3" class="mb-0" style="text-align: left;">
+                            <br />
+                            <span class="pt-1 align-items-start btn_bus" type="button" onclick="Busqueda_Agregada_GR()">
+                                &nbsp <i class="fa fa-search"></i> &nbsp
+                            </span>
+                        </td>
+                    </tr>
+                    <tr id="fil_munic" class="mb-0" style="border: hidden; ">
+                        <td class="mb-0">
+                            <label for="dpto_bus" style="color:#42BEAD;"> &nbsp Departamento:</label><br />
+                            <select name="dpto_bus" id="cbo_dpto" style="font-size:12px;">
+                                <option value="" disabled selected>Seleccione departamento</option>
+                            </select>
+                        </td>
+                        <td class="mb-0">
+                            <label for="prov_bus" style="color:#42BEAD;"> &nbsp Provincia:</label><br />
+                            <select name="prov_bus" id="cbo_prov" style="font-size:12px;">
+                                <option value="" disabled selected>Seleccione provincia</option>
+                            </select>
+                        </td>
+                        <td class="mb-0">
+                            <label for="dist_bus" style="color:#42BEAD;"> &nbsp Distrito:</label><br />
+                            <select name="dist_bus" id="cbo_dist" style="font-size:12px;">
+                                <option value="" disabled selected>Seleccione distrito</option>
+                            </select>
+                        </td>
+                        <td class="mb-0" style="text-align: center;">
+                            <br />
+                            <span class="pt-1 align-items-start btn_bus" type="button" onclick="Busqueda_Agregada_GL()">
+                                &nbsp <i class="fa fa-search"></i> &nbsp
+                            </span>
+                        </td>
+                    </tr>
+                </table>
+
+                <div id="d_invers" class="table-responsive">
+                    <table class="table table-bordered table-hover tab_border">
+                        <thead>
+                            <tr class="tit_tabla" style="vertical-align:middle;">
+                                <th style="font-weight: normal;">Tipo de inversión</th>
+                                <th style="font-weight: normal;"> Costo Actualizado</th>
+                                <th style="font-weight: normal;"> Numero de inversiones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tb_inv_acum">
+                        </tbody>
+                    </table>
+
+                    <table class="table">
+                        <tr class="mb-0" style="border: hidden; ">
+                            <td class="mb-0" style="text-align: center;">
+                                <button id="btn_descarga_ac" type="button" class="btn_bus" onclick="Descarga_Agregada()">
+                                    <i class="fa fa-download"></i>&nbsp Descargar
+                                </button>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modAlertassi" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+    <div id="d_grafalert" class="modal-dialog modal-dialog-scrollable modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h6 class="modal-title" style="color:navy; font-weight:bold; "> SE IDENTIFICARON LAS SIGUIENTES ALERTAS DE RIESGO: </h6>
+                <button type="button" class="btn-close btn-close-black" data-bs-dismiss="modal" aria-label="Close" ></button>
+            </div>
+            <div class="modal-body">
+                 
+                <ul class="nav nav-fill">
+                    <li id="alerta01" class="nav-item ">
+                        <img src="/ssi/Content/img/alerta01_ctto.png" height="360" />
+
+                    </li>
+                    <li id="alerta02" class="nav-item ">
+                        <img src="/ssi/Content/img/alerta02_avfis.png" height="360" />
+                    </li>
+                    <li id="alerta03" class="nav-item ">
+                        <img src="/ssi/Content/img/alerta03_devm.png" height="360" />
+                    </li>
+                    <li id="alerta04" class="nav-item ">
+                        <img src="/ssi/Content/img/alerta04_sindv.png" height="360" />
+                    </li>
+                    <li id="alerta05" class="nav-item ">
+                        <img src="/ssi/Content/img/alerta05_f12b.png" height="360" />
+                    </li>
+                    <li id="alerta06" class="nav-item ">
+                        <img src="/ssi/Content/img/alerta06_costo.png" height="360" />
+                    </li>
+                    <li id="alerta07" class="nav-item ">
+                        <img src="/ssi/Content/img/alerta07_paraliz.png" height="360" />
+                    </li>
+                </ul> 
+
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="divResumenCont" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+    <div id="divResumen" class="modal-dialog modal-dialog-scrollable modal-xl" role="document">
+        <div id="divReporteImp" class="modal-content">
+            <div class="modal-header">
+                <table class="table mb-0">
+                    <tr>
+                        <td width="47%" class="pb-0" style="border: none; text-align:left;">
+                            <img src="/ssi/Content/img/logo_f12b_1_ini.png" class="img_logo">
+                        </td>
+                        <td width="47%" class="pb-0" style="border: none; text-align:right;">
+                            <img src="/ssi/Content/img/logo_invpub.jpg" class="img_logo">
+                        </td>
+                        <td width="6%" class="pb-0" style="border: none; text-align:right;">
+                            <button type="button" class="btn-close p-0 m-0 " data-bs-dismiss="modal" aria-label="Close"></button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="3" class="pt-0 pb-0" style="border: none; text-align:center;">
+                            <img src="/ssi/Content/img/titulo_ssi_ini.png" class="img_titulo">
+                        </td>
+                    </tr>
+                </table>
+
+            </div>
+
+            <div class="modal-body fil_resumen">
+                <div>
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr class="tit_resumen" style="border: hidden;">
+                                <td colspan="6" class="p-3 pt-2 pr-2 pb-2 "> FICHA RESUMEN DE LA INVERSIÓN </td>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td width="18%" style="font-weight: bold; ">CÓDIGO ÚNICO</td>
+                                <td id="td_cu_r" width="15%" style="border-left: hidden;"></td>
+                                <td width="13%" style="font-weight: bold; ">CÓDIGO SNIP</td>
+                                <td id="td_snip_r" width="20%" style="border-left: hidden;"></td>
+                                <td width="20%" style="font-weight: bold; ">FECHA DE REGISTRO</td>
+                                <td id="td_fecreg_r" width="14%" style="border-left: hidden;"></td>
+                            </tr>
+                            <tr>
+                                <td colspan="2" style="font-weight: bold; ">NOMBRE DE LA INVERSIÓN</td>
+                                <td id="td_nominv_r" colspan="4"></td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight: bold; ">ESTADO DE LA INVERSIÓN</td>
+                                <td id="td_estcu_r" style="border-left: hidden;"></td>
+                                <td style="font-weight: bold; ">TIPO DE INVERSIÓN</td>
+                                <td id="td_tipinv_r" style="border-left: hidden;"></td>
+                                <td style="font-weight: bold; ">¿SE ENCUENTRA PROGRAMADO EN EL PMI?</td>
+                                <td id="td_indpmi_r" style="border-left: hidden;"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div>
+                    <table class="table table-bordered mb-1">
+                        <thead>
+                            <tr class="tit_resumen02">
+                                <td colspan="2"> DATOS GENERALES </td>
+                            </tr>
+                            <tr class="tit_resumen03" style="border-bottom: hidden;">
+                                <td colspan="2"> I. INSTITUCIONALIDAD </td>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td width="35%" style="font-weight: bold; "> OPMI</td>
+                                <td width="65%" id="td_opmi_r"></td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight: bold; ">  UNIDAD FORMULADORA (UF)</td>
+                                <td id="td_uf_r"></td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight: bold; "> UNIDAD EJECUTORA DE INVERSIONES (UEI)</td>
+                                <td id="td_uei_r"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <table class="table table-bordered mb-1">
+                        <thead>
+                            <tr class="tit_resumen03" style="border-bottom: hidden;">
+                                <td colspan="4">  II. DATOS DE LA FASE DE FORMULACIÓN Y EVALUACIÓN </td>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td width="25%" style="font-weight: bold; ">  SITUACIÓN</td>
+                                <td width="25%" id="td_situinv_r" style="text-align:center;"></td>
+                                <td style="font-weight: bold; "> COSTO DE INVERSIÓN VIABLE / APROBADO (S/)(a)</td>
+                                <td id="td_mtoviab_r" style="text-align:center;"></td>
+                            </tr>
+                            <tr>
+                                <td width="25%" style="font-weight: bold; "> FECHA DE VIABILIDAD/APROBACIÓN</td>
+                                <td width="25%" id="td_fecviab_r" style="text-align:center;"></td>
+                                <td style="font-weight: bold; "> CONTROL CONCURRENTE (S/) (b)</td>
+                                <td id="td_ccc_fye_r" style="text-align:center;"></td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight: bold; "> LA INVERSIÓN CORRESPONDE A UN DECRETO DE EMERGENCIA</td>
+                                <td id="td_emergds_r" style="text-align:center;"> </td>
+                                <td style="font-weight: bold; "> COSTO TOTAL DE INVERSIÓN VIABLE / APROBADO (S/)(a+b)</td>
+                                <td id="td_totviab_r" style="text-align:center;"></td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight: bold; ">  CADENA FUNCIONAL</td>
+                                <td id="td_cadfun_r" style="text-align:center;"></td>
+                                <td style="font-weight: bold; "> BENEFICIARIOS (HABITANTES)</td>
+                                <td id="td_benif_r" style="text-align:center;"> </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <table class="table table-bordered ">
+                        <thead>
+                            <tr class="tit_resumen03" style="border-bottom: hidden;">
+                                <td colspan="6">  III. DATOS DE LA FASE EJECUCIÓN </td>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td width="25%" style="font-weight: bold; ">  ¿TIENE EXPEDIENTE TÉCNICO O DOCUMENTO EQUIVALENTE?</td>
+                                <td width="25%" id="td_indet_r" style="text-align:center;"> </td>
+                                <td width="25%" style="font-weight: bold; "> COSTO DE INVERSIÓN ACTUALIZADO (S/) (a)</td>
+                                <td width="25%" id="val_cta_r" style="text-align:center;"></td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight: bold; "> ¿TIENE REGISTRO DE SEGUIMIENTO?</td>
+                                <td id="td_indseg_r" style="text-align:center;"></td>
+                                <td style="font-weight: bold; "> CONTROL CONCURRENTE (S/) (b)</td>
+                                <td id="td_concurr_r" style="text-align:center;"></td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight: bold; ">  REGISTRO DE CIERRE</td>
+                                <td id="td_f9" style="text-align:center;"></td>
+                                <td style="font-weight: bold; "> SOLUCIÓN DE CONTROVERSIAS (S/) (c)</td>
+                                <td id="td_laudo_r" style="text-align:center;"></td>
+                            </tr>
+                            <tr>
+                                <td width="25%" style="font-weight:bold;">  FECHA DE INICIO DE EJECUCIÓN</td>
+                                <td width="25%" id="fec_iniejec_r" style="text-align:center;"></td>
+                                <td width="25%" style="font-weight: bold; "> MONTO DE CARTA FIANZA (S/) (d)</td>
+                                <td width="25%" id="td_carfza_r" style="text-align:center;"></td>
+                            </tr>
+
+                            <tr>
+                                <td width="25%" style="font-weight:bold;">  FECHA DE FIN DE EJECUCIÓN</td>
+                                <td width="25%" id="fec_finejec_r" style="text-align:center;"></td>
+                                <td width="25%" style="font-weight:bold;"> COSTO DE INVERSIÓN TOTAL (S/) (a+b+c+d)</td>
+                                <td width="25%" id="td_mtototal_r" style="text-align:center;"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <table class="table table-bordered ">
+                        <thead>
+                            <tr class="tit_resumen03" style="border-bottom: hidden;">
+                                <td colspan="6">  IV. CONTRIBUCION AL CIERRE DE BRECHAS </td>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td width="25%" style="font-weight: bold; "> NOMBRE DEL INDICADOR</td>
+                                <td width="25%" id="td_indcie_r" style="text-align:center;"> </td>
+                                <td width="25%" style="font-weight: bold; "> ESTADO</td>
+                                <td width="25%" id="td_estind_r" style="text-align:center;"></td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight: bold; "> UNIDAD DE MEDIDA</td>
+                                <td id="td_umind_r" style="text-align:center;"></td>
+                                <td style="font-weight: bold; "> VALOR DE LA CONTRIBUCION</td>
+                                <td id="td_valcie_r" style="text-align:center;"></td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight: bold; "> FECHA DE EVALUACION</td>
+                                <td id="td_feceval_r" style="text-align:center;"></td>
+                                <td style="font-weight: bold; "> ETAPA DE VERIFICACION</td>
+                                <td id="td_etaverif_r" style="text-align:center;"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div id="div_foniprel_res">
+                        <table class="table table-bordered ">
+                            <thead>
+                                <tr class="tit_resumen03" style="border-bottom: hidden;">
+                                    <td colspan="4">   V. CONVOCATORIAS FONIPREL </td>
+                                </tr>
+                            </thead>
+                            <tbody id="tb_foniprel_res"> </tbody>
+                        </table>
+                    </div>
+                    <div id="div_paraliza_res">
+                        <table class="table table-bordered ">
+                            <thead>
+                                <tr class="tit_resumen03" style="border-bottom: hidden;">
+                                    <td colspan="4">    VI. REGISTRO DE OBRAS PARALIZADAS </td>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td width="25%" style="font-weight:bold;">  FECHA DE REGISTRO</td>
+                                    <td width="25%" id="td_fec_reg_par_r">  </td>
+                                    <td width="25%" style="font-weight:bold;">CÓDIGO INFOBRAS</td>
+                                    <td width="25%" id="td_codpar_r">  </td>
+                                </tr>
+                                <tr>
+                                    <td style="font-weight:bold;"> DESCRIPCIÓN DE LA OBRA</td>
+                                    <td colspan="3" id="td_desobra_r">  </td>
+                                </tr>
+                                <tr>
+                                    <td style="font-weight:bold;"> MODALIDAD</td>
+                                    <td id="td_modalpar_r" colspan="3">  </td>
+                                </tr>
+                                <tr>
+                                    <td width="25%" style="font-weight:bold;">  AVANCE FÍSICO</td>
+                                    <td width="25%" id="td_avanfispar_r">  </td>
+                                    <td width="25%" style="font-weight:bold;">FECHA DE PARALIZACIÓN</td>
+                                    <td width="25%" id="td_fecparal_r">  </td>
+                                </tr>
+                                <tr>
+                                    <td width="25%" style="font-weight:bold;"> MOTIVOS DE PARALIZACIÓN</td>
+                                    <td width="75%" colspan="3" id="td_motivopar_r"> </td>
+                                </tr>
+                                <tr>
+                                    <td width="25%" style="font-weight:bold;">  INFORME DE ESTADO SITUACIONAL</td>
+                                    <td width="25%" id="td_informe_par_r">  </td>
+                                    <td width="25%" style="font-weight:bold;">RESOLUCIÓN QUE APRUEBA LA LISTA PRIORIZADA</td>
+                                    <td width="25%" id="td_resol_par_r">  </td>
+                                </tr>
+                                <tr>
+                                    <td width="25%" style="font-weight:bold;"> SITUACIÓN DE LA INVERSIÓN</td>
+                                    <td width="75%" colspan="3" id="td_est_situac_r"> </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div>
+                    <table class="table table-bordered mb-1">
+                        <thead>
+                            <tr class="tit_resumen02">
+                                <td colspan="4"> EJECUCION FINANCIERA </td>
+                            </tr>
+                            <tr class="tit_resumen03" style="border-bottom: hidden;">
+                                <td colspan="4"> I. INFORMACIÓN FINANCIERA (S/) </td>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td width="25%" style="font-weight: bold; ">  COSTO INVERSIÓN TOTAL (a)</td>
+                                <td width="25%" id="td_mtototal2_r" style="text-align:center;"></td>
+                                <td width="25%" id="des_pim_r" style="font-weight: bold; "> PIM 2024 (c)</td>
+                                <td width="25%" id="val_pim_r" style="text-align:center;"></td>
+                            </tr>
+                            <tr>
+                                <td id="des_avanacum_r" style="font-weight: bold; "> DEVENGADO ACUMULADO AL 2024 (b)</td>
+                                <td id="val_efin_r" style="text-align:center;"></td>
+                                <td id="des_avan_r" style="font-weight: bold; "> DEVENGADO EN EL 2024 (d)</td>
+                                <td id="val_avan_r" style="text-align:center;"></td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight: bold; "> AVANCE FINANCIERO ACUMULADO (b/a)</td>
+                                <td id="por_avanacum_r" style="text-align:center;"></td>
+                                <td id="des_avanfinan_r" style="font-weight: bold; "> AVANCE FINANCIERO 2024 (d/c)</td>
+                                <td id="por_avananio_r" style="text-align:center;"></td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight: bold; ">SALDO POR EJECUTAR (a-b)</td>
+                                <td id="sdo_ejecacum_r" style="text-align:center;"> </td>
+                                <td id="des_sdoanio_r" style="font-weight: bold; "> SALDO POR DEVENGAR 2024 (c-d)</td>
+                                <td id="sdo_ejecanio_r" style="text-align:center;"></td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight: bold; ">FECHA DEL PRIMER DEVENGADO</td>
+                                <td id="pridev_r" style="text-align:center;"> </td>
+                                <td style="font-weight: bold; "> FECHA DEL ÚLTIMO DEVENGADO</td>
+                                <td id="ultdev_r" style="text-align:center;"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <table class="table table-bordered ">
+                        <thead>
+                            <tr class="tit_resumen03" style="border-bottom: hidden;">
+                                <td colspan="6"> II. HISTÓRICO DE DEVENGADO DE LA INVERSIÓN (S/) </td>
+                            </tr>
+                        </thead>
+                        <tbody id="tb_hist_anual_res" style="text-align:center;">
+                            <tr style="font-weight: bold;">
+                                <th width="7%"> AÑO</th>
+                                <th width="18%"> PIA</th>
+                                <th width="18%"> PIM</th>
+                                <th width="18%"> CERTIFICACIÓN</th>
+                                <th width="18%"> COMPROMISO ANUAL</th>
+                                <th width="21%"> DEVENGADO</th>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div id="graf_temp">
+                        <canvas id="canvas02_res"></canvas>
+                    </div>
+                    <div class="div_graf mb-2">
+                        <img id="url" class="img_resdv" />
+                    </div>
+
+                    <table class="table table-bordered mb-1">
+                        <thead>
+                            <tr class="tit_resumen03" style="border-bottom: hidden;">
+                                <td colspan="7"> III. HISTÓRICO DE DEVENGADO POR ESPECÍFICA (S/)  DE LOS ULTIMOS 5 AÑOS </td>
+                            </tr>
+                        </thead>
+                        <tbody id="tb_hist_especif_res" style="text-align:center;">
+                            <tr style="font-weight: bold; ">
+                                <th width="40%"> ESPECÍFICA DE GASTO</th>
+                                <th id="esp_an01_res" width="10%"> 2022</th>
+                                <th id="esp_an02_res" width="10%"> 2023</th>
+                                <th id="esp_an03_res" width="10%"> 2024</th>
+                                <th id="esp_an04_res" width="10%"> 2025</th>
+                                <th id="esp_an05_res" width="10%"> 2026</th>
+                                <th width="10%"> TOTAL</th>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr class="tit_resumen03" style="border-bottom: hidden;">
+                                <td colspan="4"> IV. DETALLE POR UNIDAD EJECUTORA PRESUPUESTAL (S/) </td>
+                            </tr>
+                        </thead>
+                        <tbody id="tb_uep_res" style="text-align:center;">
+                            <tr style="font-weight: bold; ">
+                                <th width="56%"> UNIDADES EJECUTORAS</th>
+                                <th width="30%"> DEVENGADO ACUMULADO</th>
+                                <th width="14%" colspan="2"> DETALLE</th>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div>
+                    <table class="table table-bordered mb-1">
+                        <thead>
+                            <tr class="tit_resumen02">
+                                <td>CONTRATACIONES </td>
+                            </tr>
+                        </thead>
+                    </table>
+                    <table id="tit_obra_res" class="table table-bordered mb-1">
+                        <thead>
+                            <tr class="tit_resumen03" style="border-bottom: hidden;">
+                                <td id="td_obra_res" colspan="8"> I. OBRA </td>
+                            </tr>
+                        </thead>
+                        <tbody id="tb_seaceobra_res" style="text-align:center;">
+                            <tr style=" vertical-align:middle; font-weight: bold;">
+                                <th>N° DE ITEM</th>
+                                <th>DESCRIPCIÓN DE ITEM</th>
+                                <th>CONTRATISTA</th>
+                                <th> N° CONTRATO</th>
+                                <th> FECHA DE SUSCRIPCIÓN</th>
+                                <th>MONTO CONTRATADO TOTAL (S/)</th>
+                                <th> MONTO CONTRATADO ITEM TOTAL (S/)</th>
+                                <th> VER CONTRATO</th>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <table id="tit_serv_res" class="table table-bordered mb-1">
+                        <thead>
+                            <tr class="tit_resumen03" style="border-bottom: hidden;">
+                                <td id="td_serv_res" colspan="8"> II. SERVICIO </td>
+                            </tr>
+                        </thead>
+                        <tbody id="tb_seaceserv_res" style="text-align:center;">
+                            <tr style=" vertical-align:middle; font-weight: bold;">
+                                <th>N° DE ITEM</th>
+                                <th>DESCRIPCIÓN DE ITEM</th>
+                                <th>CONTRATISTA</th>
+                                <th> N° CONTRATO</th>
+                                <th> FECHA DE SUSCRIPCIÓN</th>
+                                <th>MONTO CONTRATADO TOTAL (S/)</th>
+                                <th> MONTO CONTRATADO ITEM TOTAL (S/)</th>
+                                <th> VER CONTRATO</th>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <table id="tit_bien_res" class="table table-bordered mb-1">
+                        <thead>
+                            <tr class="tit_resumen03" style="border-bottom: hidden;">
+                                <td id="td_bien_res" colspan="8"> III. BIENES </td>
+                            </tr>
+                        </thead>
+                        <tbody id="tb_seacebien_res" style="text-align:center;">
+                            <tr style=" vertical-align:middle; font-weight: bold;">
+                                <th>N° DE ITEM</th>
+                                <th>DESCRIPCIÓN DE ITEM</th>
+                                <th>CONTRATISTA</th>
+                                <th> N° CONTRATO</th>
+                                <th> FECHA DE SUSCRIPCIÓN</th>
+                                <th>MONTO CONTRATADO TOTAL (S/)</th>
+                                <th> MONTO CONTRATADO ITEM TOTAL (S/)</th>
+                                <th> VER CONTRATO</th>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <table id="tit_cons_res" class="table table-bordered mb-0">
+                        <thead>
+                            <tr class="tit_resumen03" style="border-bottom: hidden;">
+                                <td id="td_cons_res" colspan="8"> IV. CONSULTORÍA DE OBRA </td>
+                            </tr>
+                        </thead>
+                        <tbody id="tb_seaceconsul_res" style="text-align:center;">
+                            <tr style=" vertical-align:middle; font-weight: bold;">
+                                <th>N° DE ITEM</th>
+                                <th>DESCRIPCIÓN DE ITEM</th>
+                                <th>CONTRATISTA</th>
+                                <th> N° CONTRATO</th>
+                                <th> FECHA DE SUSCRIPCIÓN</th>
+                                <th>MONTO CONTRATADO TOTAL (S/)</th>
+                                <th> MONTO CONTRATADO ITEM TOTAL (S/)</th>
+                                <th> VER CONTRATO</th>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <table id="tit_oxi_res" class="table table-bordered mb-0">
+                        <thead>
+                            <tr class="tit_resumen03" style="border-bottom: hidden;">
+                                <td id="td_oxi_res" colspan="8"> V. CONVENIOS DE OBRA POR IMPUESTOS </td>
+                            </tr>
+                        </thead>
+                        <tbody id="tb_oxi_res" style="text-align:center;">
+                            <tr style=" vertical-align:middle; font-weight: bold;">
+                                <th>AÑO BUENA PRO</th>
+                                <th>EMPRESA PRIVADA</th>
+                                <th> TIPO DOCUMENTO</th>
+                                <th> FECHA</th>
+                                <th>MONTO TOTAL INVERSION (S/)</th>
+                                <th> VER DOCUMENTO</th>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <table id="tit_oxi_res_2" class="table table-bordered mb-0">
+                        <thead>
+                            <tr class="tit_resumen03" style="border-bottom: hidden;">
+                                <td id="td_oxi_res_2" colspan="8"> VI. CONTRATOS DE SUPERVISION OXI </td>
+                            </tr>
+                        </thead>
+                        <tbody id="tb_oxi_res_2" style="text-align:center;">
+                            <tr style=" vertical-align:middle; font-weight: bold;">
+                                <th>AÑO BUENA PRO</th>
+                                <th>ENTIDAD PRIVADA SUPERVISORA</th>
+                                <th> TIPO DOCUMENTO</th>
+                                <th> FECHA</th>
+                                <th>MONTO TOTAL INVERSION (S/)</th>
+                                <th> VER DOCUMENTO</th>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <table id="tit_oxi_res_3" class="table table-bordered mb-0">
+                        <thead>
+                            <tr class="tit_resumen03" style="border-bottom: hidden;">
+                                <td id="td_oxi_res_3" colspan="8"> VII. OTROS DOCUMENTOS OXI </td>
+                            </tr>
+                        </thead>
+                        <tbody id="tb_oxi_res_3" style="text-align:center;">
+                            <tr style=" vertical-align:middle; font-weight: bold;">
+                                <th>AÑO BUENA PRO</th>
+                                <th>EMPRESA FINANCISTA</th>
+                                <th> TIPO DOCUMENTO</th>
+                                <th> VER DOCUMENTO</th>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                </div>
+                <br />
+                <div>
+                    <table class="table table-bordered mb-1">
+                        <thead>
+                            <tr class="tit_resumen02">
+                                <td>INFOBRAS </td>
+                            </tr>
+                        </thead>
+                    </table>
+                    <div id="div_infobras_res">
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-primary" onclick="Imprimir_resumen()">Imprimir</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div id="divPreload" class="modal-preload" style="display:none">
+    <div class="circles">
+        <div class="circle"></div>
+        <div class="mainLogo"><i class="preloadEc"></i> Procesando... </div>
+    </div>
+</div>
+
+
+<script src="/ssi/Scripts/repssi/formato_data.js"></script>
+<script src="/ssi/Scripts/repssi/script_ssi01_ws.js"></script>
+<script src="/ssi/Scripts/repssi/script_ssi01_func.js"></script>
+<script src="/ssi/Scripts/repssi/script_ssi01.js?v=639074522181507837"></script>
+
+
+
+
+        </div>
+    </form>
+
+
+</body>
+</html><script id="f5_cspm">(function(){var f5_cspm={f5_p:'OFNDFCJNHGKBANIIPFHPEHNEGLEPGKNFOCNKNJBIINGDDFDJIICDIDEBGHLABEBPPAHBCDNGAAOIBJAOIJGAAMEMAABCFPIOJNMFGINBFDGIJJFMGKBHAJLNOKOPOPKI',setCharAt:function(str,index,chr){if(index>str.length-1)return str;return str.substr(0,index)+chr+str.substr(index+1);},get_byte:function(str,i){var s=(i/16)|0;i=(i&15);s=s*32;return((str.charCodeAt(i+16+s)-65)<<4)|(str.charCodeAt(i+s)-65);},set_byte:function(str,i,b){var s=(i/16)|0;i=(i&15);s=s*32;str=f5_cspm.setCharAt(str,(i+16+s),String.fromCharCode((b>>4)+65));str=f5_cspm.setCharAt(str,(i+s),String.fromCharCode((b&15)+65));return str;},set_latency:function(str,latency){latency=latency&0xffff;str=f5_cspm.set_byte(str,40,(latency>>8));str=f5_cspm.set_byte(str,41,(latency&0xff));str=f5_cspm.set_byte(str,35,2);return str;},wait_perf_data:function(){try{var wp=window.performance.timing;if(wp.loadEventEnd>0){var res=wp.loadEventEnd-wp.navigationStart;if(res<60001){var cookie_val=f5_cspm.set_latency(f5_cspm.f5_p,res);window.document.cookie='f5avr1604567244aaaaaaaaaaaaaaaa_cspm_='+encodeURIComponent(cookie_val)+';path=/;'+'';}
+return;}}
+catch(err){return;}
+setTimeout(f5_cspm.wait_perf_data,100);return;},go:function(){var chunk=window.document.cookie.split(/\s*;\s*/);for(var i=0;i<chunk.length;++i){var pair=chunk[i].split(/\s*=\s*/);if(pair[0]=='f5_cspm'&&pair[1]=='1234')
+{var d=new Date();d.setTime(d.getTime()-1000);window.document.cookie='f5_cspm=;expires='+d.toUTCString()+';path=/;'+';';setTimeout(f5_cspm.wait_perf_data,100);}}}}
+f5_cspm.go();}());</script>

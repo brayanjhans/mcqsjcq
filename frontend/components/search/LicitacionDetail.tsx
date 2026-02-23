@@ -37,6 +37,13 @@ interface Props {
 // ─── Historial Table (replaces chart) ──────────────────────────────────────
 function HistorialChart({ historial }: { historial: HistorialAnual[] }) {
     const [expanded, setExpanded] = React.useState(false);
+    const [expandedYears, setExpandedYears] = React.useState<number[]>([]);
+
+    const toggleYear = (year: number) => {
+        setExpandedYears(prev =>
+            prev.includes(year) ? prev.filter(y => y !== year) : [...prev, year]
+        );
+    };
 
     // Sort descending (most recent first), show 3 or all
     const sorted = [...historial].reverse();
@@ -65,25 +72,83 @@ function HistorialChart({ historial }: { historial: HistorialAnual[] }) {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-white/5 bg-white dark:bg-[#111c44]">
-                        {visible.map(h => (
-                            <tr key={h.year} className="hover:bg-slate-50/70 dark:hover:bg-white/5 transition-colors">
-                                <td className="py-3 px-4 text-sm font-black text-slate-800 dark:text-white">{h.year}</td>
-                                <td className="py-3 px-4 text-xs text-slate-500 dark:text-slate-400 text-right font-mono">{fmt(h.pia)}</td>
-                                <td className="py-3 px-4 text-xs font-bold text-slate-700 dark:text-slate-200 text-right font-mono">{fmt(h.pim)}</td>
-                                <td className="py-3 px-4 text-xs text-slate-500 dark:text-slate-400 text-right font-mono">{fmt(h.certificado)}</td>
-                                <td className="py-3 px-4 text-xs text-slate-500 dark:text-slate-400 text-right font-mono">{fmt(h.compromiso_anual)}</td>
-                                <td className="py-3 px-4 text-xs font-bold text-blue-600 dark:text-blue-400 text-right font-mono">{fmt(h.devengado)}</td>
-                                <td className="py-3 px-4 text-xs font-bold text-emerald-600 dark:text-emerald-400 text-right font-mono">{fmt(h.girado)}</td>
-                                <td className="py-3 px-4 text-right">
-                                    <span className={`text-xs font-black ${h.avance_pct >= 80 ? 'text-emerald-600' :
-                                        h.avance_pct >= 40 ? 'text-amber-600' :
-                                            h.avance_pct > 0 ? 'text-blue-600' : 'text-slate-400'
-                                        }`}>
-                                        {h.avance_pct > 0 ? `${h.avance_pct}%` : '—'}
-                                    </span>
-                                </td>
-                            </tr>
-                        ))}
+                        {visible.map(h => {
+                            const isYearExpanded = expandedYears.includes(h.year);
+                            const hasMonths = h.meses && h.meses.length > 0;
+                            return (
+                                <React.Fragment key={h.year}>
+                                    <tr
+                                        onClick={() => hasMonths && toggleYear(h.year)}
+                                        className={`${hasMonths ? 'cursor-pointer' : ''} hover:bg-slate-50/70 dark:hover:bg-white/5 transition-colors`}
+                                    >
+                                        <td className="py-3 px-4 text-sm font-black text-slate-800 dark:text-white flex items-center gap-2">
+                                            {hasMonths ? (
+                                                <span className="text-slate-400 font-normal text-[9px]">{isYearExpanded ? '▼' : '▶'}</span>
+                                            ) : (
+                                                <span className="w-2.5"></span>
+                                            )}
+                                            {h.year}
+                                        </td>
+                                        <td className="py-3 px-4 text-xs text-slate-500 dark:text-slate-400 text-right font-mono">{fmt(h.pia)}</td>
+                                        <td className="py-3 px-4 text-xs font-bold text-slate-700 dark:text-slate-200 text-right font-mono">{fmt(h.pim)}</td>
+                                        <td className="py-3 px-4 text-xs text-slate-500 dark:text-slate-400 text-right font-mono">{fmt(h.certificado)}</td>
+                                        <td className="py-3 px-4 text-xs text-slate-500 dark:text-slate-400 text-right font-mono">{fmt(h.compromiso_anual)}</td>
+                                        <td className="py-3 px-4 text-xs font-bold text-blue-600 dark:text-blue-400 text-right font-mono">{fmt(h.devengado)}</td>
+                                        <td className="py-3 px-4 text-xs font-bold text-emerald-600 dark:text-emerald-400 text-right font-mono">{h.girado > 0 ? fmt(h.girado) : <span className="text-slate-400">—</span>}</td>
+                                        <td className="py-3 px-4 text-right">
+                                            <span className={`text-xs font-black ${h.avance_pct >= 80 ? 'text-emerald-600' :
+                                                h.avance_pct >= 40 ? 'text-amber-600' :
+                                                    h.avance_pct > 0 ? 'text-blue-600' : 'text-slate-400'
+                                                }`}>
+                                                {h.avance_pct > 0 ? `${h.avance_pct}%` : '—'}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    {isYearExpanded && hasMonths && (
+                                        <tr className="bg-slate-50/50 dark:bg-slate-800/30">
+                                            <td colSpan={8} className="p-0">
+                                                <div className="p-4 border-l-2 border-indigo-500 ml-4 mb-2 mt-2 mr-4 rounded-xl bg-white dark:bg-[#0b1437] shadow-sm">
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <h4 className="text-[10px] font-bold uppercase text-indigo-500 tracking-wider">Desglose Mensual {h.year}</h4>
+                                                        <span className="text-[9px] text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-400/10 border border-amber-200 dark:border-amber-400/20 rounded-full px-2 py-0.5">
+                                                            ⚠ Solo meses con devengado ejecutado
+                                                        </span>
+                                                    </div>
+                                                    <table className="w-full text-left">
+                                                        <thead>
+                                                            <tr className="border-b border-slate-200 dark:border-white/10">
+                                                                <th className="py-2 px-3 text-[9px] font-bold uppercase text-slate-500 tracking-wider">Mes</th>
+                                                                <th className="py-2 px-3 text-[9px] font-bold uppercase text-slate-500 tracking-wider text-right">PIA</th>
+                                                                <th className="py-2 px-3 text-[9px] font-bold uppercase text-slate-500 tracking-wider text-right">PIM</th>
+                                                                <th className="py-2 px-3 text-[9px] font-bold uppercase text-slate-500 tracking-wider text-right">Certificación</th>
+                                                                <th className="py-2 px-3 text-[9px] font-bold uppercase text-slate-500 tracking-wider text-right">Comp. Anual</th>
+                                                                <th className="py-2 px-3 text-[9px] font-bold uppercase text-slate-500 tracking-wider text-right">Devengado</th>
+                                                                <th className="py-2 px-3 text-[9px] font-bold uppercase text-slate-500 tracking-wider text-right">Girado</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody className="divide-y divide-slate-100 dark:divide-white/5">
+                                                            {h.meses!.map(m => (
+                                                                <tr key={m.mes} className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                                                                    <td className="py-2 px-3 text-[11px] font-semibold text-slate-700 dark:text-slate-200">
+                                                                        {new Date(2000, m.mes - 1, 1).toLocaleString('es-PE', { month: 'long' }).toUpperCase()}
+                                                                    </td>
+                                                                    <td className="py-2 px-3 text-[10px] font-mono text-slate-500 text-right">{fmt(m.pia)}</td>
+                                                                    <td className="py-2 px-3 text-[10px] font-mono font-bold text-slate-700 dark:text-slate-200 text-right">{fmt(m.pim)}</td>
+                                                                    <td className="py-2 px-3 text-[10px] font-mono text-slate-500 text-right">{fmt(m.certificado)}</td>
+                                                                    <td className="py-2 px-3 text-[10px] font-mono text-slate-500 text-right">{fmt(m.compromiso_anual)}</td>
+                                                                    <td className="py-2 px-3 text-[10px] font-mono font-bold text-blue-600 dark:text-blue-400 text-right">{fmt(m.devengado)}</td>
+                                                                    <td className="py-2 px-3 text-[10px] font-mono font-bold text-emerald-600 dark:text-emerald-400 text-right">{(m.girado ?? 0) > 0 ? fmt(m.girado) : <span className="text-slate-400">—</span>}</td>
+                                                                </tr>
+                                                            ))}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    )}
+                                </React.Fragment>
+                            );
+                        })}
                     </tbody>
                 </table>
             </div>

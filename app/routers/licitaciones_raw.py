@@ -550,7 +550,7 @@ def get_licitaciones(
                 # Default empty fields (filled by batch fetch)
                 "ganador_nombre": None,
                 "ganador_ruc": None,
-                "entidad_financiera": None,
+                "entidades_financieras": None,
                 "tipo_garantia": None,
                 "monto_total_adjudicado": 0,
                 "total_adjudicaciones": 0,
@@ -592,7 +592,7 @@ def get_licitaciones(
                     adjs = adj_map[cid]
                     item["ganador_nombre"] = " | ".join(sorted(list(set(filter(None, [a[1] for a in adjs])))))
                     item["ganador_ruc"] = " | ".join(sorted(list(set(filter(None, [a[2] for a in adjs])))))
-                    item["entidad_financiera"] = " | ".join(sorted(list(set(filter(None, [a[3] for a in adjs])))))
+                    item["entidades_financieras"] = " | ".join(sorted(list(set(filter(None, [a[3] for a in adjs])))))
                     item["tipo_garantia"] = ",".join(sorted(list(set(filter(None, [a[4] for a in adjs])))))
                     item["monto_total_adjudicado"] = sum([float(a[5]) for a in adjs if a[5]])
                     item["total_adjudicaciones"] = len(adjs)

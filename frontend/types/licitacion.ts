@@ -86,6 +86,16 @@ export interface ReportData {
 }
 
 // --- Integration API types ---
+export interface HistorialMensual {
+    mes: number;
+    pia: number;
+    pim: number;
+    certificado: number;
+    compromiso_anual: number;
+    devengado: number;
+    girado: number;
+}
+
 export interface HistorialAnual {
     year: number;
     pia: number;
@@ -95,6 +105,7 @@ export interface HistorialAnual {
     devengado: number;
     girado: number;
     avance_pct: number;
+    meses?: HistorialMensual[];
 }
 
 export interface EjecucionFinanciera {

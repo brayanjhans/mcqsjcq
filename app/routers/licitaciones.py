@@ -249,8 +249,10 @@ def get_licitaciones(
     total_pages = math.ceil(total / limit) if total > 0 else 0
     offset = (page - 1) * limit
     
-    # Get paginated results - order by most recent
-    items = query.distinct().order_by(
+    # Get paginated results - order by most recent and eagerly load adjudications to compute banks
+    items = query.distinct().options(
+        joinedload(LicitacionesCabecera.adjudicaciones)
+    ).order_by(
         LicitacionesCabecera.fecha_publicacion.desc()
     ).offset(offset).limit(limit).all()
     
@@ -262,12 +264,37 @@ def get_licitaciones(
         from app.schemas import DetalleConsorcioSchema
 
         for item in items:
-            item_schema = LicitacionListSchema.model_validate(item)
+            # 1. Base dict from SQLAlchemy ORM
+            base_data = {
+                "id_convocatoria": item.id_convocatoria,
+                "nomenclatura": item.nomenclatura,
+                "comprador": item.comprador,
+                "monto_estimado": item.monto_estimado,
+                "fecha_publicacion": item.fecha_publicacion,
+                "estado_proceso": item.estado_proceso,
+                "entidades_financieras": None,
+                "tipo_garantia": None,
+                "miembros_consorcio": []
+            }
             
             # Aggregate members from all adjudications
             consortium_members = []
-            if item.adjudicaciones:
-                for adj in item.adjudicaciones:
+            entidades_set = set()
+            garantias_set = set()
+            
+            from app.models.seace import LicitacionesAdjudicaciones
+            adjudicaciones_db = db.query(LicitacionesAdjudicaciones).filter(
+                LicitacionesAdjudicaciones.id_convocatoria == item.id_convocatoria
+            ).all()
+            
+            if adjudicaciones_db:
+                for adj in adjudicaciones_db:
+                    # Capturar financieras
+                    if adj.entidad_financiera:
+                        entidades_set.add(adj.entidad_financiera)
+                    if adj.tipo_garantia and adj.tipo_garantia != 'SIN_GARANTIA':
+                        garantias_set.add(adj.tipo_garantia)
+                        
                     # Logic similar to get_licitacion_detalle
                     consorcios_adj = []
                     if adj.id_contrato:
@@ -281,24 +308,14 @@ def get_licitaciones(
                         ).all()
                     
                     for c in consorcios_adj:
-                        consortium_members.append(DetalleConsorcioSchema.model_validate(c))
+                        consortium_members.append(c)
             
-            item_schema.miembros_consorcio = consortium_members
+            base_data["miembros_consorcio"] = consortium_members
+            base_data["entidades_financieras"] = " | ".join(sorted(entidades_set)) if entidades_set else None
+            base_data["tipo_garantia"] = ",".join(sorted(garantias_set)) if garantias_set else None
             
-            # --- AGREGAR ENTIDADES FINANCIERAS Y TIPO DE GARANTÍA A LA LISTA ---
-            entidades_set = set()
-            garantias_set = set()
-            
-            if item.adjudicaciones:
-                for adj in item.adjudicaciones:
-                    if adj.entidad_financiera:
-                        entidades_set.add(adj.entidad_financiera)
-                    if adj.tipo_garantia and adj.tipo_garantia != 'SIN_GARANTIA':
-                        garantias_set.add(adj.tipo_garantia)
-                        
-            item_schema.entidades_financieras = " | ".join(sorted(entidades_set)) if entidades_set else None
-            item_schema.tipo_garantia = ",".join(sorted(garantias_set)) if garantias_set else None
-            
+            # 2. Build model instance
+            item_schema = LicitacionListSchema.model_validate(base_data)
             results.append(item_schema)
 
     return PaginatedLicitacionesSchema(
