@@ -127,7 +127,7 @@ def get_ejecucion_by_cui_ssi(cui: str) -> Optional[dict]:
         girado_anual_db = {}
         try:
             db = SessionLocal()
-            rows = db.execute(text("SELECT ano_eje, SUM(monto_girado) FROM mef_ejecucion WHERE producto_proyecto LIKE :cui GROUP BY ano_eje"), {"cui": f"{cui}%"}).fetchall()
+            rows = db.execute(text("SELECT ano_eje, MAX(monto_girado) FROM mef_ejecucion WHERE producto_proyecto LIKE :cui GROUP BY ano_eje"), {"cui": f"{cui}%"}).fetchall()
             for r in rows:
                 girado_anual_db[int(r[0])] = float(r[1] or 0)
             db.close()
