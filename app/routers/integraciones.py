@@ -18,6 +18,7 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
+import requests
 
 router = APIRouter(prefix="/api/integraciones", tags=["Integraciones"])
 
@@ -47,8 +48,18 @@ def download_and_import_mef(year: int):
         
         url = f"https://fs.datosabiertos.mef.gob.pe/datastorefiles/{year}-Gasto-Devengado-Diario.csv"
         
-        # Download the latest CSV from the MEF
-        urllib.request.urlretrieve(url, csv_path)
+        # Download the latest CSV from the MEF with streaming to avoid Memory Errors and fake User-Agent to bypass Anti-Bot
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+            "Accept-Encoding": "gzip, deflate, br",
+            "Connection": "keep-alive"
+        }
+        with requests.get(url, stream=True, headers=headers, timeout=60) as r:
+            r.raise_for_status() # Raise exception for 403, 404, etc.
+            with open(csv_path, 'wb') as f:
+                for chunk in r.iter_content(chunk_size=8192): 
+                    f.write(chunk)
         
         mef_update_state["current_step"] = f"Procesando CSV e importando proyectos a la base de datos local..."
         mef_update_state["logs"].append(mef_update_state["current_step"])
