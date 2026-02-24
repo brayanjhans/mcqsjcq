@@ -1104,12 +1104,27 @@ def create_licitacion(licitacion: LicitacionCreate, db: Session = Depends(get_db
         # NOTIFICATION
         try:
             from app.routers.notifications import create_notification_internal
+            
+            meta = {
+                "categoria": licitacion.categoria or "GENERAL",
+                "ubicacion": ubicacion or "PERU",
+                "monto": float(licitacion.monto_estimado or 0),
+                "orcid": licitacion.ocid or new_id,
+                "estadoAnterior": None,
+                "estadoNuevo": None,
+                "licitacionId": new_id
+            }
+            
+            proc_type_notif = licitacion.tipo_procedimiento or "Licitación"
+            msg = f"{proc_type_notif}\n\nSe ha registrado una nueva licitación:\n{licitacion.descripcion[:100]}..."
+            
             create_notification_internal(
                 title="Nueva Licitación Creada",
-                message=f"Se ha registrado una nueva licitación: {licitacion.descripcion[:50]}...",
+                message=msg,
                 type="licitacion",
                 priority="low",
-                link=f"/seace/search?id={new_id}"
+                link=f"/seace/busqueda/{new_id}",
+                metadata=meta
             )
         except Exception as e:
             print(f"Error creating notification: {e}")
