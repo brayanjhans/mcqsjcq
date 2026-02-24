@@ -35,7 +35,7 @@ export default function ModulesPage() {
             <div
                 className="absolute inset-0 z-0 bg-cover bg-center bg-fixed"
                 style={{
-                    backgroundImage: 'linear-gradient(to bottom, rgba(15, 44, 74, 0.5), rgba(15, 44, 74, 0.3)), url(/bg-building.jpg)'
+                    backgroundImage: 'linear-gradient(to bottom, rgba(15, 44, 74, 0.5), rgba(15, 44, 74, 0.3)), url(/bg-building7.jpg)'
                 }}
             />
 
