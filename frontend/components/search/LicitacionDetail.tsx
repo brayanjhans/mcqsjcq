@@ -559,8 +559,8 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                                             <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">Monto Adjudicado</th>
                                             <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">Monto Girado (S/)</th>
                                             <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">% Avance</th>
-                                            <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">Garantía / Emitido Por</th>
-                                            <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">Estado Fianza</th>
+                                            <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">Garantía</th>
+                                            <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">Emitido Por</th>
                                             <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">Fecha</th>
                                             <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">Estado</th>
                                         </tr>
@@ -612,52 +612,40 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                                                 <td className="py-4 px-4 text-center">
                                                     <div className="flex flex-col gap-1 items-center">
                                                         {((adj.tipo_garantia && adj.tipo_garantia !== "SIN_GARANTIA") ||
-                                                            (licitacion.tipo_garantia && licitacion.tipo_garantia !== "SIN_GARANTIA") ||
-                                                            (adj.entidad_financiera || licitacion.entidades_financieras)) ? (
-                                                            <>
-                                                                {((adj.tipo_garantia && adj.tipo_garantia !== "SIN_GARANTIA") ||
-                                                                    (licitacion.tipo_garantia && licitacion.tipo_garantia !== "SIN_GARANTIA")) && (
-                                                                        <span className="inline-flex items-center w-fit rounded bg-emerald-50 px-2 py-0.5 text-[10px] font-bold uppercase text-emerald-700 border border-emerald-100">
-                                                                            {(adj.tipo_garantia && adj.tipo_garantia !== "SIN_GARANTIA" ? adj.tipo_garantia : licitacion.tipo_garantia || "").replace(/_/g, " ")}
-                                                                        </span>
-                                                                    )}
-                                                                {(adj.entidad_financiera || licitacion.entidades_financieras) && (
-                                                                    <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 uppercase">
-                                                                        <Landmark className="w-3 h-3" />
-                                                                        {adj.entidad_financiera || licitacion.entidades_financieras}
-                                                                    </div>
-                                                                )}
-                                                            </>
+                                                            (licitacion.tipo_garantia && licitacion.tipo_garantia !== "SIN_GARANTIA")) ? (
+                                                            <span className="inline-flex items-center w-fit rounded bg-emerald-50 px-2 py-0.5 text-[10px] font-bold uppercase text-emerald-700 border border-emerald-100">
+                                                                {(adj.tipo_garantia && adj.tipo_garantia !== "SIN_GARANTIA" ? adj.tipo_garantia : licitacion.tipo_garantia || "").replace(/_/g, " ")}
+                                                            </span>
                                                         ) : (
                                                             <span className="text-[10px] text-slate-400 italic">Sin Garantía</span>
                                                         )}
                                                     </div>
                                                 </td>
-                                                {/* NEW: Estado Fianza */}
+                                                {/* NEW: Emitido Por */}
                                                 <td className="py-4 px-4 text-center">
-                                                    {loadingIntegracion ? (
-                                                        <Loader2 className="w-4 h-4 text-slate-300 animate-spin mx-auto" />
-                                                    ) : garantiasData ? (
-                                                        <div className="flex flex-col items-center gap-1">
-                                                            {renderSemaforoBadge(
-                                                                garantiasData.estado_semaforo,
-                                                                garantiasData.garantias?.[0]?.dias_restantes
-                                                            )}
-                                                            {garantiasData.enlace_asbanc && (
-                                                                <a
-                                                                    href={garantiasData.enlace_asbanc}
-                                                                    target="_blank"
-                                                                    rel="noopener noreferrer"
-                                                                    className="inline-flex items-center gap-1 text-[9px] text-blue-600 hover:text-blue-800 font-bold mt-1"
-                                                                >
-                                                                    <ExternalLink className="w-3 h-3" />
-                                                                    Validar ASBANC
-                                                                </a>
-                                                            )}
-                                                        </div>
-                                                    ) : (
-                                                        renderSemaforoBadge("gris")
-                                                    )}
+                                                    <div className="flex flex-col items-center gap-1">
+                                                        {(adj.entidad_financiera || licitacion.entidades_financieras) ? (
+                                                            <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 uppercase">
+                                                                <Landmark className="w-3 h-3" />
+                                                                {adj.entidad_financiera || licitacion.entidades_financieras}
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-[10px] text-slate-400 italic">—</span>
+                                                        )}
+                                                        {loadingIntegracion ? (
+                                                            <Loader2 className="w-3 h-3 text-slate-300 animate-spin mt-1" />
+                                                        ) : garantiasData?.enlace_asbanc && (
+                                                            <a
+                                                                href={garantiasData.enlace_asbanc}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="inline-flex items-center gap-1 text-[9px] text-blue-600 hover:text-blue-800 font-bold mt-1"
+                                                            >
+                                                                <ExternalLink className="w-3 h-3" />
+                                                                Validar ASBANC
+                                                            </a>
+                                                        )}
+                                                    </div>
                                                 </td>
                                                 <td className="py-4 px-4 text-xs font-medium text-slate-600 dark:text-slate-400 text-center">
                                                     {formatDate(adj.fecha_adjudicacion)}
