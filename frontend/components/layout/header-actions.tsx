@@ -100,10 +100,26 @@ export function HeaderActions() {
         checkInitialStatus();
         fetchLastUpdated();
 
-        // Sondeo automático cada 5 minutos para refrescar la fecha de actualización 
-        // en caso de que el planificador ETL (BackgroundScheduler) actúe en el VPS
-        const intervalId = setInterval(fetchLastUpdated, 5 * 60 * 1000);
-        return () => clearInterval(intervalId);
+        // Check status periodically to keep the UI in sync even if the cron job or another ADMIN triggers it
+        const backgroundCheckInterval = setInterval(async () => {
+            if (!isUpdatingMef) {
+                const res = await fetch('/api/integraciones/update-mef/status');
+                if (res.ok) {
+                    const statusData = await res.json();
+                    if (statusData.is_running) {
+                        setIsUpdatingMef(true);
+                        setMefStatusText(statusData.current_step || 'Actualizando...');
+                        startPolling();
+                    } else {
+                        // If not running, just update the date text
+                        fetchLastUpdated();
+                    }
+                }
+            }
+        }, 30 * 1000); // Check every 30 seconds globally
+        return () => {
+            clearInterval(backgroundCheckInterval);
+        };
     }, []);
 
     const startPolling = () => {
@@ -196,18 +212,28 @@ export function HeaderActions() {
                 <div className="relative flex flex-col items-center">
                     <button
                         onClick={() => window.location.reload()}
-                        className="flex h-12 px-4 rounded-full backdrop-blur-md border border-gray-200 dark:border-slate-700 shadow-lg items-center justify-center gap-2 transition-all bg-white/50 dark:bg-slate-800/50 text-slate-700 dark:text-blue-300 hover:bg-white dark:hover:bg-slate-800 active:scale-95"
-                        title="Refrescar página"
+                        className={`flex h-12 px-4 rounded-full backdrop-blur-md border border-gray-200 dark:border-slate-700 shadow-lg items-center justify-center gap-2 transition-all 
+                            ${isUpdatingMef ? 'bg-blue-50/50 dark:bg-blue-900/30' : 'bg-white/50 dark:bg-slate-800/50 hover:bg-white dark:hover:bg-slate-800 active:scale-95'} 
+                            text-slate-700 dark:text-blue-300`}
+                        title="Refrescar vista"
                     >
-                        <i className="fas fa-sync"></i>
+                        <i className={`fas fa-sync ${isUpdatingMef ? 'fa-spin text-blue-500' : ''}`}></i>
                         <span className="hidden md:inline text-sm font-bold text-center">
                             Refrescar
                         </span>
                     </button>
-                    {mefLastUpdated && (
-                        <span className="absolute -bottom-5 text-[10px] text-slate-500 dark:text-slate-400 font-medium whitespace-nowrap">
-                            Datos del MEF al {mefLastUpdated}
-                        </span>
+                    {(mefLastUpdated || isUpdatingMef) && (
+                        <div className="absolute -bottom-5 flex items-center justify-center w-full gap-1">
+                            {isUpdatingMef ? (
+                                <span className="text-[10px] text-blue-500 dark:text-blue-400 font-bold whitespace-nowrap animate-pulse flex items-center gap-1">
+                                    <i className="fas fa-database fa-fade"></i> API Trabajando...
+                                </span>
+                            ) : (
+                                <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium whitespace-nowrap">
+                                    Datos al {mefLastUpdated}
+                                </span>
+                            )}
+                        </div>
                     )}
                 </div>
 
