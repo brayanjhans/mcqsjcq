@@ -17,7 +17,7 @@ import urllib.request
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from apscheduler.schedulers.background import BackgroundScheduler
-from apscheduler.triggers.interval import IntervalTrigger
+from apscheduler.triggers.cron import CronTrigger
 import requests
 
 router = APIRouter(prefix="/api/integraciones", tags=["Integraciones"])
@@ -102,17 +102,17 @@ def _get_next_interval_hours() -> int:
     return 4
 
 def start_mef_scheduler():
-    """Start the MEF auto-update scheduler with smart interval (called from main.py)"""
+    """Start the MEF auto-update scheduler with absolute cron hours (called from main.py)"""
     if not mef_scheduler.running:
         mef_scheduler.add_job(
             auto_update_mef,
-            trigger=IntervalTrigger(hours=_get_next_interval_hours()),
+            trigger=CronTrigger(hour='0,4,8,12,16,20', minute='0'),
             id='mef_auto_update',
-            name='MEF CSV Auto Update (Smart)',
+            name='MEF CSV Auto Update (Absolute Cron)',
             replace_existing=True
         )
         mef_scheduler.start()
-        print(f"[MEF-UPDATE] Auto-update scheduler started (interval=4h 24/7)")
+        print(f"[MEF-UPDATE] Auto-update scheduler started (Cron: 0,4,8,12,16,20:00)")
 
 def stop_mef_scheduler():
     """Stop the MEF auto-update scheduler"""
