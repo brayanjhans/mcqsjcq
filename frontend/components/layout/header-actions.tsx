@@ -195,23 +195,16 @@ export function HeaderActions() {
                 {/* MEF Update Button (Responsive) */}
                 <div className="relative flex flex-col items-center">
                     <button
-                        onClick={handleUpdateMef}
-                        disabled={isUpdatingMef}
-                        className={`flex h-12 px-4 rounded-full backdrop-blur-md border shadow-lg items-center justify-center gap-2 transition-all 
-                            ${updateSuccess
-                                ? 'bg-emerald-500/90 border-emerald-400 text-white'
-                                : isUpdatingMef
-                                    ? 'bg-blue-500/80 border-blue-400 text-white cursor-wait'
-                                    : 'bg-white/50 dark:bg-slate-800/50 border-gray-200 dark:border-slate-700 text-slate-700 dark:text-blue-300 hover:bg-white dark:hover:bg-slate-800'
-                            }`}
-                        title="Actualizar datos del MEF (CSV 2025/2026)"
+                        onClick={() => window.location.reload()}
+                        className="flex h-12 px-4 rounded-full backdrop-blur-md border border-gray-200 dark:border-slate-700 shadow-lg items-center justify-center gap-2 transition-all bg-white/50 dark:bg-slate-800/50 text-slate-700 dark:text-blue-300 hover:bg-white dark:hover:bg-slate-800 active:scale-95"
+                        title="Refrescar página"
                     >
-                        <i className={`fas ${updateSuccess ? 'fa-check' : 'fa-sync'} ${isUpdatingMef ? 'fa-spin' : ''}`}></i>
-                        <span className="hidden md:inline text-sm font-bold max-w-[200px] truncate text-center">
-                            {isUpdatingMef || updateSuccess || mefStatusText.includes('Error') ? mefStatusText : 'Actualizar MEF'}
+                        <i className="fas fa-sync"></i>
+                        <span className="hidden md:inline text-sm font-bold text-center">
+                            Refrescar
                         </span>
                     </button>
-                    {mefLastUpdated && !isUpdatingMef && (
+                    {mefLastUpdated && (
                         <span className="absolute -bottom-5 text-[10px] text-slate-500 dark:text-slate-400 font-medium whitespace-nowrap">
                             Datos del MEF al {mefLastUpdated}
                         </span>
@@ -292,6 +285,25 @@ export function HeaderActions() {
                             </div>
 
                             <div className="p-2">
+                                {['admin', 'director', 'DIRECTOR', 'ADMIN'].includes(user?.role) && (
+                                    <>
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleUpdateMef();
+                                            }}
+                                            disabled={isUpdatingMef}
+                                            className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-900/20 text-sm font-medium text-blue-700 dark:text-blue-400 flex items-center gap-3 transition-colors"
+                                            title="Actualizar base de datos del MEF"
+                                        >
+                                            <div className="w-6 flex justify-center">
+                                                <i className={`fas ${updateSuccess ? 'fa-check text-emerald-500' : 'fa-database'} ${isUpdatingMef ? 'fa-spin' : ''}`}></i>
+                                            </div>
+                                            {isUpdatingMef || updateSuccess || mefStatusText.includes('Error') ? mefStatusText : 'Extraer Datos MEF'}
+                                        </button>
+                                        <div className="h-px bg-gray-100 dark:bg-slate-700 my-1"></div>
+                                    </>
+                                )}
                                 <button
                                     onClick={() => {
                                         setActiveDropdown(null);
