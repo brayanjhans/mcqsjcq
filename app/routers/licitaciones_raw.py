@@ -995,12 +995,12 @@ def create_licitacion(licitacion: LicitacionCreate, db: Session = Depends(get_db
                 id_convocatoria, ocid, nomenclatura, descripcion, comprador, 
                 entidad_ruc, categoria, tipo_procedimiento, monto_estimado, moneda, 
                 fecha_publicacion, estado_proceso, ubicacion_completa, 
-                departamento, provincia, distrito
+                departamento, provincia, distrito, anio
             ) VALUES (
                 :id, :ocid, :nom, :desc, :comp, 
                 :ruc, :cat, :proc, :monto, :mon, 
                 :fecha, :estado, :ubic, 
-                :dept, :prov, :dist
+                :dept, :prov, :dist, :anio
             )
         """)
         
@@ -1015,6 +1015,17 @@ def create_licitacion(licitacion: LicitacionCreate, db: Session = Depends(get_db
             return d
 
         fecha_pub = clean_date(licitacion.fecha_publicacion)
+        
+        # Determine Anio
+        import datetime
+        anio_val = None
+        if fecha_pub and len(str(fecha_pub)) >= 4:
+            try:
+                anio_val = int(str(fecha_pub)[:4])
+            except:
+                anio_val = datetime.datetime.now().year
+        else:
+            anio_val = datetime.datetime.now().year
 
         db.execute(sql_header, {
             "id": new_id,
@@ -1032,7 +1043,8 @@ def create_licitacion(licitacion: LicitacionCreate, db: Session = Depends(get_db
             "ubic": ubicacion,
             "dept": licitacion.departamento,
             "prov": licitacion.provincia,
-            "dist": licitacion.distrito
+            "dist": licitacion.distrito,
+            "anio": anio_val
         })
         
         # 3. Insert Adjudicaciones
@@ -1188,7 +1200,7 @@ def update_licitacion(id: str, licitacion: LicitacionCreate, db: Session = Depen
                 comprador = :comp, entidad_ruc = :ruc, categoria = :cat, tipo_procedimiento = :proc, 
                 monto_estimado = :monto, moneda = :mon, fecha_publicacion = :fecha, 
                 estado_proceso = :estado, ubicacion_completa = :ubic, 
-                departamento = :dept, provincia = :prov, distrito = :dist
+                departamento = :dept, provincia = :prov, distrito = :dist, anio = :anio
             WHERE id_convocatoria = :old_id
         """)
         
@@ -1203,6 +1215,17 @@ def update_licitacion(id: str, licitacion: LicitacionCreate, db: Session = Depen
             return d
 
         fecha_pub = clean_date(licitacion.fecha_publicacion)
+        
+        # Determine Anio
+        import datetime
+        anio_val = None
+        if fecha_pub and len(str(fecha_pub)) >= 4:
+            try:
+                anio_val = int(str(fecha_pub)[:4])
+            except:
+                anio_val = datetime.datetime.now().year
+        else:
+            anio_val = datetime.datetime.now().year
 
         result = db.execute(sql_header, {
             "new_id": target_id,
@@ -1221,7 +1244,8 @@ def update_licitacion(id: str, licitacion: LicitacionCreate, db: Session = Depen
             "ubic": ubicacion,
             "dept": licitacion.departamento,
             "prov": licitacion.provincia,
-            "dist": licitacion.distrito
+            "dist": licitacion.distrito,
+            "anio": anio_val
         })
         
         
