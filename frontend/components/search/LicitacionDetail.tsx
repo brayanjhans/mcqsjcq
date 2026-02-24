@@ -623,27 +623,14 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                                                 </td>
                                                 {/* NEW: Emitido Por */}
                                                 <td className="py-4 px-4 text-center">
-                                                    <div className="flex flex-col items-center gap-1">
+                                                    <div className="flex flex-col items-center justify-center h-full">
                                                         {(adj.entidad_financiera || licitacion.entidades_financieras) ? (
-                                                            <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 uppercase">
-                                                                <Landmark className="w-3 h-3" />
+                                                            <div className="flex items-center gap-2 text-[12px] font-black tracking-wide text-slate-500 uppercase">
+                                                                <Landmark className="w-4 h-4 text-slate-400" />
                                                                 {adj.entidad_financiera || licitacion.entidades_financieras}
                                                             </div>
                                                         ) : (
                                                             <span className="text-[10px] text-slate-400 italic">—</span>
-                                                        )}
-                                                        {loadingIntegracion ? (
-                                                            <Loader2 className="w-3 h-3 text-slate-300 animate-spin mt-1" />
-                                                        ) : garantiasData?.enlace_asbanc && (
-                                                            <a
-                                                                href={garantiasData.enlace_asbanc}
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                className="inline-flex items-center gap-1 text-[9px] text-blue-600 hover:text-blue-800 font-bold mt-1"
-                                                            >
-                                                                <ExternalLink className="w-3 h-3" />
-                                                                Validar ASBANC
-                                                            </a>
                                                         )}
                                                     </div>
                                                 </td>
