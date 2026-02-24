@@ -20,9 +20,9 @@ from app.services.mef_ssi_api import get_ejecucion_by_cui_ssi, search_project_by
 
 # Regex to extract CUI from licitacion descriptions
 # CUI modernos tienen 7-8 digitos. Numeros de 5-6 digitos son SNIP antiguos y NO se usan como CUI.
-# Handles: "CUI: 2314890", "CUI N° 2.314.890", "C.U.I. 2314890", etc.
-CUI_PATTERN = re.compile(r'(?:CUI|C\.U\.I\.)[\s:]*(?:N[º°\.]?)?[\s:]*([\d.]{7,10})', re.IGNORECASE)
-SNIP_PATTERN = re.compile(r'SNIP[\s:]*(?:N[º°\.]?)?[\s:]*(\d{5,8})', re.IGNORECASE)
+# Handles: "CUI: 2314890", "CÓDIGO ÚNICO DE INVERSIÓN 2314890", "C.U.I. 2314890", etc.
+CUI_PATTERN = re.compile(r'(?:CUI|C\.U\.I\.|C[OÓ]DIGO\s+[UÚ]NICO\s+DE\s+INVERSI[OÓ]N|C[OÓ]DIGO\s+[UÚ]NICO|C[OÓ]DIGO\s+DE\s+INVERSI[OÓ]N)[\s:]*(?:N[º°\.]?)?[\s:]*([\d.]{7,10})', re.IGNORECASE)
+SNIP_PATTERN = re.compile(r'(?:SNIP|C[OÓ]DIGO\s+SNIP)[\s:]*(?:N[º°\.]?)?[\s:]*([\d.]{5,8})', re.IGNORECASE)
 # Route codes like RUTA HU-118, RUTA PE-1N, RUTA LM-118, etc.
 ROUTE_PATTERN = re.compile(r'RUTA\s+([A-Z]{2,3})\s*[-–]\s*(\d{1,4}[A-Z]?)', re.IGNORECASE)
 
