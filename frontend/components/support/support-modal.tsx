@@ -60,9 +60,9 @@ export function SupportModal({
                                 Preguntas Frecuentes
                             </h3>
                             <div className="space-y-3">
-                                <FAQItem q="¿Cómo cambio mi contraseña?" a="Ve a Perfil > Seguridad y sigue los pasos." />
-                                <FAQItem q="¿Dónde veo mis notificaciones?" a="Haz clic en la campana en la esquina superior derecha." />
-                                <FAQItem q="¿Cómo exporto reportes?" a="En la sección 'Reportes' selecciona el formato deseado." />
+                                <FAQItem q="¿Cómo extraigo nuevos datos del SEACE?" a="Ve a tu Perfil, abre este mismo menú y haz clic en 'Extraer Datos MEF'. Esto iniciará el motor automatizado en segundo plano." />
+                                <FAQItem q="¿Por qué algunas garantías no tienen PDF?" a="Si la garantía no tiene un ticket de Alfresco enlazado en SEACE, el sistema no puede descargar su documento original." />
+                                <FAQItem q="¿Qué significan los colores en el mapa?" a="Representan la densidad y monto de las garantías adjudicadas por departamento. Puedes filtrar la vista usando el panel lateral." />
                             </div>
                         </div>
                     </div>
@@ -93,7 +93,7 @@ function ContactCard({ icon: Icon, color, title, desc, action }: any) {
 }
 
 function FAQItem({ q, a }: any) {
-    const [isOpen, setIsOpen] = useState(false);
+    const [isOpen, setIsOpen] = React.useState(false);
     return (
         <div className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
             <button onClick={() => setIsOpen(!isOpen)} className="w-full flex justify-between items-center p-4 text-left hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
