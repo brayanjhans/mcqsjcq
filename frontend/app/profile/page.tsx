@@ -106,7 +106,7 @@ export default function ProfilePage() {
                 </div>
             </div>
 
-            <div className="container mx-auto px-6 -mt-24 relative z-10">
+            <div className="container mx-auto px-6 -mt-24 relative z-40">
                 <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
                     {/* Sidebar / Profile Card */}
                     <div className="w-full lg:w-[320px] flex-shrink-0">
@@ -211,7 +211,7 @@ export default function ProfilePage() {
                     </div>
 
                     {/* Main Content */}
-                    <div className="flex-1">
+                    <div className="flex-1 relative z-20">
                         <div className="bg-white dark:bg-[#111c44] rounded-3xl shadow-2xl border border-slate-200/50 dark:border-white/5 p-8 md:p-10 min-h-[500px] backdrop-blur-sm">
                             {activeSection === 'info' && <PersonalInfoForm user={user} setUser={setUser} />}
                             {activeSection === 'security' && isAdminOrDirector && <SecuritySettings />}
@@ -502,21 +502,23 @@ function UserManagement({ currentUser }: { currentUser: any }) {
 
     return (
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-6">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-slate-100 dark:border-white/5 pb-6">
-                <div>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 border-b border-slate-100 dark:border-white/5 pb-6 mb-6">
+                <div className="flex-1">
                     <h3 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">Administración de Usuarios</h3>
                     <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Gestiona cuentas, contraseñas y accesos. Requiere privilegios de Admin/Director.</p>
                 </div>
-                <Button
-                    onClick={() => setShowCreateModal(true)}
-                    className="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white gap-2 rounded-xl shadow-lg shadow-blue-500/30 transition-all hover:scale-105"
-                >
-                    <Plus className="w-4 h-4" /> Nuevo Usuario
-                </Button>
+                <div className="w-full sm:w-auto flex-shrink-0 z-50">
+                    <Button
+                        onClick={() => setShowCreateModal(true)}
+                        className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white gap-2 rounded-xl shadow-lg shadow-blue-500/30 transition-all hover:scale-105 cursor-pointer relative"
+                    >
+                        <Plus className="w-4 h-4" /> Nuevo Usuario
+                    </Button>
+                </div>
             </div>
 
             {/* Search Bar */}
-            <div className="relative group">
+            <div className="relative group mt-2 z-10">
                 <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5 transition-colors group-focus-within:text-blue-500" />
                 <input
                     type="text"
@@ -866,16 +868,26 @@ function CreateUserModal({ onClose }: { onClose: () => void }) {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        console.log("Submit clicked: ", formData);
         setError('');
         setLoading(true);
 
+        // Remove empty optional string fields so Pydantic doesn't fail EmailStr with ""
+        const payload = { ...formData };
+        if (!payload.email) delete (payload as any).email;
+        if (!payload.job_title) delete (payload as any).job_title;
+
         try {
-            await api.post('/api/auth/register', formData);
+            console.log("Sending POST to /api/auth/register");
+            const res = await api.post('/api/auth/register', payload);
+            console.log("Response successful: ", res.data);
             onClose(); // This will trigger fetchUsers
         } catch (err: any) {
-            console.error('Error creating user:', err);
+            console.error('Error creating user full object:', err);
+            console.error('Error response:', err.response);
+            console.error('Error data:', err.response?.data);
             const detail = err.response?.data?.detail;
-            setError(typeof detail === 'string' ? detail : 'Error al crear el usuario');
+            setError(typeof detail === 'string' ? detail : 'Error al crear el usuario. Revisa la consola.');
         } finally {
             setLoading(false);
         }
