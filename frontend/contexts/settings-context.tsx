@@ -20,8 +20,11 @@ interface Settings {
     };
     security: {
         autoLogout: '15m' | '30m' | '1h' | 'never';
+        twoFactor?: boolean;
+        loginAlerts?: boolean;
     };
     regional: {
+        language?: string;
         dateFormat: string;
         timezone: string;
     };
@@ -43,8 +46,11 @@ const defaultSettings: Settings = {
     },
     security: {
         autoLogout: 'never',
+        twoFactor: false,
+        loginAlerts: true,
     },
     regional: {
+        language: 'es',
         dateFormat: 'DD/MM/YYYY',
         timezone: 'America/Lima',
     },

@@ -122,7 +122,7 @@ export function SettingsModal({
                                             <button
                                                 key={theme.id}
                                                 onClick={() => {
-                                                    const newPrefs = { ...preferences, theme: theme.id };
+                                                    const newPrefs = { ...preferences, theme: theme.id as 'light' | 'dark' | 'system' };
                                                     setPreferences(newPrefs);
                                                     updateSettings(newPrefs);
                                                 }}
@@ -177,6 +177,54 @@ export function SettingsModal({
                                             </div>
                                         </div>
                                         <Toggle label="Reducir Movimiento" checked={preferences.accessibility?.reducedMotion} onChange={() => updateNestedPreference('accessibility', 'reducedMotion', !preferences.accessibility?.reducedMotion)} />
+                                    </div>
+                                </div>
+                            )}
+
+                            {activeTab === 'security' && (
+                                <div className="space-y-6 animate-in hover-none fade-in slide-in-from-right-4 duration-300">
+                                    <h3 className="font-bold text-lg text-slate-900 dark:text-white mb-4">Seguridad de la Cuenta</h3>
+                                    <div className="space-y-4">
+                                        <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
+                                            <h4 className="font-bold text-sm text-slate-900 dark:text-white mb-1">Contraseña</h4>
+                                            <p className="text-sm text-slate-500 mb-3">Tu contraseña actual es segura. Para cambiarla, dirígete a tu Perfil principal.</p>
+                                            <Button variant="outline" className="w-full sm:w-auto" onClick={() => { onOpenChange(false); }}>
+                                                Ir al Perfil
+                                            </Button>
+                                        </div>
+                                        <Toggle label="Autenticación en Dos Pasos (2FA)" description="Protege tu cuenta con un código temporal además de tu contraseña." checked={preferences.security?.twoFactor} onChange={() => updateNestedPreference('security', 'twoFactor', !preferences.security?.twoFactor)} />
+                                        <Toggle label="Alertas de Inicio de Sesión" description="Recibe un correo si detectamos un inicio de sesión desde un dispositivo nuevo." checked={preferences.security?.loginAlerts} onChange={() => updateNestedPreference('security', 'loginAlerts', !preferences.security?.loginAlerts)} />
+                                    </div>
+                                </div>
+                            )}
+
+                            {activeTab === 'regional' && (
+                                <div className="space-y-6 animate-in hover-none fade-in slide-in-from-right-4 duration-300">
+                                    <h3 className="font-bold text-lg text-slate-900 dark:text-white mb-4">Configuración Regional</h3>
+                                    <div className="space-y-5">
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Idioma de la Interfaz</label>
+                                            <select
+                                                className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:ring-2 focus:ring-blue-500 outline-none text-slate-700 dark:text-slate-200"
+                                                value={preferences.regional?.language || 'es'}
+                                                onChange={(e) => updateNestedPreference('regional', 'language', e.target.value)}
+                                            >
+                                                <option value="es">Español (Perú)</option>
+                                                <option value="en">English (US)</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Zona Horaria</label>
+                                            <select
+                                                className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:ring-2 focus:ring-blue-500 outline-none text-slate-700 dark:text-slate-200"
+                                                value={preferences.regional?.timezone || 'America/Lima'}
+                                                onChange={(e) => updateNestedPreference('regional', 'timezone', e.target.value)}
+                                            >
+                                                <option value="America/Lima">(UTC-05:00) Lima, Quito, Bogotá</option>
+                                                <option value="America/Santiago">(UTC-04:00) Santiago</option>
+                                                <option value="America/Buenos_Aires">(UTC-03:00) Buenos Aires</option>
+                                            </select>
+                                        </div>
                                     </div>
                                 </div>
                             )}
