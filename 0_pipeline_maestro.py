@@ -30,7 +30,7 @@ logs_dir = os.path.join(script_dir, "logs")
 os.makedirs(data_dir, exist_ok=True)
 os.makedirs(logs_dir, exist_ok=True)
 
-URL_BASE_DESCARGAS = "https://contratacionesabiertas.osce.gob.pe/descargas?page=1&paginateBy=100&source=seace_v3&year="
+URL_BASE_DESCARGAS = "https://contratacionesabiertas.oece.gob.pe/descargas?page=1&paginateBy=100&source=seace_v3&year="
 
 HEADERS_HUMANOS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -433,7 +433,7 @@ def limpiar_zips_obsoletos(lista_archivos_actuales):
 # ─────────────────────────────────────────────
 # ETL
 # ─────────────────────────────────────────────
-def invocar_etl(anio, archivos_actualizados=None):
+def invocar_etl(anios, archivos_actualizados=None):
     logging.info("--------------------------------------------------")
     logging.info("🚀 INICIANDO ETL FASE 1: (OCDS - CARGA INCREMENTAL OSCE)")
     logging.info("--------------------------------------------------")
@@ -457,13 +457,14 @@ def invocar_etl(anio, archivos_actualizados=None):
         return False
         
     logging.info("--------------------------------------------------")
-    logging.info(f"🚀 INICIANDO ETL FASE 2: (APIS PRIVADAS SEACE - AÑO {anio})")
+    logging.info(f"🚀 INICIANDO ETL FASE 2: (APIS PRIVADAS SEACE - AÑOS {anios})")
     logging.info("--------------------------------------------------")
     try:
         import motor_consorcios_seace
         import importlib
         importlib.reload(motor_consorcios_seace)
-        motor_consorcios_seace.main(year=anio)
+        for a in anios:
+            motor_consorcios_seace.main(year=a)
     except Exception as e:
         logging.error(f"Error Ejecutando Fase 2: {e}")
         traceback.print_exc()
@@ -480,7 +481,7 @@ def main():
     
     parser = argparse.ArgumentParser(description="Pipeline Maestro OSCE/SEACE - Modo Incremental")
     parser.add_argument("--year", type=int, default=anio_actual, 
-                        help=f"Año a procesar (default: {anio_actual})")
+                        help=f"Año principal a procesar (default: {anio_actual})")
     parser.add_argument("--force-clean", action="store_true",
                         help="Elimina todos los datos del año en BD antes de cargar (modo full-reload)")
     parser.add_argument("--meses", nargs="*",
@@ -488,17 +489,37 @@ def main():
     args = parser.parse_args()
     
     logging.info("==========================================================")
-    logging.info(f"🌟 PIPELINE MAESTRO OSCE/SEACE v5 - AÑO: {args.year}")
+    logging.info(f"🌟 PIPELINE MAESTRO OSCE/SEACE v5 - AÑO: {args.year} (y Dic 2025)")
     logging.info(f"   Modo: {'FULL RELOAD' if args.force_clean else 'INCREMENTAL (sin borrado)'}")
     logging.info("==========================================================")
     
-    # 1. Obtener lista de archivos disponibles en el portal
+    # 1. Obtener lista de archivos disponibles en el portal para el año principal
     lista_archivos = scrape_links(args.year)
+    
+    # Añadido a petición: Siempre traer también Diciembre 2025 (si el anio principal no es 2025)
+    anios_a_procesar = [args.year]
+    if args.year != 2025:
+        logging.info("🔍 Extrayendo explícitamente datos de Diciembre 2025...")
+        if not args.force_clean:
+            lista_2025 = scrape_links(2025)
+            diciembre_25 = [a for a in lista_2025 if a['mes'] == '12']
+            if diciembre_25:
+                lista_archivos.extend(diciembre_25)
+                anios_a_procesar.append(2025)
+                logging.info("   -> Diciembre 2025 añadido a la cola.")
+            else:
+                logging.warning("   -> No se encontró el JSON de Diciembre 2025.")
+        else:
+            # Si es force-clean dejaremos que solo afecte al año principal indicado, a menos 
+            # que el usuario quiera borrar también 2025 explícitamente, pero lo normal es 
+            # adjuntarlo solo en la corrida incremental.
+            pass
+
     if not lista_archivos:
         logging.error("No se encontraron URLs de descarga o hubo timeout.")
         return
     
-    meses_disponibles = [a['mes'] for a in lista_archivos]
+    meses_disponibles = [a['nombre_base'] for a in lista_archivos]
     logging.info(f"📅 Meses disponibles en portal OSCE: {meses_disponibles}")
     
     # 2. Limpieza opcional en BD (solo con --force-clean)
@@ -519,7 +540,11 @@ def main():
     logging.info(f"📦 {len(archivos_actualizados)} archivo(s) actualizado(s): {[a['nombre_base'] for a in archivos_actualizados]}")
     
     # 5. ETL Incremental (INSERT/UPDATE sin borrar)
-    exito = invocar_etl(args.year, archivos_actualizados)
+    # Mandamos los años involucrados
+    anios_etl = list(set([int(a['nombre_base'].split('-')[0]) for a in archivos_actualizados]))
+    if not anios_etl: anios_etl = anios_a_procesar
+
+    exito = invocar_etl(anios_etl, archivos_actualizados)
     
     if exito:
         logging.info("🎉 PIPELINE MAESTRO COMPLETADO SATISFACTORIAMENTE 🎉")
