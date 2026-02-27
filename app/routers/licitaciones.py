@@ -646,11 +646,18 @@ def update_licitacion(
                 link_id = contrato_id_val if contrato_id_val else adj_id
                 
                 for consorcio_data in adj_data.consorcios:
+                    # Parse percentage robustly to avoid PyMySQL OperationalError 1366
+                    raw_pct = consorcio_data.get('porcentaje')
+                    try:
+                        pct_val = float(raw_pct) if raw_pct not in [None, ""] else 0.0
+                    except (ValueError, TypeError):
+                        pct_val = 0.0
+                        
                     new_consorcio = DetalleConsorcios(
                         id_contrato=link_id,
                         ruc_miembro=consorcio_data.get('ruc'),
                         nombre_miembro=consorcio_data.get('nombre'),
-                        porcentaje_participacion=consorcio_data.get('porcentaje', 0),
+                        porcentaje_participacion=pct_val,
                         fecha_registro=datetime.now()
                     )
                     db.add(new_consorcio)
