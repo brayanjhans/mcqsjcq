@@ -175,6 +175,7 @@ def scrape_links(anio):
     opts.add_argument("--disable-software-rasterizer")
     opts.add_argument("--window-size=1280,800")
     opts.add_argument("--log-level=3")
+    opts.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
     
     # Prevenir que Selenium crashee guardando perfiles en el home de root
     import tempfile
@@ -207,13 +208,21 @@ def scrape_links(anio):
         url_pagina = f"{URL_BASE_DESCARGAS}{anio}"
 
         logging.info(f"🔍 Auditando Portal OSCE: {url_pagina}")
+        driver.set_page_load_timeout(30)
         driver.get(url_pagina)
         
         try:
-            WebDriverWait(driver, 15).until(
+            WebDriverWait(driver, 20).until(
                 EC.presence_of_element_located((By.XPATH, "//a[contains(@href, 'api/v1/file')]"))
             )
         except TimeoutException:
+            # Capturar screenshot para entender qué ve el VPS
+            try:
+                os.makedirs("logs", exist_ok=True)
+                driver.save_screenshot("logs/error_headless_osce.png")
+                logging.warning(f"⚠️ Screenshot guardado en logs/error_headless_osce.png")
+            except:
+                pass
             logging.warning(f"⚠️ No se encontró la tabla de descargas para el año {anio}.")
             return []
 
