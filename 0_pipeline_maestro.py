@@ -169,14 +169,47 @@ def scrape_links(anio):
     opts.add_argument("--headless=new")
     opts.add_argument("--disable-gpu")
     opts.add_argument("--no-sandbox")
+    opts.add_argument("--disable-dev-shm-usage")        # crítico en VPS (memoria compartida limitada)
+    opts.add_argument("--disable-extensions")
+    opts.add_argument("--disable-software-rasterizer")
+    opts.add_argument("--remote-debugging-port=0")      # evita conflictos de puerto
+    opts.add_argument("--window-size=1280,800")
     opts.add_argument("--log-level=3")
+    opts.add_argument("--silent")
     
+    # Directorio temporal para evitar conflictos de perfil en ejecuciones concurrentes
+    import tempfile
+    tmp_dir = tempfile.mkdtemp(prefix="chrome_osce_")
+    opts.add_argument(f"--user-data-dir={tmp_dir}")
+    
+    # En VPS Linux, Chromium snap puede estar en rutas no estándar
+    for chrome_path in [
+        "/snap/bin/chromium",
+        "/usr/bin/chromium-browser",
+        "/usr/bin/chromium",
+        "/usr/bin/google-chrome",
+    ]:
+        if os.path.exists(chrome_path):
+            opts.binary_location = chrome_path
+            logging.info(f"   Usando Chrome en: {chrome_path}")
+            break
+
     try:
-        s = Service(ChromeDriverManager().install())
-        driver = webdriver.Chrome(service=s, options=opts)
+        # Intentar con webdriver-manager primero (local), luego ChromeDriver del sistema
+        try:
+            s = Service(ChromeDriverManager().install())
+            driver = webdriver.Chrome(service=s, options=opts)
+        except Exception:
+            # Fallback: usar chromedriver del sistema (VPS Linux)
+            s = Service("/usr/bin/chromedriver")
+            driver = webdriver.Chrome(service=s, options=opts)
     except Exception as e:
         logging.critical(f"Error iniciando Chrome: {e}")
+        # Limpiar directorio temporal
+        import shutil
+        shutil.rmtree(tmp_dir, ignore_errors=True)
         return []
+
 
     try:
         url_pagina = f"{URL_BASE_DESCARGAS}{anio}"
