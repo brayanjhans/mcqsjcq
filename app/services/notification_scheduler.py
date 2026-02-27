@@ -80,8 +80,19 @@ def run_pipeline_osce():
     """
     anio = datetime.now().year
     log_file = os.path.join(_LOG_DIR, "pipeline_osce.log")
-    python_exec = sys.executable  # Usa el mismo Python del entorno virtual
     
+    # --- Detectar entorno virtual ---
+    python_exec = sys.executable
+    for venv_path in [
+        os.path.join(_BASE_DIR, "venv", "bin", "python3"),
+        os.path.join(_BASE_DIR, ".venv", "bin", "python3"),
+        os.path.join(_BASE_DIR, "venv", "Scripts", "python.exe"),
+        os.path.join(_BASE_DIR, ".venv", "Scripts", "python.exe")
+    ]:
+        if os.path.exists(venv_path):
+            python_exec = venv_path
+            break
+            
     logger.info(f"[Pipeline OSCE] Iniciando pipeline incremental año {anio}...")
     try:
         with open(log_file, "a", encoding="utf-8") as f_log:

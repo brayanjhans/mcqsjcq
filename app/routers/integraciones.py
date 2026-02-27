@@ -185,7 +185,19 @@ def run_pipeline_osce_background():
         osce_update_state["logs"].append(osce_update_state["current_step"])
         print(f"[OSCE-UPDATE] {osce_update_state['current_step']}")
 
-        cmd = [sys.executable, pipeline_script, "--year", str(anio)]
+        # --- Detectar entorno virtual ---
+        python_exec = sys.executable
+        for venv_path in [
+            os.path.join(base_dir, "venv", "bin", "python3"),
+            os.path.join(base_dir, ".venv", "bin", "python3"),
+            os.path.join(base_dir, "venv", "Scripts", "python.exe"),
+            os.path.join(base_dir, ".venv", "Scripts", "python.exe")
+        ]:
+            if os.path.exists(venv_path):
+                python_exec = venv_path
+                break
+
+        cmd = [python_exec, pipeline_script, "--year", str(anio)]
         kwargs = {}
         if sys.platform == "win32":
             kwargs["creationflags"] = subprocess.CREATE_NO_WINDOW
