@@ -30,7 +30,7 @@ logs_dir = os.path.join(script_dir, "logs")
 os.makedirs(data_dir, exist_ok=True)
 os.makedirs(logs_dir, exist_ok=True)
 
-URL_BASE_DESCARGAS = "https://contratacionesabiertas.oece.gob.pe/descargas?page=1&paginateBy=100&source=seace_v3&year="
+URL_BASE_DESCARGAS = "https://contratacionesabiertas.osce.gob.pe/descargas?page=1&paginateBy=100&source=seace_v3&year="
 
 HEADERS_HUMANOS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
