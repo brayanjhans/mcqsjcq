@@ -29,6 +29,12 @@ app/cache/
 *.zip
 *.tar.gz
 *.rar
+*.sha
+
+# Pipeline OSCE - Archivos de datos descargados (no subir al repo)
+DATAJSON/
+logs/pipeline_osce.log
+
 
 # Documents and Temp Files (Added by Agent)
 *.pdf
