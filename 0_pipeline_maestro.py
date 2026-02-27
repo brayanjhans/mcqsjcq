@@ -162,6 +162,76 @@ from selenium.webdriver.chrome.options import Options
 from selenium.common.exceptions import TimeoutException
 from webdriver_manager.chrome import ChromeDriverManager
 
+def create_proxy_extension(proxy_url):
+    import zipfile
+    import tempfile
+    import urllib.parse
+    
+    parsed = urllib.parse.urlparse(proxy_url)
+    proxy_host = parsed.hostname
+    proxy_port = parsed.port or 80
+    proxy_user = parsed.username or ""
+    proxy_pass = parsed.password or ""
+    
+    manifest_json = """
+    {
+        "version": "1.0.0",
+        "manifest_version": 2,
+        "name": "Chrome Proxy",
+        "permissions": [
+            "proxy",
+            "tabs",
+            "unlimitedStorage",
+            "storage",
+            "<all_urls>",
+            "webRequest",
+            "webRequestBlocking"
+        ],
+        "background": {
+            "scripts": ["background.js"]
+        },
+        "minimum_chrome_version":"22.0.0"
+    }
+    """
+    
+    background_js = f"""
+    var config = {{
+            mode: "fixed_servers",
+            rules: {{
+              singleProxy: {{
+                scheme: "http",
+                host: "{proxy_host}",
+                port: parseInt({proxy_port})
+              }},
+              bypassList: ["localhost"]
+            }}
+          }};
+
+    chrome.proxy.settings.set({{value: config, scope: "regular"}}, function() {{}});
+
+    function callbackFn(details) {{
+        return {{
+            authCredentials: {{
+                username: "{proxy_user}",
+                password: "{proxy_pass}"
+            }}
+        }};
+    }}
+
+    chrome.webRequest.onAuthRequired.addListener(
+                callbackFn,
+                {{urls: ["<all_urls>"]}},
+                ['blocking']
+    );
+    """
+    
+    plugin_file = os.path.join(tempfile.gettempdir(), f"proxy_auth_plugin.zip")
+    with zipfile.ZipFile(plugin_file, 'w') as zp:
+        zp.writestr("manifest.json", manifest_json)
+        zp.writestr("background.js", background_js)
+    
+    return plugin_file
+
 def scrape_links(anio):
     lista_final = []
     
@@ -170,13 +240,23 @@ def scrape_links(anio):
     opts.add_argument("--disable-gpu")
     opts.add_argument("--no-sandbox")
     opts.add_argument("--disable-dev-shm-usage")
-    opts.add_argument("--disable-extensions")
+    opts.add_argument("--disable-extensions-except")  # Permitir extensiones especificadas
     opts.add_argument("--remote-debugging-pipe") # CRITICAL FIX para Chromium snap
     opts.add_argument("--disable-software-rasterizer")
     opts.add_argument("--window-size=1280,800")
     opts.add_argument("--log-level=3")
     opts.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
     
+    # Añadir proxy extension si IPRoyal está configurado
+    plugin_file = None
+    if _proxy_url:
+        try:
+            plugin_file = create_proxy_extension(_proxy_url)
+            opts.add_extension(plugin_file)
+            logging.info("🛡️ Añadida extensión Proxy de IPRoyal a Selenium.")
+        except Exception as e:
+            logging.error(f"Error creando proxy extension: {e}")
+            
     # Prevenir que Selenium crashee guardando perfiles en el home de root
     import tempfile
     opts.add_argument(f"--user-data-dir={tempfile.mkdtemp(prefix='osce_chrome_')}")
