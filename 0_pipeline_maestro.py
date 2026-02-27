@@ -169,50 +169,43 @@ def scrape_links(anio):
     opts.add_argument("--headless=new")
     opts.add_argument("--disable-gpu")
     opts.add_argument("--no-sandbox")
-    opts.add_argument("--disable-dev-shm-usage")        # crítico en VPS (memoria compartida limitada)
+    opts.add_argument("--disable-dev-shm-usage")
     opts.add_argument("--disable-extensions")
+    opts.add_argument("--remote-debugging-pipe") # CRITICAL FIX para Chromium snap
     opts.add_argument("--disable-software-rasterizer")
-    opts.add_argument("--remote-debugging-port=0")      # evita conflictos de puerto
     opts.add_argument("--window-size=1280,800")
     opts.add_argument("--log-level=3")
-    opts.add_argument("--silent")
     
-    # Directorio temporal para evitar conflictos de perfil en ejecuciones concurrentes
+    # Prevenir que Selenium crashee guardando perfiles en el home de root
     import tempfile
-    tmp_dir = tempfile.mkdtemp(prefix="chrome_osce_")
-    opts.add_argument(f"--user-data-dir={tmp_dir}")
+    opts.add_argument(f"--user-data-dir={tempfile.mkdtemp(prefix='osce_chrome_')}")
+    opts.add_argument(f"--data-path={tempfile.mkdtemp(prefix='osce_data_')}")
+    opts.add_argument(f"--disk-cache-dir={tempfile.mkdtemp(prefix='osce_cache_')}")
     
-    # En VPS Linux, Chromium snap puede estar en rutas no estándar
-    for chrome_path in [
-        "/snap/bin/chromium",
-        "/usr/bin/chromium-browser",
-        "/usr/bin/chromium",
-        "/usr/bin/google-chrome",
-    ]:
+    # Detección de binario Chromium en Ubuntu/VPS
+    is_vps = False
+    for chrome_path in ["/usr/bin/chromium-browser", "/usr/bin/chromium", "/snap/bin/chromium"]:
         if os.path.exists(chrome_path):
             opts.binary_location = chrome_path
-            logging.info(f"   Usando Chrome en: {chrome_path}")
+            is_vps = True
             break
-
+            
     try:
-        # Intentar con webdriver-manager primero (local), luego ChromeDriver del sistema
-        try:
-            s = Service(ChromeDriverManager().install())
-            driver = webdriver.Chrome(service=s, options=opts)
-        except Exception:
-            # Fallback: usar chromedriver del sistema (VPS Linux)
+        if is_vps and os.path.exists("/usr/bin/chromedriver"):
+            # En VPS usar el driver del sistema que matchee el snap
             s = Service("/usr/bin/chromedriver")
+            driver = webdriver.Chrome(service=s, options=opts)
+        else:
+            # En local usar el manager
+            s = Service(ChromeDriverManager().install())
             driver = webdriver.Chrome(service=s, options=opts)
     except Exception as e:
         logging.critical(f"Error iniciando Chrome: {e}")
-        # Limpiar directorio temporal
-        import shutil
-        shutil.rmtree(tmp_dir, ignore_errors=True)
         return []
-
-
+        
     try:
         url_pagina = f"{URL_BASE_DESCARGAS}{anio}"
+
         logging.info(f"🔍 Auditando Portal OSCE: {url_pagina}")
         driver.get(url_pagina)
         
