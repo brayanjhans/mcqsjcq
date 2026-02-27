@@ -17,6 +17,9 @@ export function HeaderActions() {
     const [updateSuccess, setUpdateSuccess] = useState(false);
     const [mefStatusText, setMefStatusText] = useState('Actualizando...');
     const [mefLastUpdated, setMefLastUpdated] = useState<string | null>(null);
+    const [isUpdatingOsce, setIsUpdatingOsce] = useState(false);
+    const [osceSuccess, setOsceSuccess] = useState(false);
+    const [osceStatusText, setOsceStatusText] = useState('Actualizando SEACE...');
 
     // Unified Dropdown State (Mutual Exclusion)
     const [activeDropdown, setActiveDropdown] = useState<'profile' | 'notifications' | null>(null);
@@ -205,6 +208,54 @@ export function HeaderActions() {
         }
     };
 
+    const handleUpdateOsce = async () => {
+        if (isUpdatingOsce) return;
+        setIsUpdatingOsce(true);
+        setOsceSuccess(false);
+        setOsceStatusText('Iniciando...');
+
+        try {
+            await fetch('/api/integraciones/update-osce', { method: 'POST' });
+
+            // Start polling
+            const pollInterval = setInterval(async () => {
+                try {
+                    const res = await fetch('/api/integraciones/update-osce/status');
+                    if (!res.ok) throw new Error('Failed to fetch status');
+                    const statusData = await res.json();
+
+                    if (statusData.current_step) setOsceStatusText(statusData.current_step);
+
+                    if (!statusData.is_running && statusData.current_step !== '') {
+                        clearInterval(pollInterval);
+                        setIsUpdatingOsce(false);
+                        if (statusData.current_step.includes('Error')) {
+                            setOsceStatusText('Error al actualizar');
+                            setTimeout(() => setOsceStatusText('Actualizar SEACE'), 5000);
+                        } else {
+                            setOsceSuccess(true);
+                            setOsceStatusText('Actualizado');
+                            setTimeout(() => { setOsceSuccess(false); setOsceStatusText('Actualizar SEACE'); }, 5000);
+                        }
+                    }
+                } catch (err) {
+                    clearInterval(pollInterval);
+                    setIsUpdatingOsce(false);
+                    setOsceStatusText('Error de conexión');
+                    setTimeout(() => setOsceStatusText('Actualizar SEACE'), 5000);
+                }
+            }, 3000);
+        } catch (error: any) {
+            if (error?.status === 409) {
+                setOsceStatusText('Ya en ejecución...');
+            } else {
+                setIsUpdatingOsce(false);
+                setOsceStatusText('Error al iniciar');
+                setTimeout(() => setOsceStatusText('Actualizar SEACE'), 3000);
+            }
+        }
+    };
+
     return (
         <>
             <div className="absolute top-6 right-6 z-50 flex items-center gap-4">
@@ -326,6 +377,29 @@ export function HeaderActions() {
                                                 <i className={`fas ${updateSuccess ? 'fa-check text-emerald-500' : 'fa-database'} ${isUpdatingMef ? 'fa-spin' : ''}`}></i>
                                             </div>
                                             {isUpdatingMef || updateSuccess || mefStatusText.includes('Error') ? mefStatusText : 'Extraer Datos MEF'}
+                                        </button>
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleUpdateOsce();
+                                            }}
+                                            disabled={isUpdatingOsce}
+                                            className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-emerald-50 dark:hover:bg-emerald-900/20 text-sm font-medium text-emerald-700 dark:text-emerald-400 flex items-center gap-3 transition-colors"
+                                            title="Actualizar datos OSCE/SEACE (modo incremental)"
+                                        >
+                                            <div className="w-6 flex justify-center">
+                                                <i className={`fas ${osceStatusText === 'Actualizado con datos nuevos' ? 'fa-check text-emerald-500' :
+                                                        osceStatusText === 'Sin cambios nuevos' ? 'fa-circle-check text-blue-400' :
+                                                            osceStatusText.includes('Error') ? 'fa-triangle-exclamation text-red-400' :
+                                                                'fa-satellite-dish'
+                                                    } ${isUpdatingOsce ? 'fa-pulse' : ''}`}></i>
+                                            </div>
+                                            <span className={
+                                                osceStatusText === 'Sin cambios nuevos' ? 'text-blue-500 dark:text-blue-400' :
+                                                    osceStatusText.includes('Error') ? 'text-red-500' : ''
+                                            }>
+                                                {isUpdatingOsce || osceStatusText !== 'Actualizando SEACE...' ? osceStatusText : 'Actualizar SEACE'}
+                                            </span>
                                         </button>
                                         <div className="h-px bg-gray-100 dark:bg-slate-700 my-1"></div>
                                     </>

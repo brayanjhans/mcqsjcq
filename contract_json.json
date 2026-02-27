@@ -1,0 +1,76 @@
+{
+  "idContrato": 2375062,
+  "entidadContratante": "20489250731-GOBIERNO REGIONAL DE HUANUCO SEDE CENTRAL",
+  "contratista": "20601175259-CONSORCIO EDUCATIVO POMACUCHO",
+  "descripcionContrato": "CONTRATO PARA LA EJECUCI\u00d3N DE LA OBRA: MEJORAMIENTO Y AMPLIACION DEL SERVICIO DE EDUCACI\u00d3N INICIAL EN LA INSTITUCI\u00d3N EDUCATIVA INICIAL N 194 POMACUCHO DEL DISTRITO DE SANTA MARIA DEL VALLE - PROVINCIA DE HUANUCO - DEPARTAMENTO DE HUANUCO - CUI: 2517099",
+  "numeroContrato": "CONTRATO N\u00b0 042-2026-GRH/GGR",
+  "rucCodigoContratista": "20601175259",
+  "tipoMoneda": "Soles",
+  "montoContrato": "4886542.82",
+  "fechaSuscripcionContrato": "29/01/2026",
+  "fechaInicioVigenciaContrato": "30/01/2026",
+  "fechaPublicacionContrato": "02/02/2026",
+  "fechaFinVigenciaContrato": "28/08/2026",
+  "lugar": "HUANUCO",
+  "destinatarioPago": "20601175259-ARVAMA PERU EMRPESA INDIVIDUAL DE RESPONSABILIDAD LIMITADA",
+  "estadoSituacional": "Publicado",
+  "archivoAdjunto": "Contrato N 000042-2026-GRH_GGR..pdf",
+  "entidadConvocante": "20489250731-GOBIERNO REGIONAL DE HUANUCO SEDE CENTRAL",
+  "rucDestinoPago": "20601175259",
+  "nomenclaturaProceso": "LP-ABR-65-2025-GRH/C-3",
+  "montoPresupuesto": "9773086",
+  "montoCCP": "4886543",
+  "montoPrevision": "3481389.29",
+  "archivoAdjunto2": "CONTRATO DE CONSORCIO.pdf",
+  "idDocumento2": "153035174",
+  "tamanioDocumento2": "299172",
+  "fechaDocumento2": "02/02/2026 04:08 PM",
+  "indPresupuesto": "1",
+  "listaItemsContrato": [
+    {
+      "idItem": 504310,
+      "nroItem": "1",
+      "cubso": "7212140600359845-AMPLIACION DE INFRAESTRUCTURA DE CENTROS EDUCATIVOS",
+      "descripcionItem": "EJECUCI\u00d3N DE LA OBRA: MEJORAMIENTO Y AMPLIACION DEL SERVICIO DE EDUCACI\u00d3N INICIAL EN LA INSTITUCI\u00d3N EDUCATIVA INICIAL N 194 POMACUCHO DEL DISTRITO DE SANTA MARIA DEL VALLE - PROVINCIA DE HUANUCO - DEPARTAMENTO DE HUANUCO - CUI: 2517099",
+      "lugar": "HUANUCO/HUANUCO/SANTA MARIA DEL VALLE",
+      "monto": "4886542.82",
+      "unidadMedida": "Servicio",
+      "cantidadContratada": "1",
+      "codMoneda": null
+    }
+  ],
+  "listaGarantiaContrato": [
+    {
+      "idGarantia": 89824,
+      "claseGarantia": "Garant\u00eda de fiel cumplimiento",
+      "tipoGarantia": "Carta Fianza",
+      "nroGrantia": "15411-0102-2026-001",
+      "moneda": "S/.",
+      "monto": "488654.29",
+      "entidadEmisora": "CESCE PER\u00da S.A. COMPA\u00d1IA DE SEGUROS",
+      "fechaEmision": "12/01/2026",
+      "fechaVencimiento": "09/08/2026",
+      "idDocumento": "153035184",
+      "condicion": "Vigente",
+      "fechaPublicacion": "02/02/2026 04:02:45"
+    }
+  ],
+  "listaAccionContrato": [],
+  "listaProyectoContrato": [
+    {
+      "codigoUnicoInversion": "2517099",
+      "descripcionProyecto": "MEJORAMIENTO Y AMPLIACION DEL SERVICIO DE EDUCACI\u00d3N INICIAL EN LA INSTITUCI\u00d3N EDUCATIVA INICIAL  N\u00b0 194 POMACUCHO DEL DISTRITO DE SANTA MARIA DEL VALLE - PROVINCIA DE HUANUCO - DEPARTAMENTO DE HUANUCO"
+    }
+  ],
+  "listaResolucionDisputas": [],
+  "listaConciliaciones": [],
+  "listaArbitrajes": [],
+  "listaPresupuestoGeneral": null,
+  "idDocumento": "153035173",
+  "tamanioDocumento": "1517543",
+  "fechaDocumento": "02/02/2026 04:08 PM",
+  "nIndConsorcio": "1",
+  "idDocumentoConsorcio": null,
+  "indContratosMenores": 0,
+  "norma": "1796"
+}

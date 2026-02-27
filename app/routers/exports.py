@@ -58,10 +58,10 @@ def build_query(req: ExportRequest):
         if f.get('distrito'):
             where_clauses.append("lc.distrito = :distrito")
             params['distrito'] = f.get('distrito')
-        filter_anio = req.filters.get('anio')
-        if filter_anio:
-            where_clauses.append("EXTRACT(YEAR FROM lc.fecha_publicacion) = :anio")
-            params['anio'] = filter_anio
+        filter_year = req.filters.get('year')
+        if filter_year:
+            where_clauses.append("EXTRACT(YEAR FROM lc.fecha_publicacion) = :year")
+            params['year'] = filter_year
 
         filter_mes = req.filters.get('mes')
         if filter_mes:

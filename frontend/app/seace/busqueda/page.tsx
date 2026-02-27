@@ -258,7 +258,7 @@ function BusquedaContent() {
             if (departamento) filters.departamento = departamento;
             if (estado) filters.estado = estado;
             if (categoria) filters.categoria = categoria;
-            if (anio) filters.anio = anio;
+            if (anio) filters.year = anio;
             if (mes) filters.mes = Number(mes);
             if (provincia) filters.provincia = provincia;
             if (distrito) filters.distrito = distrito;

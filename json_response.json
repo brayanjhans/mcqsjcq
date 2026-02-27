@@ -1,0 +1,76 @@
+{
+  "idContrato": 2367059,
+  "entidadContratante": "20213726766-MUNICIPALIDAD DISTRITAL DE SAN FRANCISCO DE ASIS",
+  "contratista": "20601724597-SAN FRANCISCO",
+  "descripcionContrato": "EJECUCION DE LA OBRA: INSTALACION Y AMPLIACIÓN DEL SERVICIO DE SANEAMIENTO BÁSICO INTEGRAL EN LAS LOCALIDADES DE CARAMARCA Y HUANCABAMBA, DISTRITO DE SAN FRANCISCO DE ASIS - LAURICOCHA - HUANUCO, CUI N°352446",
+  "numeroContrato": "003-2025-MDSFA/A",
+  "rucCodigoContratista": "20601724597",
+  "tipoMoneda": "Soles",
+  "montoContrato": "8037832",
+  "fechaSuscripcionContrato": "10/12/2025",
+  "fechaInicioVigenciaContrato": "11/12/2025",
+  "fechaPublicacionContrato": "13/12/2025",
+  "fechaFinVigenciaContrato": "30/09/2026",
+  "lugar": "HUANUCO",
+  "destinatarioPago": "20615153053-CONSORCIO SAN FRANCISCO",
+  "estadoSituacional": "Publicado",
+  "archivoAdjunto": "SCN_0027.pdf",
+  "entidadConvocante": "20213726766-MUNICIPALIDAD DISTRITAL DE SAN FRANCISCO DE ASIS",
+  "rucDestinoPago": "20615153053",
+  "nomenclaturaProceso": "LP-SM-1-2025-MDSFA/CS-1",
+  "montoPresupuesto": "8037832",
+  "montoCCP": "1138538",
+  "montoPrevision": "6899294",
+  "archivoAdjunto2": "SCN_0029.pdf",
+  "idDocumento2": "152991855",
+  "tamanioDocumento2": "9814896",
+  "fechaDocumento2": "15/12/2025 10:23 AM",
+  "indPresupuesto": "1",
+  "listaItemsContrato": [
+    {
+      "idItem": 495578,
+      "nroItem": "1",
+      "cubso": "7214112100379726-CONSTRUCCION DE REDES DE AGUA POTABLE Y ALCANTARILLADO",
+      "descripcionItem": "EJECUCION DE LA OBRA: INSTALACION Y AMPLIACIÓN DEL SERVICIO DE SANEAMIENTO BÁSICO INTEGRAL EN LAS LOCALIDADES DE CARAMARCA Y HUANCABAMBA, DISTRITO DE SAN FRANCISCO DE ASIS - LAURICOCHA - HUANUCO, CUI N°352446",
+      "lugar": "HUANUCO/LAURICOCHA/SAN FRANCISCO DE ASIS",
+      "monto": "8037832",
+      "unidadMedida": "Servicio",
+      "cantidadContratada": "1",
+      "codMoneda": null
+    }
+  ],
+  "listaGarantiaContrato": [
+    {
+      "idGarantia": 88000,
+      "claseGarantia": "Garantía de fiel cumplimiento",
+      "tipoGarantia": "Carta Fianza",
+      "nroGrantia": "15411-2761-2025-000",
+      "moneda": "S/.",
+      "monto": "803783.2",
+      "entidadEmisora": "CESCE PERÚ S.A. COMPAÑIA DE SEGUROS",
+      "fechaEmision": "01/12/2025",
+      "fechaVencimiento": "26/09/2026",
+      "idDocumento": "152991876",
+      "condicion": "Vigente",
+      "fechaPublicacion": "15/12/2025 10:12:02"
+    }
+  ],
+  "listaAccionContrato": [],
+  "listaProyectoContrato": [
+    {
+      "codigoUnicoInversion": "2314890",
+      "descripcionProyecto": "INSTALACION Y AMPLIACIÓN DEL SERVICIO DE SANEAMIENTO BÁSICO INTEGRAL EN LAS LOCALIDADES DE CARAMARCA Y HUANCABAMBA, DISTRITO DE SAN FRANCISCO DE ASIS - LAURICOCHA - HUANUCO"
+    }
+  ],
+  "listaResolucionDisputas": [],
+  "listaConciliaciones": [],
+  "listaArbitrajes": [],
+  "listaPresupuestoGeneral": null,
+  "idDocumento": "152991854",
+  "tamanioDocumento": "19323695",
+  "fechaDocumento": "15/12/2025 10:23 AM",
+  "nIndConsorcio": "1",
+  "idDocumentoConsorcio": null,
+  "indContratosMenores": 0,
+  "norma": "1796"
+}

@@ -206,7 +206,7 @@ def get_licitaciones(
     departamento: Optional[str] = Query(None),
     provincia: Optional[str] = Query(None),
     distrito: Optional[str] = Query(None),
-    anio: Optional[int] = Query(None),
+    year: Optional[int] = Query(None),
     mes: Optional[str] = Query(None),
     tipo_garantia: Optional[str] = Query(None),
     entidad_financiera: Optional[str] = Query(None),
@@ -345,9 +345,9 @@ def get_licitaciones(
         if distrito:
             where_clauses.append("UPPER(TRIM(distrito)) = :distrito")
             params['distrito'] = distrito
-        if anio:
-            where_clauses.append("anio = :anio")
-            params['anio'] = anio
+        if year:
+            where_clauses.append("EXTRACT(YEAR FROM licitaciones_cabecera.fecha_publicacion) = :year")
+            params['year'] = year
         if comprador:
             where_clauses.append("UPPER(TRIM(comprador)) = :comprador")
             params['comprador'] = comprador

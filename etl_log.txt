@@ -1,0 +1,52 @@
+﻿py : 2026-02-26 10:06:10,707 [INFO] Se 
+encontraron 2 archivos ZIP. Iniciando...
+En línea: 1 Carácter: 1
++ py 1_motor_etl\cargador_ocds_osce.py 2>&1 | 
+Out-File -Encoding utf8 C ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ( 
+   2026-02-26 10:0...P. Iniciando...:String)  
+   [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandEr 
+   ror
+ 
+2026-02-26 10:06:10,707 [INFO] \U0001f4c1 
+Extrayendo archivo: C:\laragon\www\gitc\garant
+ias_seacee\DATAJSON\2026-01_seace_v3.zip
+2026-02-26 10:06:10,709 [INFO]    -> Leyendo 
+subarchivo JSON 2026-01_seace_v3.json
+2026-02-26 10:06:10,855 [INFO]    -> 
+Recibidos 926 records. Formateando...
+2026-02-26 10:06:10,867 [INFO]    -> 
+Guardando bloque...(926 cabeceras, 647 
+adjudicaciones)
+2026-02-26 10:06:10,986 [WARNING] Error en 
+batch adjudicaciones ((1364, "Field 'id' 
+doesn't have a default value")), insertando 
+fila por fila...
+2026-02-26 10:06:11,157 [INFO]    Fila por 
+fila: 0 ok, 647 fallidas
+2026-02-26 10:06:11,161 [INFO]    \u2705 
+Commit exitoso: 926 cabeceras, 647 
+adjudicaciones
+2026-02-26 10:06:11,180 [INFO] \U0001f4c1 
+Extrayendo archivo: C:\laragon\www\gitc\garant
+ias_seacee\DATAJSON\2026-02_seace_v3.zip
+2026-02-26 10:06:11,180 [INFO]    -> Leyendo 
+subarchivo JSON 2026-02_seace_v3.json
+2026-02-26 10:06:11,531 [INFO]    -> 
+Recibidos 3582 records. Formateando...
+2026-02-26 10:06:11,569 [INFO]    -> 
+Guardando bloque...(3582 cabeceras, 944 
+adjudicaciones)
+2026-02-26 10:06:11,844 [WARNING] Error en 
+batch adjudicaciones ((1364, "Field 'id' 
+doesn't have a default value")), insertando 
+fila por fila...
+2026-02-26 10:06:12,084 [INFO]    Fila por 
+fila: 0 ok, 944 fallidas
+2026-02-26 10:06:12,090 [INFO]    \u2705 
+Commit exitoso: 3582 cabeceras, 944 
+adjudicaciones
+2026-02-26 10:06:12,129 [INFO] \U0001f389 
+Proceso OCDS 2026 completado con Úxito.

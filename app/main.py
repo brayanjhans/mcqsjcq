@@ -72,7 +72,7 @@ async def startup_event():
     """Iniciar scheduler de notificaciones al arranque"""
     """Iniciar scheduler de notificaciones al arranque"""
     print("DEBUG: Force reload due to route missing")
-    # start_scheduler()
+    start_scheduler()  # Scheduler de notificaciones + Pipeline OSCE (1 AM diario)
     
     # Iniciar scheduler de actulización automática del MEF (cada 8hs)
     start_mef_scheduler()

@@ -155,6 +155,109 @@ def get_mef_last_updated():
     return {"last_updated": None}
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# OSCE/SEACE PIPELINE ENDPOINTS
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Estado global del pipeline OSCE
+osce_update_state = {
+    "is_running": False,
+    "current_step": "",
+    "logs": []
+}
+
+def run_pipeline_osce_background():
+    """Background task: lanza el pipeline maestro como subproceso y hace seguimiento."""
+    global osce_update_state
+    
+    base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+    pipeline_script = os.path.join(base_dir, "0_pipeline_maestro.py")
+    logs_dir = os.path.join(base_dir, "logs")
+    os.makedirs(logs_dir, exist_ok=True)
+    log_file = os.path.join(logs_dir, "pipeline_osce.log")
+    anio = datetime.now().year
+
+    try:
+        osce_update_state["is_running"] = True
+        osce_update_state["logs"] = []
+
+        osce_update_state["current_step"] = f"Iniciando pipeline incremental OSCE ({anio})..."
+        osce_update_state["logs"].append(osce_update_state["current_step"])
+        print(f"[OSCE-UPDATE] {osce_update_state['current_step']}")
+
+        cmd = [sys.executable, pipeline_script, "--year", str(anio)]
+        kwargs = {}
+        if sys.platform == "win32":
+            kwargs["creationflags"] = subprocess.CREATE_NO_WINDOW
+
+        with open(log_file, "a", encoding="utf-8") as f_log:
+            f_log.write(f"\n\n{'='*60}\n[{datetime.now()}] Pipeline OSCE iniciado desde UI\n{'='*60}\n")
+
+        osce_update_state["current_step"] = "Verificando SHA y descargando datos de OSCE/SEACE..."
+        proc = subprocess.run(
+            cmd,
+            cwd=base_dir,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            **kwargs
+        )
+
+        # Guardar output en log
+        with open(log_file, "a", encoding="utf-8") as f_log:
+            f_log.write(proc.stdout or "")
+            f_log.write(proc.stderr or "")
+
+        if proc.returncode == 0:
+            # Detectar si el pipeline tuvo cambios o no basándose en el output
+            output_lower = (proc.stdout or "").lower()
+            if "sin cambios" in output_lower or "sin archivos nuevos" in output_lower:
+                osce_update_state["current_step"] = "Sin cambios nuevos"
+            else:
+                osce_update_state["current_step"] = "Actualizado con datos nuevos"
+            print("[OSCE-UPDATE] Pipeline completado.")
+
+        else:
+            osce_update_state["current_step"] = f"Error en la ejecución (código {proc.returncode})"
+            print(f"[OSCE-UPDATE] Pipeline falló con código {proc.returncode}")
+
+        osce_update_state["logs"].append(osce_update_state["current_step"])
+
+    except Exception as e:
+        osce_update_state["current_step"] = f"Error inesperado: {str(e)}"
+        osce_update_state["logs"].append(str(e))
+        print(f"[OSCE-UPDATE] Excepción: {e}")
+    finally:
+        osce_update_state["is_running"] = False
+        print("[OSCE-UPDATE] Finalizado.")
+
+
+@router.post("/update-osce")
+def trigger_osce_update(background_tasks: BackgroundTasks):
+    """Lanza el pipeline incremental OSCE/SEACE en segundo plano."""
+    global osce_update_state
+
+    if osce_update_state.get("is_running", False):
+        raise HTTPException(status_code=409, detail="El pipeline OSCE ya está en ejecución.")
+
+    background_tasks.add_task(run_pipeline_osce_background)
+    return {"message": f"Pipeline OSCE iniciado para el año {datetime.now().year}."}
+
+
+@router.get("/update-osce/status")
+def get_osce_update_status():
+    """Devuelve el estado actual del pipeline OSCE (para polling desde el frontend)."""
+    global osce_update_state
+    return {
+        "is_running": osce_update_state.get("is_running", False),
+        "current_step": osce_update_state.get("current_step", ""),
+        "logs": osce_update_state.get("logs", [])
+    }
+
+
+
+
 
 @router.get("/ejecucion/{id_convocatoria}")
 def get_ejecucion(id_convocatoria: str, db: Session = Depends(get_db)):

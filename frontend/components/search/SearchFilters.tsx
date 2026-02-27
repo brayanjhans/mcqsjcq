@@ -107,8 +107,12 @@ export const SearchFiltersComponent: React.FC<Props> = ({
         return () => clearTimeout(timeoutId);
     }, [localFilters]);
 
-    const handleChange = (key: keyof SearchFilters, value: string) => {
-        setLocalFilters(prev => ({ ...prev, [key]: value }));
+    const handleChange = (key: keyof SearchFilters, value: string, autoApply: boolean = true) => {
+        const newFilters = { ...localFilters, [key]: value };
+        setLocalFilters(newFilters);
+        if (autoApply) {
+            onFilterChange(newFilters);
+        }
     };
 
     const handleApply = () => {
@@ -175,7 +179,7 @@ export const SearchFiltersComponent: React.FC<Props> = ({
                             placeholder="Buscar por descripción, comprador, nomenclatura, ganador, banco..."
                             className={`${inputClasses} pl-11 py-3 bg-white border-slate-200 shadow-sm group-focus-within:shadow-md transition-shadow`}
                             value={localFilters.search || ""}
-                            onChange={(e) => handleChange("search", e.target.value)}
+                            onChange={(e) => handleChange("search", e.target.value, false)}
                             onKeyDown={(e) => e.key === 'Enter' && handleApply()}
                         />
                         <Search className="absolute left-4 top-3.5 h-4 w-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
@@ -293,7 +297,8 @@ export const SearchFiltersComponent: React.FC<Props> = ({
                                 placeholder="Provincia"
                                 className={inputClasses}
                                 value={localFilters.provincia || ""}
-                                onChange={(e) => handleChange("provincia", e.target.value)}
+                                onChange={(e) => handleChange("provincia", e.target.value, false)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleApply()}
                             />
                         </div>
                         <div className="flex-1">
@@ -303,7 +308,8 @@ export const SearchFiltersComponent: React.FC<Props> = ({
                                 placeholder="Distrito"
                                 className={inputClasses}
                                 value={localFilters.distrito || ""}
-                                onChange={(e) => handleChange("distrito", e.target.value)}
+                                onChange={(e) => handleChange("distrito", e.target.value, false)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleApply()}
                             />
                         </div>
                     </div>
@@ -346,7 +352,8 @@ export const SearchFiltersComponent: React.FC<Props> = ({
                             placeholder="Todas las entidades"
                             className={inputClasses}
                             value={localFilters.entidad || ""}
-                            onChange={(e) => handleChange("entidad", e.target.value)}
+                            onChange={(e) => handleChange("entidad", e.target.value, false)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleApply()}
                         />
                     </div>
 

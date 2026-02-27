@@ -120,7 +120,7 @@ export default function GeneradorReportesPage() {
             if (estado) filters.estado = estado;
             if (departamento) filters.departamento = departamento;
             if (categoria) filters.categoria = categoria;
-            if (anio) filters.anio = anio;
+            if (anio) filters.year = anio;
             if (mes) filters.mes = Number(mes);
 
             try {
@@ -151,7 +151,7 @@ export default function GeneradorReportesPage() {
             if (estado) filters.estado = estado;
             if (departamento) filters.departamento = departamento;
             if (categoria) filters.categoria = categoria;
-            if (anio) filters.anio = anio;
+            if (anio) filters.year = anio;
             if (mes) filters.mes = Number(mes);
             if (provincia) filters.provincia = provincia;
             if (distrito) filters.distrito = distrito;
@@ -181,7 +181,7 @@ export default function GeneradorReportesPage() {
             if (estado) filters.estado = estado;
             if (departamento) filters.departamento = departamento;
             if (categoria) filters.categoria = categoria;
-            if (anio) filters.anio = anio;
+            if (anio) filters.year = anio;
             if (mes) filters.mes = Number(mes);
             if (provincia) filters.provincia = provincia;
             if (distrito) filters.distrito = distrito;
@@ -280,7 +280,7 @@ export default function GeneradorReportesPage() {
             if (estado) filters.estado = estado;
             if (departamento) filters.departamento = departamento;
             if (categoria) filters.categoria = categoria;
-            if (anio) filters.anio = anio;
+            if (anio) filters.year = anio;
             if (mes) filters.mes = Number(mes);
             if (provincia) filters.provincia = provincia;
             if (distrito) filters.distrito = distrito;
