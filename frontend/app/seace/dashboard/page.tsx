@@ -58,7 +58,7 @@ export default function EcommerceDashboardPage() {
                     // tipos: data.tipos_entidad || [], // OLD: Dynamic from DB
                     tipos: DEFAULT_TIPOS_PROCEDIMIENTO, // NEW: Static List (Contains "Contratación Directa")
                     // Use backend years if available, else default
-                    anios: data.anios || [2026, 2025, 2024]
+                    anios: data.anios || [2028, 2027, 2026, 2025, 2024, 2023, 2022, 2021, 2020]
                 }));
             } catch (error) {
                 console.error("Error options:", error);

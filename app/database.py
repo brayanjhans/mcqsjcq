@@ -24,7 +24,8 @@ engine = create_engine(
     max_overflow=20,     # Allow 20 extra connections (was 10)
     pool_timeout=30,     # Timeout after 30 seconds if no connection available
     pool_recycle=1800,   # Recycle connections after 30 minutes
-    echo=False           # Set to True for SQL query logging
+    echo=False,          # Set to True for SQL query logging
+    connect_args={'charset': 'utf8mb4'} # Fix for upside-down question marks and emojis/accents
 )
 
 # Session factory

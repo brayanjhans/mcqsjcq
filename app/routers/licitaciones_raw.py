@@ -155,9 +155,8 @@ def get_all_filters(db: Session = Depends(get_db)):
         aseguradoras = ALL_ENTITIES
         if not aseguradoras: aseguradoras = DEFAULTS["aseguradoras"]
 
-        # NEW: 5. Periodos (Años)
-        # User requested to strictly define years as 2024, 2025, 2026
-        anios = [2026, 2025, 2024]
+        # Períodos (Años) - Rango histórico completo
+        anios = [2028, 2027, 2026, 2025, 2024, 2023, 2022, 2021, 2020]
 
         # NEW: 6. Entidades (Comprador) - Now using validated static list (2964 entities)
         from app.data.entidades_list import ENTIDADES_COMPRADORAS

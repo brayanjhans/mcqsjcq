@@ -371,7 +371,8 @@ def guardar_bd(todo_cabeceras, todo_adjudicaciones):
                 monto_final = VALUES(monto_final),
                 url_pdf_contrato = COALESCE(VALUES(url_pdf_contrato), url_pdf_contrato),
                 url_pdf_cartafianza = COALESCE(VALUES(url_pdf_cartafianza), url_pdf_cartafianza),
-                url_pdf_consorcio = COALESCE(VALUES(url_pdf_consorcio), url_pdf_consorcio)
+                url_pdf_consorcio = COALESCE(VALUES(url_pdf_consorcio), url_pdf_consorcio),
+                entidad_financiera = COALESCE(entidad_financiera, VALUES(entidad_financiera))
         """
         
         adj_data = []

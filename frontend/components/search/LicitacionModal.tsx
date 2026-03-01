@@ -112,14 +112,12 @@ export default function LicitacionModal({
         if (isOpen) {
             if (licitacion) {
                 // Map backend data to frontend structure
-                // Specifically map consorcios fields: nombre_miembro -> nombre, ruc_miembro -> ruc
                 const mappedAdjs = (licitacion.adjudicaciones || []).map((adj: any) => ({
                     ...adj,
                     consorcios: (adj.consorcios || []).map((c: any) => ({
                         ...c,
-                        nombre: c.nombre || c.nombre_miembro,
-                        ruc: c.ruc || c.ruc_miembro,
-                        // porcentaje removed from UI but keep mapping if needed internally
+                        nombre: c.nombre || c.nombre_miembro || '',
+                        ruc: c.ruc || c.ruc_miembro || '',
                         porcentaje: c.porcentaje || c.porcentaje_participacion || 0
                     }))
                 }));
@@ -192,7 +190,19 @@ export default function LicitacionModal({
     if (!isOpen || !isMounted) return null;
 
     const handleSave = () => {
-        onSave(formData);
+        // Clonar y sanear datos numéricos por si llegaron vacíos ("") desde la interfaz
+        const payload = JSON.parse(JSON.stringify(formData));
+        if (payload.adjudicaciones) {
+            payload.adjudicaciones.forEach((adj: any) => {
+                adj.monto_adjudicado = Number(adj.monto_adjudicado) || 0;
+                if (adj.consorcios) {
+                    adj.consorcios.forEach((c: any) => {
+                        c.porcentaje = Number(c.porcentaje) || 0;
+                    });
+                }
+            });
+        }
+        onSave(payload);
         onClose();
     };
 

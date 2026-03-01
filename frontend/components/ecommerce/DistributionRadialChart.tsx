@@ -96,7 +96,7 @@ export const DistributionRadialChart: React.FC<DistributionRadialChartProps> = (
         labels: stats.map(s => s.label)
     };
 
-    const years = [2024, 2025, 2026];
+    const years = [2020, 2021, 2022, 2023, 2024, 2025, 2026, 2027, 2028];
 
     return (
         <div className="rounded-2xl bg-white dark:bg-[#111c44] p-6 shadow-sm border border-slate-100 dark:border-white/5 h-full flex flex-col justify-between">

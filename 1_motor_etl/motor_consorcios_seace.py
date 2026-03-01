@@ -159,22 +159,34 @@ def main(year=None):
     
     with conn.cursor() as cursor:
         if year:
-            logging.info(f"   Filtrando contratos del año {year}...")
+            logging.info(f"   Filtrando contratos del año {year} para Garantías y Consorcios...")
             sql = """
                 SELECT a.id_adjudicacion, a.id_contrato, a.ganador_nombre
                 FROM licitaciones_adjudicaciones a
                 INNER JOIN licitaciones_cabecera l ON a.id_convocatoria = l.id_convocatoria
                 WHERE a.id_contrato IS NOT NULL AND a.id_contrato != ''
-                AND a.entidad_financiera IS NULL
                 AND l.fecha_publicacion BETWEEN %s AND %s
+                AND (
+                    a.entidad_financiera IS NULL 
+                    OR (
+                        a.ganador_nombre LIKE '%%CONSORCIO%%' 
+                        AND a.id_contrato NOT IN (SELECT id_contrato FROM detalle_consorcios)
+                    )
+                )
             """
             cursor.execute(sql, (f"{year}-01-01", f"{year}-12-31"))
         else:
             sql = """
-                SELECT id_adjudicacion, id_contrato, ganador_nombre
-                FROM licitaciones_adjudicaciones 
-                WHERE id_contrato IS NOT NULL AND id_contrato != ''
-                AND entidad_financiera IS NULL
+                SELECT a.id_adjudicacion, a.id_contrato, a.ganador_nombre
+                FROM licitaciones_adjudicaciones a
+                WHERE a.id_contrato IS NOT NULL AND a.id_contrato != ''
+                AND (
+                    a.entidad_financiera IS NULL 
+                    OR (
+                        a.ganador_nombre LIKE '%%CONSORCIO%%' 
+                        AND a.id_contrato NOT IN (SELECT id_contrato FROM detalle_consorcios)
+                    )
+                )
             """
             cursor.execute(sql)
         pendientes = cursor.fetchall()
