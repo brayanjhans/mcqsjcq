@@ -57,8 +57,8 @@ def extract_cuis_from_db():
     Extract CUIs from licitacion descriptions.
     CUI appears in description like "CUI: 2517099" or "CUI 2517099".
     """
-    cui_pattern = re.compile(r'CUI[:\s]+(\d{5,8})', re.IGNORECASE)
-    snip_pattern = re.compile(r'SNIP[:\s]+(\d{5,8})', re.IGNORECASE)
+    cui_pattern = re.compile(r'(?:CUI|C\.U\.I\.|C[OÓ]DIGO\s+[UÚ]NICO\s+DE\s+INVERSI[OÓ]N|C[OÓ]DIGO\s+[UÚ]NICO|C[OÓ]DIGO\s+DE\s+INVERSI[OÓ]N)[\s:]*(?:N[º°\.]?)?[\s:]*([\d.]{7,10})', re.IGNORECASE)
+    snip_pattern = re.compile(r'(?:SNIP|C[OÓ]DIGO\s+SNIP)[\s:]*(?:N[º°\.]?)?[\s:]*([\d.]{5,8})', re.IGNORECASE)
 
     with engine.connect() as conn:
         rows = conn.execute(text("""
@@ -203,7 +203,19 @@ def import_from_file(filepath: str, year: int, filter_cuis: set | None = None, i
                 elif db_col == "ano_eje":
                     db_row[db_col] = int(val) if val else year
                 else:
-                    db_row[db_col] = val[:500] if val else None
+                    limit = 200
+                    if db_col == "nivel_gobierno": limit = 5
+                    elif db_col in ["sector", "pliego", "ejecutora"]: limit = 10
+                    elif db_col == "producto_proyecto": limit = 20
+                    elif db_col == "sec_ejec": limit = 50
+                    elif db_col == "departamento_meta": limit = 100
+                    elif db_col == "producto_proyecto_nombre": limit = 450
+                    elif db_col == "meta_nombre": limit = 500
+                    
+                    if val is not None:
+                        db_row[db_col] = val[:limit]
+                    else:
+                        db_row[db_col] = None
 
             batch.append(db_row)
             matched_rows += 1
