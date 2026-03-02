@@ -68,7 +68,7 @@ def download_and_import_mef(year: int):
         # Run script
         import_script = os.path.join(script_dir, "import_mef_csv.py")
         result = subprocess.run(
-            [sys.executable, import_script, "--year", str(year), "--all-rows"],
+            [sys.executable, import_script, "--year", str(year), "--all-rows", "--incremental"],
             capture_output=True,
             text=True
         )
