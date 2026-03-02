@@ -426,7 +426,7 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                     <div className="rounded-2xl border border-slate-200 bg-white p-6 md:p-8 shadow-md dark:border-white/10 dark:bg-[#111c44] animate-in fade-in slide-in-from-bottom-5 duration-500 delay-75 border-t-4 border-t-cyan-500">
                         <div className="flex items-center gap-3 mb-6">
                             <Activity className="w-5 h-5 text-blue-500" />
-                            <h3 className="text-lg font-bold text-slate-900 dark:text-white">Estado de Ejecución Financiera</h3>
+                            <h3 className="text-lg font-bold text-slate-900 dark:text-white uppercase">ESTADO DE EJECUCIÓN FINANCIERA</h3>
                             {loadingIntegracion && <Loader2 className="w-4 h-4 text-slate-400 animate-spin" />}
                             {/* 5.1: Confidence badge */}
                             {!loadingIntegracion && ejecucion && (
@@ -547,7 +547,7 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                     <div className="rounded-2xl border border-slate-200 bg-white p-6 md:p-8 shadow-md dark:border-white/10 dark:bg-[#111c44] animate-in fade-in slide-in-from-bottom-5 duration-500 delay-100 border-t-4 border-t-emerald-500">
                         <div className="flex items-center gap-3 mb-6">
                             <ShieldCheck className="w-5 h-5 text-emerald-500" />
-                            <h3 className="text-lg font-bold text-slate-900 dark:text-white">Detalle de Adjudicaciones y Ganadores</h3>
+                            <h3 className="text-lg font-bold text-slate-900 dark:text-white uppercase">DETALLE DE ADJUDICACIONES Y GARANTÍAS</h3>
                         </div>
 
                         <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
@@ -663,7 +663,7 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                     <div className="rounded-2xl border border-slate-200 bg-white p-6 md:p-8 shadow-md dark:border-white/10 dark:bg-[#111c44] animate-in fade-in slide-in-from-bottom-5 duration-500 delay-200 mt-6 border-t-4 border-t-violet-500">
                         <div className="flex items-center gap-3 mb-6">
                             <FileText className="w-5 h-5 text-indigo-500" />
-                            <h3 className="text-lg font-bold text-slate-900 dark:text-white">Documentación Contractual y Consorcios</h3>
+                            <h3 className="text-lg font-bold text-slate-900 dark:text-white uppercase">DOCUMENTACIÓN CONTRACTUAL Y CONSORCIOS</h3>
                         </div>
 
                         <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
