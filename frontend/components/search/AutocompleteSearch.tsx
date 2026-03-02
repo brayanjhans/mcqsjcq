@@ -26,9 +26,13 @@ export const AutocompleteSearch: React.FC<AutocompleteSearchProps> = ({
 }) => {
     const [query, setQuery] = useState(initialValue);
 
-    // Sync with parent changes (e.g. when clearing filters)
+    // Sync con el padre SOLO cuando se limpia (initialValue = "")
+    // Si sincronizamos en cada cambio, el usuario pierde caracteres
+    // porque onSearch dispara actualización del padre que sobrescribe lo escrito
     useEffect(() => {
-        setQuery(initialValue);
+        if (initialValue === "") {
+            setQuery("");
+        }
     }, [initialValue]);
     const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
     const [loading, setLoading] = useState(false);
