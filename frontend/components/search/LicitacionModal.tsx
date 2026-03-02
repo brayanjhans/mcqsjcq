@@ -209,8 +209,8 @@ export default function LicitacionModal({
     // Render modal using Portal to avoid parent transform issues
     return createPortal(
         <div className="fixed inset-0 z-[99999] overflow-y-auto">
-            {/* Backdrop */}
-            <div className="fixed inset-0 bg-black/40 transition-opacity" onClick={onClose} aria-hidden="true" />
+            {/* Backdrop - sin onClick para evitar cierre accidental */}
+            <div className="fixed inset-0 bg-black/40 transition-opacity" aria-hidden="true" />
 
             {/* Modal Container - Optimized for production with better responsiveness */}
             <div className="flex min-h-full items-center justify-center p-2 sm:p-4 md:p-6">
