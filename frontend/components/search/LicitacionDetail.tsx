@@ -311,7 +311,7 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                                 </span>
                                 <div>
                                     <h1 className="text-2xl font-bold text-slate-900 dark:text-white leading-tight">
-                                        Proceso #{licitacion.id_convocatoria}
+                                        PROCESO {licitacion.id_convocatoria}
                                     </h1>
                                     <p className="text-xs text-slate-400 font-medium mt-0.5 font-mono">
                                         {licitacion.ocid || "OCID no disponible"}
