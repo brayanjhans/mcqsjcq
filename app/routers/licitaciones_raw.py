@@ -170,9 +170,15 @@ def get_all_filters(db: Session = Depends(get_db)):
              raw_garantias = ["CARTA FIANZA", "POLIZA DE CAUCION", "RETENCION", "FIDEICOMISO", "CERTIFICADO BANCARIO"]
              
         garantias_set = set()
+        GARANTIA_NORM = {
+            'CARTA_FIANZA': 'CARTA FIANZA',
+            'POLIZA_CAUCION': 'PÓLIZA DE CAUCIÓN',
+            'POLIZA DE CAUCION': 'PÓLIZA DE CAUCIÓN',
+        }
         for g in raw_garantias:
             parts = [p.strip() for p in g.split('|')]
-            garantias_set.update(parts)
+            for p in parts:
+                garantias_set.add(GARANTIA_NORM.get(p, p))
         tipos_garantia = sorted(list(garantias_set))
 
         # NEW: 8. Tipos de Procedimiento (For Dashboard)

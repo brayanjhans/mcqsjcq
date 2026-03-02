@@ -6,6 +6,7 @@ import { AutocompleteSearch } from "@/components/search/AutocompleteSearch";
 import type { Licitacion } from "@/types/licitacion";
 import { licitacionService } from "@/lib/services/licitacionService";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
+import { CompactSelect } from "@/components/ui/CompactSelect";
 import {
     Search,
     ChevronUp,
@@ -353,17 +354,13 @@ function BusquedaContent() {
                                     initialValue={searchTerm}
                                 />
                             </div>
-                            <div className="relative">
-                                <select
-                                    className="w-full h-full appearance-none rounded-xl border border-slate-200 bg-white py-3 pl-4 pr-10 text-sm font-semibold text-slate-700 focus:border-indigo-500 focus:ring-0 outline-none dark:bg-[#111c44] dark:border-slate-700 dark:text-slate-300"
-                                    value={tipoProcedimiento} onChange={(e) => { setTipoProcedimiento(e.target.value); setCurrentPage(1); }}
-                                >
-                                    <option value="">Todos los procedimientos</option>
-                                    {DEFAULT_TIPOS_PROCEDIMIENTO.map((proc) => (
-                                        <option key={proc} value={proc}>{proc}</option>
-                                    ))}
-                                </select>
-                                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                            <div>
+                                <CompactSelect
+                                    value={tipoProcedimiento}
+                                    onChange={(v) => { setTipoProcedimiento(v); setCurrentPage(1); }}
+                                    options={DEFAULT_TIPOS_PROCEDIMIENTO}
+                                    placeholder="Todos los procedimientos"
+                                />
                             </div>
                         </div>
 
@@ -373,77 +370,46 @@ function BusquedaContent() {
                             {/* Row 1 - Always Visible */}
                             <div className="space-y-1.5">
                                 <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide ml-1">Departamento</label>
-                                <div className="relative">
-                                    <select
-                                        className="w-full appearance-none rounded-xl border border-slate-200 bg-white py-3 pl-4 pr-10 text-sm font-semibold text-slate-700 focus:border-indigo-500 focus:ring-0 outline-none dark:bg-[#111c44] dark:border-slate-700 dark:text-slate-300"
-                                        value={departamento} onChange={(e) => { handleDepartamentoChange(e); setCurrentPage(1); }}
-                                    >
-                                        <option value="">Todos los departamentos</option>
-                                        {departamentoOptions.map(opt => (
-                                            <option key={opt} value={opt}>{opt}</option>
-                                        ))}
-                                    </select>
-                                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-                                </div>
+                                <CompactSelect
+                                    value={departamento}
+                                    onChange={(v) => { handleDepartamentoChange({ target: { value: v } } as any); setCurrentPage(1); }}
+                                    options={departamentoOptions}
+                                    placeholder="Todos los departamentos"
+                                />
                             </div>
                             <div className="space-y-1.5">
                                 <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide ml-1">Estado del Proceso</label>
-                                <div className="relative">
-                                    <select
-                                        className="w-full appearance-none rounded-xl border border-slate-200 bg-white py-3 pl-4 pr-10 text-sm font-semibold text-slate-700 focus:border-indigo-500 focus:ring-0 outline-none dark:bg-[#111c44] dark:border-slate-700 dark:text-slate-300"
-                                        value={estado} onChange={(e) => { setEstado(e.target.value); setCurrentPage(1); }}
-                                    >
-                                        <option value="">Todos los estados</option>
-                                        {estadoOptions.map(opt => (
-                                            <option key={opt} value={opt}>{opt}</option>
-                                        ))}
-                                    </select>
-                                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-                                </div>
+                                <CompactSelect
+                                    value={estado}
+                                    onChange={(v) => { setEstado(v); setCurrentPage(1); }}
+                                    options={estadoOptions}
+                                    placeholder="Todos los estados"
+                                />
                             </div>
                             <div className="space-y-1.5">
                                 <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide ml-1">Categoría</label>
-                                <div className="relative">
-                                    <select
-                                        className="w-full appearance-none rounded-xl border border-slate-200 bg-white py-3 pl-4 pr-10 text-sm font-semibold text-slate-700 focus:border-indigo-500 focus:ring-0 outline-none dark:bg-[#111c44] dark:border-slate-700 dark:text-slate-300"
-                                        value={categoria} onChange={(e) => { setCategoria(e.target.value); setCurrentPage(1); }}
-                                    >
-                                        <option value="">Todas las categorías</option>
-                                        {categoriaOptions.map(opt => (
-                                            <option key={opt} value={opt}>{opt}</option>
-                                        ))}
-                                    </select>
-                                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-                                </div>
+                                <CompactSelect
+                                    value={categoria}
+                                    onChange={(v) => { setCategoria(v); setCurrentPage(1); }}
+                                    options={categoriaOptions}
+                                    placeholder="Todas las categorías"
+                                />
                             </div>
                             <div className="space-y-1.5">
                                 <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide ml-1">Periodo</label>
                                 <div className="grid grid-cols-2 gap-3">
-                                    <div className="relative">
-                                        <select
-                                            className="w-full appearance-none rounded-xl border border-slate-200 bg-white py-3 pl-4 pr-8 text-sm font-semibold text-slate-700 focus:border-indigo-500 focus:ring-0 outline-none dark:bg-[#111c44] dark:border-slate-700 dark:text-slate-300"
-                                            value={anio} onChange={(e) => { setAnio(e.target.value); setCurrentPage(1); }}
-                                        >
-                                            <option value="">Año</option>
-                                            {anioOptions.map(opt => (
-                                                <option key={opt} value={opt}>{opt}</option>
-                                            ))}
-                                        </select>
-                                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-                                    </div>
-                                    <div className="relative">
-                                        <select
-                                            className="w-full appearance-none rounded-xl border border-slate-200 bg-white py-3 pl-4 pr-8 text-sm font-semibold text-slate-700 focus:border-indigo-500 focus:ring-0 outline-none dark:bg-[#111c44] dark:border-slate-700 dark:text-slate-300"
-                                            value={mes} onChange={(e) => { setMes(e.target.value); setCurrentPage(1); }}
-                                        >
-                                            <option value="">Mes</option>
-                                            {/* Static months for now */}
-                                            {['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'].map((m, i) => (
-                                                <option key={i} value={i + 1}>{m}</option>
-                                            ))}
-                                        </select>
-                                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-                                    </div>
+                                    <CompactSelect
+                                        value={anio}
+                                        onChange={(v) => { setAnio(v); setCurrentPage(1); }}
+                                        options={anioOptions.map(String)}
+                                        placeholder="Año"
+                                    />
+                                    <CompactSelect
+                                        value={mes ? String(mes) : ""}
+                                        onChange={(v) => { setMes(v); setCurrentPage(1); }}
+                                        options={['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12']}
+                                        placeholder="Mes"
+                                    />
                                 </div>
                             </div>
 
@@ -485,48 +451,30 @@ function BusquedaContent() {
                                     </div>
                                     <div className="space-y-1.5 animate-in fade-in slide-in-from-top-2 duration-200 delay-75">
                                         <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide ml-1">Tipo de Garantía</label>
-                                        <div className="relative">
-                                            <select
-                                                className="w-full appearance-none rounded-xl border border-slate-200 bg-white py-3 pl-4 pr-10 text-sm font-semibold text-slate-700 focus:border-indigo-500 focus:ring-0 outline-none dark:bg-[#111c44] dark:border-slate-700 dark:text-slate-300"
-                                                value={tipoGarantia} onChange={(e) => { setTipoGarantia(e.target.value); setCurrentPage(1); }}
-                                            >
-                                                <option value="">Todos los tipos</option>
-                                                {tipoGarantiaOptions.map(opt => (
-                                                    <option key={opt} value={opt}>{opt}</option>
-                                                ))}
-                                            </select>
-                                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-                                        </div>
+                                        <CompactSelect
+                                            value={tipoGarantia}
+                                            onChange={(v) => { setTipoGarantia(v); setCurrentPage(1); }}
+                                            options={tipoGarantiaOptions}
+                                            placeholder="Todos los tipos"
+                                        />
                                     </div>
                                     <div className="space-y-1.5 animate-in fade-in slide-in-from-top-2 duration-200 delay-100">
                                         <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide ml-1">Aseguradora</label>
-                                        <div className="relative">
-                                            <select
-                                                className="w-full appearance-none rounded-xl border border-slate-200 bg-white py-3 pl-4 pr-10 text-sm font-semibold text-slate-700 focus:border-indigo-500 focus:ring-0 outline-none dark:bg-[#111c44] dark:border-slate-700 dark:text-slate-300"
-                                                value={aseguradora} onChange={(e) => { setAseguradora(e.target.value); setCurrentPage(1); }}
-                                            >
-                                                <option value="">Todas las aseguradoras</option>
-                                                {aseguradoraOptions.map(opt => (
-                                                    <option key={opt} value={opt}>{opt}</option>
-                                                ))}
-                                            </select>
-                                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-                                        </div>
+                                        <CompactSelect
+                                            value={aseguradora}
+                                            onChange={(v) => { setAseguradora(v); setCurrentPage(1); }}
+                                            options={aseguradoraOptions}
+                                            placeholder="Todas las aseguradoras"
+                                        />
                                     </div>
                                     <div className="space-y-1.5 animate-in fade-in slide-in-from-top-2 duration-200 delay-150">
                                         <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide ml-1">Entidad o Consorcio</label>
-                                        <div className="relative">
-                                            <select
-                                                className="w-full appearance-none rounded-xl border border-slate-200 bg-white py-3 pl-4 pr-10 text-sm font-semibold text-slate-700 focus:border-indigo-500 focus:ring-0 outline-none dark:bg-[#111c44] dark:border-slate-700 dark:text-slate-300"
-                                                value={entidad} onChange={(e) => { setEntidad(e.target.value); setCurrentPage(1); }}
-                                            >
-                                                <option value="">Todas las entidades</option>
-                                                {entidadOptions.map(opt => (
-                                                    <option key={opt} value={opt}>{opt}</option>
-                                                ))}
-                                            </select>
-                                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-                                        </div>
+                                        <CompactSelect
+                                            value={entidad}
+                                            onChange={(v) => { setEntidad(v); setCurrentPage(1); }}
+                                            options={entidadOptions}
+                                            placeholder="Todas las entidades"
+                                        />
                                     </div>
 
                                 </>

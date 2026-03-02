@@ -28,6 +28,7 @@ import { AutocompleteSearch } from "@/components/search/AutocompleteSearch";
 import type { Licitacion } from "@/types/licitacion";
 import { licitacionService } from "@/lib/services/licitacionService";
 import { DEFAULT_TIPOS_PROCEDIMIENTO } from "@/lib/constants/procedimientos";
+import { CompactSelect } from "@/components/ui/CompactSelect";
 
 
 export default function GestionManualPage() {
@@ -304,19 +305,12 @@ export default function GestionManualPage() {
                                 />
                             </div>
                             <div className="w-full md:w-64 flex-shrink-0">
-                                <div className="relative">
-                                    <select
-                                        className="w-full h-[52px] appearance-none rounded-xl border-2 border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 focus:border-[#4F46E5] focus:ring-4 focus:ring-[#4F46E5]/10 outline-none transition-all dark:bg-[#0b122b] dark:border-slate-700 dark:text-white"
-                                        value={tipoProcedimiento}
-                                        onChange={(e) => setTipoProcedimiento(e.target.value)}
-                                    >
-                                        <option value="">Todos los procedimientos</option>
-                                        {DEFAULT_TIPOS_PROCEDIMIENTO.map((tipo) => (
-                                            <option key={tipo} value={tipo}>{tipo}</option>
-                                        ))}
-                                    </select>
-                                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 pointer-events-none" />
-                                </div>
+                                <CompactSelect
+                                    value={tipoProcedimiento}
+                                    onChange={setTipoProcedimiento}
+                                    options={DEFAULT_TIPOS_PROCEDIMIENTO}
+                                    placeholder="Todos los procedimientos"
+                                />
                             </div>
                         </div>
 
@@ -326,76 +320,46 @@ export default function GestionManualPage() {
                             {/* Row 1 - Always Visible */}
                             <div className="space-y-1.5">
                                 <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide ml-1">Departamento</label>
-                                <div className="relative">
-                                    <select
-                                        className="w-full appearance-none rounded-xl border border-slate-200 bg-white py-3 pl-4 pr-10 text-sm font-semibold text-slate-700 focus:border-indigo-500 focus:ring-0 outline-none dark:bg-[#111c44] dark:border-slate-700 dark:text-slate-300"
-                                        value={departamento} onChange={(e) => setDepartamento(e.target.value)}
-                                    >
-                                        <option value="">Todos los departamentos</option>
-                                        {filterOptions.departamentos?.map((dept: string) => (
-                                            <option key={dept} value={dept}>{dept}</option>
-                                        ))}
-                                    </select>
-                                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-                                </div>
+                                <CompactSelect
+                                    value={departamento}
+                                    onChange={setDepartamento}
+                                    options={filterOptions.departamentos || []}
+                                    placeholder="Todos los departamentos"
+                                />
                             </div>
                             <div className="space-y-1.5">
                                 <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide ml-1">Estado del Proceso</label>
-                                <div className="relative">
-                                    <select
-                                        className="w-full appearance-none rounded-xl border border-slate-200 bg-white py-3 pl-4 pr-10 text-sm font-semibold text-slate-700 focus:border-indigo-500 focus:ring-0 outline-none dark:bg-[#111c44] dark:border-slate-700 dark:text-slate-300"
-                                        value={estado} onChange={(e) => setEstado(e.target.value)}
-                                    >
-                                        <option value="">Todos los estados</option>
-                                        {filterOptions.estados?.map((est: string) => (
-                                            <option key={est} value={est}>{est}</option>
-                                        ))}
-                                    </select>
-                                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-                                </div>
+                                <CompactSelect
+                                    value={estado}
+                                    onChange={setEstado}
+                                    options={filterOptions.estados || []}
+                                    placeholder="Todos los estados"
+                                />
                             </div>
                             <div className="space-y-1.5">
                                 <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide ml-1">Categoría</label>
-                                <div className="relative">
-                                    <select
-                                        className="w-full appearance-none rounded-xl border border-slate-200 bg-white py-3 pl-4 pr-10 text-sm font-semibold text-slate-700 focus:border-indigo-500 focus:ring-0 outline-none dark:bg-[#111c44] dark:border-slate-700 dark:text-slate-300"
-                                        value={categoria} onChange={(e) => setCategoria(e.target.value)}
-                                    >
-                                        <option value="">Todas las categorías</option>
-                                        {filterOptions.categorias?.map((cat: string) => (
-                                            <option key={cat} value={cat}>{cat}</option>
-                                        ))}
-                                    </select>
-                                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-                                </div>
+                                <CompactSelect
+                                    value={categoria}
+                                    onChange={setCategoria}
+                                    options={filterOptions.categorias || []}
+                                    placeholder="Todas las categorías"
+                                />
                             </div>
                             <div className="space-y-1.5">
                                 <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide ml-1">Periodo</label>
                                 <div className="grid grid-cols-2 gap-3">
-                                    <div className="relative">
-                                        <select
-                                            className="w-full appearance-none rounded-xl border border-slate-200 bg-white py-3 pl-4 pr-8 text-sm font-semibold text-slate-700 focus:border-indigo-500 focus:ring-0 outline-none dark:bg-[#111c44] dark:border-slate-700 dark:text-slate-300"
-                                            value={anio} onChange={(e) => setAnio(e.target.value)}
-                                        >
-                                            <option value="">Año</option>
-                                            {filterOptions.anios?.map((a: number) => (
-                                                <option key={a} value={String(a)}>{a}</option>
-                                            ))}
-                                        </select>
-                                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-                                    </div>
-                                    <div className="relative">
-                                        <select
-                                            className="w-full appearance-none rounded-xl border border-slate-200 bg-white py-3 pl-4 pr-8 text-sm font-semibold text-slate-700 focus:border-indigo-500 focus:ring-0 outline-none dark:bg-[#111c44] dark:border-slate-700 dark:text-slate-300"
-                                            value={mes} onChange={(e) => setMes(e.target.value)}
-                                        >
-                                            <option value="">Mes</option>
-                                            {["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"].map((m) => (
-                                                <option key={m} value={m}>{m}</option>
-                                            ))}
-                                        </select>
-                                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-                                    </div>
+                                    <CompactSelect
+                                        value={anio}
+                                        onChange={setAnio}
+                                        options={(filterOptions.anios || []).map(String)}
+                                        placeholder="Año"
+                                    />
+                                    <CompactSelect
+                                        value={mes}
+                                        onChange={setMes}
+                                        options={["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]}
+                                        placeholder="Mes"
+                                    />
                                 </div>
                             </div>
 
@@ -435,48 +399,30 @@ export default function GestionManualPage() {
                                     </div>
                                     <div className="space-y-1.5 animate-in fade-in slide-in-from-top-2 duration-200 delay-75">
                                         <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide ml-1">Tipo de Garantía</label>
-                                        <div className="relative">
-                                            <select
-                                                className="w-full appearance-none rounded-xl border border-slate-200 bg-white py-3 pl-4 pr-10 text-sm font-semibold text-slate-700 focus:border-indigo-500 focus:ring-0 outline-none dark:bg-[#111c44] dark:border-slate-700 dark:text-slate-300"
-                                                value={tipoGarantia} onChange={(e) => setTipoGarantia(e.target.value)}
-                                            >
-                                                <option value="">Todos los tipos</option>
-                                                {filterOptions.tipos_garantia?.map((tipo: string) => (
-                                                    <option key={tipo} value={tipo}>{tipo}</option>
-                                                ))}
-                                            </select>
-                                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-                                        </div>
+                                        <CompactSelect
+                                            value={tipoGarantia}
+                                            onChange={setTipoGarantia}
+                                            options={filterOptions.tipos_garantia || []}
+                                            placeholder="Todos los tipos"
+                                        />
                                     </div>
                                     <div className="space-y-1.5 animate-in fade-in slide-in-from-top-2 duration-200 delay-100">
                                         <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide ml-1">Aseguradora</label>
-                                        <div className="relative">
-                                            <select
-                                                className="w-full appearance-none rounded-xl border border-slate-200 bg-white py-3 pl-4 pr-10 text-sm font-semibold text-slate-700 focus:border-indigo-500 focus:ring-0 outline-none dark:bg-[#111c44] dark:border-slate-700 dark:text-slate-300"
-                                                value={aseguradora} onChange={(e) => setAseguradora(e.target.value)}
-                                            >
-                                                <option value="">Todas las aseguradoras</option>
-                                                {filterOptions.aseguradoras?.map((aseg: string) => (
-                                                    <option key={aseg} value={aseg}>{aseg}</option>
-                                                ))}
-                                            </select>
-                                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-                                        </div>
+                                        <CompactSelect
+                                            value={aseguradora}
+                                            onChange={setAseguradora}
+                                            options={filterOptions.aseguradoras || []}
+                                            placeholder="Todas las aseguradoras"
+                                        />
                                     </div>
                                     <div className="space-y-1.5 animate-in fade-in slide-in-from-top-2 duration-200 delay-150">
                                         <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide ml-1">Entidad o Consorcio</label>
-                                        <div className="relative">
-                                            <select
-                                                className="w-full appearance-none rounded-xl border border-slate-200 bg-white py-3 pl-4 pr-10 text-sm font-semibold text-slate-700 focus:border-indigo-500 focus:ring-0 outline-none dark:bg-[#111c44] dark:border-slate-700 dark:text-slate-300"
-                                                value={entidad} onChange={(e) => setEntidad(e.target.value)}
-                                            >
-                                                <option value="">Todas las entidades</option>
-                                                {filterOptions.entidades?.map((ent: string) => (
-                                                    <option key={ent} value={ent}>{ent}</option>
-                                                ))}
-                                            </select>
-                                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-                                        </div>
+                                        <CompactSelect
+                                            value={entidad}
+                                            onChange={setEntidad}
+                                            options={filterOptions.entidades || []}
+                                            placeholder="Todas las entidades"
+                                        />
                                     </div>
 
 
