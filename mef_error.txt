@@ -1,0 +1,107 @@
+Traceback (most recent call last):
+  File "C:\laragon\www\gitc\garantias_seacee\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1936, in _exec_single_context
+    self.dialect.do_executemany(
+  File "C:\laragon\www\gitc\garantias_seacee\venv\Lib\site-packages\sqlalchemy\dialects\mysql\mysqldb.py", line 196, in do_executemany
+    rowcount = cursor.executemany(statement, parameters)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\laragon\www\gitc\garantias_seacee\venv\Lib\site-packages\pymysql\cursors.py", line 182, in executemany
+    return self._do_execute_many(
+           ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\laragon\www\gitc\garantias_seacee\venv\Lib\site-packages\pymysql\cursors.py", line 220, in _do_execute_many
+    rows += self.execute(sql + postfix)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\laragon\www\gitc\garantias_seacee\venv\Lib\site-packages\pymysql\cursors.py", line 153, in execute
+    result = self._query(query)
+             ^^^^^^^^^^^^^^^^^^
+  File "C:\laragon\www\gitc\garantias_seacee\venv\Lib\site-packages\pymysql\cursors.py", line 322, in _query
+    conn.query(q)
+  File "C:\laragon\www\gitc\garantias_seacee\venv\Lib\site-packages\pymysql\connections.py", line 575, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\laragon\www\gitc\garantias_seacee\venv\Lib\site-packages\pymysql\connections.py", line 826, in _read_query_result
+    result.read()
+  File "C:\laragon\www\gitc\garantias_seacee\venv\Lib\site-packages\pymysql\connections.py", line 1203, in read
+    first_packet = self.connection._read_packet()
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\laragon\www\gitc\garantias_seacee\venv\Lib\site-packages\pymysql\connections.py", line 782, in _read_packet
+    packet.raise_for_error()
+  File "C:\laragon\www\gitc\garantias_seacee\venv\Lib\site-packages\pymysql\protocol.py", line 219, in raise_for_error
+    err.raise_mysql_exception(self._data)
+  File "C:\laragon\www\gitc\garantias_seacee\venv\Lib\site-packages\pymysql\err.py", line 150, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1364, "Field 'id' doesn't have a default value")
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\laragon\www\gitc\garantias_seacee\scripts\import_mef_csv.py", line 307, in <module>
+    main()
+  File "C:\laragon\www\gitc\garantias_seacee\scripts\import_mef_csv.py", line 286, in main
+    import_from_file(args.file, args.year, filter_cuis, incremental=args.incremental)
+  File "C:\laragon\www\gitc\garantias_seacee\scripts\import_mef_csv.py", line 227, in import_from_file
+    insert_batch(batch)
+  File "C:\laragon\www\gitc\garantias_seacee\scripts\import_mef_csv.py", line 136, in insert_batch
+    conn.execute(text("""
+  File "C:\laragon\www\gitc\garantias_seacee\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1419, in execute
+    return meth(
+           ^^^^^
+  File "C:\laragon\www\gitc\garantias_seacee\venv\Lib\site-packages\sqlalchemy\sql\elements.py", line 527, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\laragon\www\gitc\garantias_seacee\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1641, in _execute_clauseelement
+    ret = self._execute_context(
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\laragon\www\gitc\garantias_seacee\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1846, in _execute_context
+    return self._exec_single_context(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\laragon\www\gitc\garantias_seacee\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1986, in _exec_single_context
+    self._handle_dbapi_exception(
+  File "C:\laragon\www\gitc\garantias_seacee\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2363, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "C:\laragon\www\gitc\garantias_seacee\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1936, in _exec_single_context
+    self.dialect.do_executemany(
+  File "C:\laragon\www\gitc\garantias_seacee\venv\Lib\site-packages\sqlalchemy\dialects\mysql\mysqldb.py", line 196, in do_executemany
+    rowcount = cursor.executemany(statement, parameters)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\laragon\www\gitc\garantias_seacee\venv\Lib\site-packages\pymysql\cursors.py", line 182, in executemany
+    return self._do_execute_many(
+           ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\laragon\www\gitc\garantias_seacee\venv\Lib\site-packages\pymysql\cursors.py", line 220, in _do_execute_many
+    rows += self.execute(sql + postfix)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\laragon\www\gitc\garantias_seacee\venv\Lib\site-packages\pymysql\cursors.py", line 153, in execute
+    result = self._query(query)
+             ^^^^^^^^^^^^^^^^^^
+  File "C:\laragon\www\gitc\garantias_seacee\venv\Lib\site-packages\pymysql\cursors.py", line 322, in _query
+    conn.query(q)
+  File "C:\laragon\www\gitc\garantias_seacee\venv\Lib\site-packages\pymysql\connections.py", line 575, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\laragon\www\gitc\garantias_seacee\venv\Lib\site-packages\pymysql\connections.py", line 826, in _read_query_result
+    result.read()
+  File "C:\laragon\www\gitc\garantias_seacee\venv\Lib\site-packages\pymysql\connections.py", line 1203, in read
+    first_packet = self.connection._read_packet()
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\laragon\www\gitc\garantias_seacee\venv\Lib\site-packages\pymysql\connections.py", line 782, in _read_packet
+    packet.raise_for_error()
+  File "C:\laragon\www\gitc\garantias_seacee\venv\Lib\site-packages\pymysql\protocol.py", line 219, in raise_for_error
+    err.raise_mysql_exception(self._data)
+  File "C:\laragon\www\gitc\garantias_seacee\venv\Lib\site-packages\pymysql\err.py", line 150, in raise_mysql_exception
+    raise errorclass(errno, errval)
+sqlalchemy.exc.OperationalError: (pymysql.err.OperationalError) (1364, "Field 'id' doesn't have a default value")
+[SQL: 
+            INSERT INTO mef_ejecucion 
+                (ano_eje, sec_ejec, nivel_gobierno, sector, pliego, ejecutora,
+                 producto_proyecto, producto_proyecto_nombre,
+                 monto_pia, monto_pim, monto_devengado, monto_girado,
+                 monto_certificado, monto_comprometido_anual,
+                 meta_nombre, departamento_meta)
+            VALUES 
+                (%(ano_eje)s, %(sec_ejec)s, %(nivel_gobierno)s, %(sector)s, %(pliego)s, %(ejecutora)s,
+                 %(producto_proyecto)s, %(producto_proyecto_nombre)s,
+                 %(monto_pia)s, %(monto_pim)s, %(monto_devengado)s, %(monto_girado)s,
+                 %(monto_certificado)s, %(monto_comprometido_anual)s,
+                 %(meta_nombre)s, %(departamento_meta)s)
+        ]
+[parameters: [{'ano_eje': 2025, 'sec_ejec': '1128', 'nivel_gobierno': 'R', 'sector': '99', 'pliego': '465', 'ejecutora': '001', 'producto_proyecto': '3999999', 'producto_proyecto_nombre': 'SIN PRODUCTO', 'monto_pia': Decimal('0'), 'monto_pim': Decimal('32912'), 'monto_devengado': Decimal('29179'), 'monto_girado': Decimal('29179'), 'monto_certificado': Decimal('29179'), 'monto_comprometido_anual': Decimal('29179'), 'meta_nombre': 'ACCIONES ADMINISTRATIVAS', 'departamento_meta': 'LIMA'}, {'ano_eje': 2025, 'sec_ejec': '1128', 'nivel_gobierno': 'R', 'sector': '99', 'pliego': '465', 'ejecutora': '001', 'producto_proyecto': '3999999', 'producto_proyecto_nombre': 'SIN PRODUCTO', 'monto_pia': Decimal('0'), 'monto_pim': Decimal('0'), 'monto_devengado': Decimal('0'), 'monto_girado': Decimal('0'), 'monto_certificado': Decimal('0'), 'monto_comprometido_anual': Decimal('0'), 'meta_nombre': 'ACCIONES ADMINISTRATIVAS', 'departamento_meta': 'LIMA'}, {'ano_eje': 2025, 'sec_ejec': '1128', 'nivel_gobierno': 'R', 'sector': '99', 'pliego': '465', 'ejecutora': '001', 'producto_proyecto': '3999999', 'producto_proyecto_nombre': 'SIN PRODUCTO', 'monto_pia': Decimal('413983'), 'monto_pim': Decimal('37257'), 'monto_devengado': Decimal('37256.25'), 'monto_girado': Decimal('37256.25'), 'monto_certificado': Decimal('37256.25'), 'monto_comprometido_anual': Decimal('37256.25'), 'meta_nombre': 'ACCIONES ADMINISTRATIVAS', 'departamento_meta': 'LIMA'}, {'ano_eje': 2025, 'sec_ejec': '1128', 'nivel_gobierno': 'R', 'sector': '99', 'pliego': '465', 'ejecutora': '001', 'producto_proyecto': '3999999', 'producto_proyecto_nombre': 'SIN PRODUCTO', 'monto_pia': Decimal('17184'), 'monto_pim': Decimal('40764'), 'monto_devengado': Decimal('40672.22'), 'monto_girado': Decimal('40672.22'), 'monto_certificado': Decimal('40672.22'), 'monto_comprometido_anual': Decimal('40672.22'), 'meta_nombre': 'ACCIONES ADMINISTRATIVAS', 'departamento_meta': 'LIMA'}, {'ano_eje': 2025, 'sec_ejec': '1128', 'nivel_gobierno': 'R', 'sector': '99', 'pliego': '465', 'ejecutora': '001', 'producto_proyecto': '3999999', 'producto_proyecto_nombre': 'SIN PRODUCTO', 'monto_pia': Decimal('0'), 'monto_pim': Decimal('846'), 'monto_devengado': Decimal('791'), 'monto_girado': Decimal('791'), 'monto_certificado': Decimal('791'), 'monto_comprometido_anual': Decimal('791'), 'meta_nombre': 'ACCIONES ADMINISTRATIVAS', 'departamento_meta': 'LIMA'}, {'ano_eje': 2025, 'sec_ejec': '1128', 'nivel_gobierno': 'R', 'sector': '99', 'pliego': '465', 'ejecutora': '001', 'producto_proyecto': '3999999', 'producto_proyecto_nombre': 'SIN PRODUCTO', 'monto_pia': Decimal('0'), 'monto_pim': Decimal('15800'), 'monto_devengado': Decimal('14600'), 'monto_girado': Decimal('14600'), 'monto_certificado': Decimal('14600'), 'monto_comprometido_anual': Decimal('14600'), 'meta_nombre': 'ACCIONES ADMINISTRATIVAS', 'departamento_meta': 'LIMA'}, {'ano_eje': 2025, 'sec_ejec': '1128', 'nivel_gobierno': 'R', 'sector': '99', 'pliego': '465', 'ejecutora': '001', 'producto_proyecto': '3999999', 'producto_proyecto_nombre': 'SIN PRODUCTO', 'monto_pia': Decimal('0'), 'monto_pim': Decimal('22648'), 'monto_devengado': Decimal('0'), 'monto_girado': Decimal('0'), 'monto_certificado': Decimal('22544.79'), 'monto_comprometido_anual': Decimal('22544.79'), 'meta_nombre': 'ACCIONES ADMINISTRATIVAS', 'departamento_meta': 'LIMA'}, {'ano_eje': 2025, 'sec_ejec': '1128', 'nivel_gobierno': 'R', 'sector': '99', 'pliego': '465', 'ejecutora': '001', 'producto_proyecto': '3999999', 'producto_proyecto_nombre': 'SIN PRODUCTO', 'monto_pia': Decimal('0'), 'monto_pim': Decimal('0'), 'monto_devengado': Decimal('3656.98'), 'monto_girado': Decimal('3656.98'), 'monto_certificado': Decimal('0'), 'monto_comprometido_anual': Decimal('0'), 'meta_nombre': 'ACCIONES ADMINISTRATIVAS', 'departamento_meta': 'LIMA'}  ... displaying 10 of 2000 total bound parameter sets ...  {'ano_eje': 2025, 'sec_ejec': '1028', 'nivel_gobierno': 'R', 'sector': '99', 'pliego': '464', 'ejecutora': '001', 'producto_proyecto': '3999999', 'producto_proyecto_nombre': 'SIN PRODUCTO', 'monto_pia': Decimal('0'), 'monto_pim': Decimal('3000'), 'monto_devengado': Decimal('0'), 'monto_girado': Decimal('0'), 'monto_certificado': Decimal('3000'), 'monto_comprometido_anual': Decimal('3000'), 'meta_nombre': 'GESTION DE LA GERENCIA REGIONAL DE DESARROLLO ECONOMICO', 'departamento_meta': 'PROVINCIA CONSTITUCIONAL DEL CALLAO'}, {'ano_eje': 2025, 'sec_ejec': '1028', 'nivel_gobierno': 'R', 'sector': '99', 'pliego': '464', 'ejecutora': '001', 'producto_proyecto': '3999999', 'producto_proyecto_nombre': 'SIN PRODUCTO', 'monto_pia': Decimal('0'), 'monto_pim': Decimal('2200'), 'monto_devengado': Decimal('0'), 'monto_girado': Decimal('0'), 'monto_certificado': Decimal('2200'), 'monto_comprometido_anual': Decimal('2200'), 'meta_nombre': 'APOYO A LAS ORGANIZACIONES DE BASES', 'departamento_meta': 'PROVINCIA CONSTITUCIONAL DEL CALLAO'}]]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)

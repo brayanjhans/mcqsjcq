@@ -15,11 +15,13 @@ import {
     Users,
     Activity,
     ExternalLink,
-    Loader2
+    Loader2,
+    Download
 } from "lucide-react";
 import type { Licitacion, Adjudicacion, EjecucionFinanciera, GarantiasResponse, HistorialAnual } from "@/types/licitacion";
 import { licitacionService } from "@/lib/services/licitacionService";
 import { integracionService } from "@/lib/services/integracionService";
+import { generateLicitacionPDF } from "@/lib/utils/generateLicitacionPDF";
 
 const PdfIcon = ({ className }: { className?: string }) => (
     <img
@@ -180,6 +182,19 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
     const [ejecucion, setEjecucion] = useState<EjecucionFinanciera | null>(null);
     const [garantiasData, setGarantiasData] = useState<GarantiasResponse | null>(null);
     const [loadingIntegracion, setLoadingIntegracion] = useState(false);
+    const [exporting, setExporting] = useState(false);
+
+    const handleExportPDF = async () => {
+        if (!licitacion || exporting) return;
+        setExporting(true);
+        try {
+            generateLicitacionPDF(licitacion, ejecucion, garantiasData);
+        } catch (err) {
+            console.error('Error exporting PDF:', err);
+        } finally {
+            setExporting(false);
+        }
+    };
 
     useEffect(() => {
         const fetchData = async () => {
@@ -289,15 +304,29 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
         <div className="min-h-screen bg-slate-50 p-4 sm:p-6 lg:p-8 dark:bg-[#0b122b] transition-colors duration-300">
             <div className="mx-auto max-w-5xl space-y-6">
 
-                {/* Back Link */}
-                {/* Back Link */}
-                <button
-                    onClick={() => router.back()}
-                    className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-indigo-600 transition-colors font-medium cursor-pointer"
-                >
-                    <ChevronLeft className="w-4 h-4" />
-                    Volver a resultados
-                </button>
+                {/* Top bar: Back Link + Export PDF */}
+                <div className="flex items-center justify-between">
+                    <button
+                        onClick={() => router.back()}
+                        className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-indigo-600 transition-colors font-medium cursor-pointer"
+                    >
+                        <ChevronLeft className="w-4 h-4" />
+                        Volver a resultados
+                    </button>
+                    <button
+                        onClick={handleExportPDF}
+                        disabled={exporting}
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {exporting ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                            <Download className="w-4 h-4" />
+                        )}
+                        {exporting ? 'Generando PDF...' : 'Exportar PDF'}
+                    </button>
+                </div>
+
 
                 {/* Main Card */}
                 <div className="rounded-2xl border border-slate-200 bg-white p-6 md:p-8 shadow-md dark:border-white/10 dark:bg-[#111c44] animate-in fade-in slide-in-from-bottom-4 duration-500 border-t-4 border-t-blue-500">
