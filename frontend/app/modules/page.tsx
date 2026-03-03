@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { UserCog, LineChart, ChevronRight, User, ShieldCheck, ArrowLeft, ArrowRight, Lock } from 'lucide-react';
-import { HeaderActions } from '@/components/layout/header-actions';
+
 import { useAuthProtection } from '@/hooks/use-auth-protection';
 
 export default function ModulesPage() {
@@ -29,7 +29,7 @@ export default function ModulesPage() {
 
     return (
         <div className={`min-h-screen w-full flex flex-col justify-center items-center relative overflow-hidden transition-all duration-1000 ${visible ? 'opacity-100' : 'opacity-0'}`}>
-            <HeaderActions />
+
 
             {/* Background Image with Overlay */}
             <div
