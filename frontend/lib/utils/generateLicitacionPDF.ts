@@ -121,34 +121,29 @@ export function generateLicitacionPDF(
     } catch (e) { /* logo not available */ }
 
     // Title text (centered area between logos)
-    doc.setFontSize(18);
+    doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(...COLORS.dark);
-    doc.text('INFORME DE PROCESO', pageW / 2, 14, { align: 'center' });
-
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...COLORS.medium);
-    doc.text(`Proceso ${licitacion.id_convocatoria}`, pageW / 2, 21, { align: 'center' });
+    doc.text(`INFORME DE PROCESO N\u00b0 ${licitacion.id_convocatoria}`, pageW / 2, 14, { align: 'center' });
 
     // System name and date below
     doc.setFontSize(7);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(...COLORS.medium);
-    doc.text('MQS JCQ — Sistema de Inteligencia SEACE', pageW / 2, 27, { align: 'center' });
+    doc.text('MQS JCQ \u2014 Sistema de Inteligencia SEACE', pageW / 2, 20, { align: 'center' });
 
     const today = new Date().toLocaleDateString('es-PE', { day: '2-digit', month: 'long', year: 'numeric' });
     doc.setFontSize(7);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(...COLORS.medium);
-    doc.text(`Fecha de emisión: ${today}`, pageW / 2, 32, { align: 'center' });
+    doc.text(`Fecha de emisi\u00f3n: ${today}`, pageW / 2, 25, { align: 'center' });
 
     // Bottom border line
     doc.setDrawColor(...COLORS.dark);
     doc.setLineWidth(0.8);
-    doc.line(margin, 36, pageW - margin, 36);
+    doc.line(margin, 29, pageW - margin, 29);
 
-    y = 42;
+    y = 34;
 
     // ═══════════════════════════════════════════════════
     //  2. INFORMACIÓN DEL PROCESO
