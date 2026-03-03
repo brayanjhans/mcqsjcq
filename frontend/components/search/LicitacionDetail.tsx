@@ -21,6 +21,7 @@ import {
 import type { Licitacion, Adjudicacion, EjecucionFinanciera, GarantiasResponse, HistorialAnual } from "@/types/licitacion";
 import { licitacionService } from "@/lib/services/licitacionService";
 import { integracionService } from "@/lib/services/integracionService";
+import { createPortal } from "react-dom";
 import { generateLicitacionPDF } from "@/lib/utils/generateLicitacionPDF";
 
 const PdfIcon = ({ className }: { className?: string }) => (
@@ -183,14 +184,23 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
     const [garantiasData, setGarantiasData] = useState<GarantiasResponse | null>(null);
     const [loadingIntegracion, setLoadingIntegracion] = useState(false);
     const [exporting, setExporting] = useState(false);
+    const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(null);
+    const [portalContainerLeft, setPortalContainerLeft] = useState<HTMLElement | null>(null);
+
+    useEffect(() => {
+        // Find the portal targets in the global header
+        setPortalContainer(document.getElementById('portal-header-actions'));
+        setPortalContainerLeft(document.getElementById('portal-header-left'));
+    }, []);
 
     const handleExportPDF = async () => {
         if (!licitacion || exporting) return;
         setExporting(true);
         try {
             generateLicitacionPDF(licitacion, ejecucion, garantiasData);
-        } catch (err) {
+        } catch (err: any) {
             console.error('Error exporting PDF:', err);
+            alert('Error generando PDF: ' + err.message);
         } finally {
             setExporting(false);
         }
@@ -304,27 +314,60 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
         <div className="min-h-screen bg-slate-50 p-4 sm:p-6 lg:p-8 dark:bg-[#0b122b] transition-colors duration-300">
             <div className="mx-auto max-w-5xl space-y-6">
 
-                {/* Top bar: Back Link + Export PDF */}
+                {/* Top bar: Back Link */}
                 <div className="flex items-center justify-between">
-                    <button
-                        onClick={() => router.back()}
-                        className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-indigo-600 transition-colors font-medium cursor-pointer"
-                    >
-                        <ChevronLeft className="w-4 h-4" />
-                        Volver a resultados
-                    </button>
-                    <button
-                        onClick={handleExportPDF}
-                        disabled={exporting}
-                        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        {exporting ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                            <Download className="w-4 h-4" />
-                        )}
-                        {exporting ? 'Generando PDF...' : 'Exportar PDF'}
-                    </button>
+                    {portalContainerLeft ? createPortal(
+                        <button
+                            onClick={() => router.back()}
+                            className="inline-flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors font-semibold cursor-pointer bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 px-2 sm:px-3 py-1.5 rounded-lg border border-blue-200 dark:border-blue-700 hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-sm"
+                        >
+                            <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+                            <span className="hidden sm:inline">Volver a resultados</span>
+                            <span className="sm:hidden">Volver</span>
+                        </button>,
+                        portalContainerLeft
+                    ) : (
+                        <button
+                            onClick={() => router.back()}
+                            className="inline-flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-blue-600 hover:text-blue-800 transition-colors font-semibold cursor-pointer"
+                        >
+                            <ChevronLeft className="w-4 h-4" />
+                            <span className="hidden sm:inline">Volver a resultados</span>
+                            <span className="sm:hidden">Volver</span>
+                        </button>
+                    )}
+
+                    {/* The Export button is ported to the global header if available, otherwise rendered here */}
+                    {portalContainer ? createPortal(
+                        <button
+                            onClick={handleExportPDF}
+                            disabled={exporting}
+                            className="flex h-10 px-4 rounded-full bg-red-500/15 hover:bg-red-500/25 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-700 items-center justify-center gap-2 transition-all font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-sm ml-2"
+                        >
+                            {exporting ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                                <PdfIcon className="w-5 h-5" />
+                            )}
+                            <span className="hidden md:inline">
+                                {exporting ? 'Generando...' : 'Exportar'}
+                            </span>
+                        </button>,
+                        portalContainer
+                    ) : (
+                        <button
+                            onClick={handleExportPDF}
+                            disabled={exporting}
+                            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/15 hover:bg-red-500/25 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-700 text-sm font-bold shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {exporting ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                                <PdfIcon className="w-5 h-5" />
+                            )}
+                            {exporting ? 'Generando PDF...' : 'Exportar PDF'}
+                        </button>
+                    )}
                 </div>
 
 
