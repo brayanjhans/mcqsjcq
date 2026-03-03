@@ -54,22 +54,22 @@ def generar_reporte(request: GenerarReporteRequest, db: Session = Depends(get_db
     
     # Apply filters to WHERE
     if filtros.departamento:
-        where_clauses.append("UPPER(c.departamento) = UPPER(:departamento)")
+        where_clauses.append("c.departamento = :departamento")
         params['departamento'] = filtros.departamento
     if filtros.provincia:
-        where_clauses.append("UPPER(c.provincia) = UPPER(:provincia)")
+        where_clauses.append("c.provincia = :provincia")
         params['provincia'] = filtros.provincia
     if filtros.distrito:
-        where_clauses.append("UPPER(c.distrito) = UPPER(:distrito)")
+        where_clauses.append("c.distrito = :distrito")
         params['distrito'] = filtros.distrito
     if filtros.estado_proceso:
-        where_clauses.append("UPPER(c.estado_proceso) = UPPER(:estado_proceso)")
+        where_clauses.append("c.estado_proceso = :estado_proceso")
         params['estado_proceso'] = filtros.estado_proceso
     if filtros.categoria:
-        where_clauses.append("UPPER(c.categoria) = UPPER(:categoria)")
+        where_clauses.append("c.categoria = :categoria")
         params['categoria'] = filtros.categoria
     if filtros.comprador:
-        where_clauses.append("UPPER(c.comprador) LIKE UPPER(:comprador)")
+        where_clauses.append("c.comprador LIKE :comprador")
         params['comprador'] = f"%{filtros.comprador}%"
     if filtros.year:
         where_clauses.append("YEAR(c.fecha_publicacion) = :year")
@@ -80,7 +80,7 @@ def generar_reporte(request: GenerarReporteRequest, db: Session = Depends(get_db
         
     # Additional specific filters
     if filtros.aseguradora and tipo != 'entidad': # If filtering by insurer
-        where_clauses.append("UPPER(a.entidad_financiera) LIKE UPPER(:aseguradora)")
+        where_clauses.append("a.entidad_financiera LIKE :aseguradora")
         params['aseguradora'] = f"%{filtros.aseguradora}%"
 
     where_str = " AND ".join(where_clauses)
