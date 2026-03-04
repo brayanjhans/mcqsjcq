@@ -194,9 +194,8 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
     // Oferta Edit states
     const [editingOfertaId, setEditingOfertaId] = useState<string | null>(null);
     const [savingOferta, setSavingOferta] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState<number>(0);
     const [ofertaFileInput, setOfertaFileInput] = useState<File | null>(null);
-    const [ofertaUrlInput, setOfertaUrlInput] = useState<string>("");
-    const [ofertaMode, setOfertaMode] = useState<"file" | "url">("file");
 
     // Oferta Delete states
     const [deletingOfertaId, setDeletingOfertaId] = useState<string | null>(null);
@@ -208,18 +207,16 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
     }, []);
 
     const handleOfertaSave = async (id_adjudicacion: string) => {
-        if (ofertaMode === "file" && !ofertaFileInput) return;
-        if (ofertaMode === "url" && !ofertaUrlInput.trim()) return;
+        if (!ofertaFileInput) return;
         setSavingOferta(true);
+        setUploadProgress(0);
         try {
-            let finalUrl: string;
-            if (ofertaMode === "file" && ofertaFileInput) {
-                const uploadRes = await licitacionService.uploadOfertaFile(id_adjudicacion, ofertaFileInput);
-                finalUrl = uploadRes.url_pdf_oferta;
-            } else {
-                await licitacionService.updateOferta(id_adjudicacion, ofertaUrlInput.trim());
-                finalUrl = ofertaUrlInput.trim();
-            }
+            const uploadRes = await licitacionService.uploadOfertaFile(
+                id_adjudicacion,
+                ofertaFileInput,
+                (pct) => setUploadProgress(pct)
+            );
+            const finalUrl = uploadRes.url_pdf_oferta;
 
             setLicitacion(prev => {
                 if (!prev) return prev;
@@ -232,10 +229,12 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
             });
             setEditingOfertaId(null);
             setOfertaFileInput(null);
-            setOfertaUrlInput("");
-        } catch (err) {
+            setUploadProgress(0);
+        } catch (err: any) {
             console.error("Error saving oferta:", err);
-            alert("Ocurrió un error al guardar la oferta. Por favor, intenta de nuevo.");
+            const status = err?.response?.status;
+            const msg = err?.response?.data?.detail || err?.message || "Error desconocido";
+            alert(`Error al guardar la oferta (${status ?? 'red'}): ${msg}`);
         } finally {
             setSavingOferta(false);
         }
@@ -922,100 +921,73 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                                                                     </button>
                                                                 </div>
 
-                                                                <div className="p-8 space-y-5 bg-slate-50/30 dark:bg-transparent">
-                                                                    {/* Tab Switcher */}
-                                                                    <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800/60 rounded-2xl">
-                                                                        <button
-                                                                            onClick={() => { setOfertaMode("file"); setOfertaUrlInput(""); }}
-                                                                            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-[13px] font-bold transition-all ${ofertaMode === "file" ? "bg-white dark:bg-[#0b1437] text-indigo-600 dark:text-indigo-400 shadow-sm ring-1 ring-slate-200 dark:ring-indigo-500/30" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"}`}
-                                                                        >
-                                                                            <Upload className="w-4 h-4" />
-                                                                            Subir Archivo
-                                                                        </button>
-                                                                        <button
-                                                                            onClick={() => { setOfertaMode("url"); setOfertaFileInput(null); }}
-                                                                            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-[13px] font-bold transition-all ${ofertaMode === "url" ? "bg-white dark:bg-[#0b1437] text-indigo-600 dark:text-indigo-400 shadow-sm ring-1 ring-slate-200 dark:ring-indigo-500/30" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"}`}
-                                                                        >
-                                                                            <Link className="w-4 h-4" />
-                                                                            Pegar URL
-                                                                        </button>
-                                                                    </div>
-
-                                                                    {/* File Upload Tab */}
-                                                                    {ofertaMode === "file" && (
-                                                                        <div className="space-y-4">
-                                                                            <div className="flex items-center justify-between">
-                                                                                <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                                                                                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.8)]"></div>
-                                                                                    Archivo PDF
-                                                                                </label>
-                                                                                {adj.url_pdf_oferta && (
-                                                                                    <a href={adj.url_pdf_oferta} target="_blank" rel="noopener noreferrer"
-                                                                                        className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-500/10 dark:hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 rounded-lg text-[10px] font-bold transition-colors border border-indigo-100 dark:border-indigo-500/20">
-                                                                                        <FileText className="w-3.5 h-3.5 flex-none" />
-                                                                                        <span className="truncate max-w-[160px]">Documento Actual</span>
-                                                                                    </a>
-                                                                                )}
-                                                                            </div>
-                                                                            <div className={`relative group flex flex-col items-center justify-center w-full h-44 border-2 border-dashed rounded-[2rem] transition-all duration-500 cursor-pointer overflow-hidden ${ofertaFileInput ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-500/10 shadow-[0_8px_30px_rgba(99,102,241,0.15)] ring-4 ring-indigo-50 dark:ring-indigo-500/5' : 'border-slate-300 dark:border-slate-600 hover:border-indigo-400 hover:bg-white dark:hover:bg-[#111c44]/50'}`}>
-                                                                                <input type="file" accept=".pdf" onChange={(e) => { if (e.target.files && e.target.files.length > 0) setOfertaFileInput(e.target.files[0]); }} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
-                                                                                {ofertaFileInput ? (
-                                                                                    <div className="flex flex-col items-center text-center px-6 space-y-3 z-0 group-hover:scale-105 transition-transform">
-                                                                                        <div className="w-14 h-14 rounded-full bg-white dark:bg-[#0b1437] flex items-center justify-center text-indigo-600 dark:text-indigo-400 shadow-lg border border-indigo-100 dark:border-indigo-500/30">
-                                                                                            <FileText className="w-7 h-7" />
-                                                                                        </div>
-                                                                                        <div className="flex flex-col items-center">
-                                                                                            <span className="text-[14px] font-extrabold text-indigo-700 dark:text-indigo-300 truncate max-w-[260px]">{ofertaFileInput.name}</span>
-                                                                                            <span className="text-[11px] font-bold text-indigo-500/70 mt-1 bg-indigo-100/50 dark:bg-indigo-500/20 px-3 py-0.5 rounded-full">
-                                                                                                {(ofertaFileInput.size / (1024 * 1024)).toFixed(1)} MB · Haz clic para cambiar
-                                                                                            </span>
-                                                                                        </div>
-                                                                                    </div>
-                                                                                ) : (
-                                                                                    <div className="flex flex-col items-center text-center px-6 space-y-4 z-0">
-                                                                                        <div className="w-14 h-14 rounded-[1.5rem] bg-white dark:bg-slate-800 flex items-center justify-center text-slate-400 group-hover:text-indigo-500 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-500/20 transition-all shadow-sm border border-slate-200 dark:border-slate-700 group-hover:scale-110 group-hover:-translate-y-1">
-                                                                                            <Upload className="w-6 h-6" />
-                                                                                        </div>
-                                                                                        <div className="flex flex-col items-center">
-                                                                                            <span className="text-[14px] font-extrabold text-slate-700 dark:text-slate-200">Arrastra tu PDF aquí</span>
-                                                                                            <span className="text-[12px] font-semibold text-slate-400 dark:text-slate-500 mt-1">o <span className="text-indigo-500 underline decoration-indigo-500 underline-offset-4 font-bold">explora tus archivos</span></span>
-                                                                                        </div>
-                                                                                    </div>
-                                                                                )}
-                                                                            </div>
-                                                                        </div>
-                                                                    )}
-
-                                                                    {/* URL Input Tab */}
-                                                                    {ofertaMode === "url" && (
-                                                                        <div className="space-y-4">
+                                                                <div className="p-8 space-y-6 bg-slate-50/30 dark:bg-transparent">
+                                                                    {/* File Upload Section */}
+                                                                    <div className="space-y-4">
+                                                                        <div className="flex items-center justify-between">
                                                                             <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest flex items-center gap-2">
                                                                                 <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.8)]"></div>
-                                                                                URL del Documento
+                                                                                Archivo PDF
                                                                             </label>
-                                                                            <div className="relative">
-                                                                                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 pointer-events-none">
-                                                                                    <Link className="w-4 h-4" />
-                                                                                </div>
-                                                                                <input
-                                                                                    type="url"
-                                                                                    value={ofertaUrlInput}
-                                                                                    onChange={(e) => setOfertaUrlInput(e.target.value)}
-                                                                                    placeholder="https://drive.google.com/... o cualquier URL"
-                                                                                    className="w-full pl-11 pr-4 py-3.5 bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-600 rounded-2xl text-[14px] text-slate-700 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-400/50 focus:border-indigo-400 dark:focus:border-indigo-500 transition-all"
-                                                                                />
-                                                                            </div>
-                                                                            <div className="flex items-start gap-3 p-4 bg-blue-50 dark:bg-blue-500/10 rounded-2xl border border-blue-100 dark:border-blue-500/20">
-                                                                                <div className="w-8 h-8 rounded-xl bg-blue-100 dark:bg-blue-500/20 flex items-center justify-center flex-none">
-                                                                                    <ExternalLink className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                                                                                </div>
-                                                                                <div className="text-[12px] text-blue-700 dark:text-blue-300">
-                                                                                    <p className="font-bold mb-0.5">Para archivos grandes (Google Drive)</p>
-                                                                                    <p className="text-blue-600/80 dark:text-blue-400/80 leading-relaxed">Sube el PDF a Google Drive → clic derecho → <strong>Obtener enlace</strong> → Cambia a &quot;Cualquiera con el enlace&quot; → pega la URL aquí.</p>
-                                                                                </div>
-                                                                            </div>
+                                                                            {adj.url_pdf_oferta && (
+                                                                                <a href={adj.url_pdf_oferta} target="_blank" rel="noopener noreferrer"
+                                                                                    className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-500/10 dark:hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 rounded-lg text-[10px] font-bold transition-colors border border-indigo-100 dark:border-indigo-500/20 max-w-[200px]">
+                                                                                    <FileText className="w-3.5 h-3.5 flex-none" />
+                                                                                    <span className="truncate">Documento Actual</span>
+                                                                                </a>
+                                                                            )}
                                                                         </div>
-                                                                    )}
+
+                                                                        {/* Drop Zone */}
+                                                                        <div className={`relative group flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-[2rem] transition-all duration-500 cursor-pointer overflow-hidden ${savingOferta ? 'border-indigo-400 bg-indigo-50/50 dark:bg-indigo-500/10 cursor-not-allowed' : ofertaFileInput ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-500/10 shadow-[0_8px_30px_rgba(99,102,241,0.15)] ring-4 ring-indigo-50 dark:ring-indigo-500/5' : 'border-slate-300 dark:border-slate-600 hover:border-indigo-400 hover:shadow-[0_8px_30px_rgba(99,102,241,0.1)] hover:bg-white dark:hover:bg-[#111c44]/50'}`}>
+                                                                            {!savingOferta && (
+                                                                                <input type="file" accept=".pdf,application/pdf" onChange={(e) => { if (e.target.files && e.target.files.length > 0) setOfertaFileInput(e.target.files[0]); }} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
+                                                                            )}
+                                                                            {savingOferta ? (
+                                                                                <div className="flex flex-col items-center text-center px-6 space-y-3 z-0">
+                                                                                    <Loader2 className="w-10 h-10 text-indigo-500 animate-spin" />
+                                                                                    <div className="flex flex-col items-center gap-1 w-full max-w-[240px]">
+                                                                                        <span className="text-[13px] font-extrabold text-indigo-600 dark:text-indigo-400">
+                                                                                            Subiendo archivo... {uploadProgress}%
+                                                                                        </span>
+                                                                                        <div className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                                                                                            <div
+                                                                                                className="h-full bg-gradient-to-r from-indigo-500 to-blue-500 rounded-full transition-all duration-300"
+                                                                                                style={{ width: `${uploadProgress}%` }}
+                                                                                            />
+                                                                                        </div>
+                                                                                        <span className="text-[11px] text-slate-400 dark:text-slate-500">
+                                                                                            {ofertaFileInput ? `${(ofertaFileInput.size / (1024 * 1024)).toFixed(1)} MB` : ''} · No cierres esta ventana
+                                                                                        </span>
+                                                                                    </div>
+                                                                                </div>
+                                                                            ) : ofertaFileInput ? (
+                                                                                <div className="flex flex-col items-center text-center px-6 space-y-3 z-0 group-hover:scale-105 transition-transform">
+                                                                                    <div className="w-14 h-14 rounded-full bg-white dark:bg-[#0b1437] flex items-center justify-center text-indigo-600 dark:text-indigo-400 shadow-lg border border-indigo-100 dark:border-indigo-500/30">
+                                                                                        <FileText className="w-7 h-7" />
+                                                                                    </div>
+                                                                                    <div className="flex flex-col items-center">
+                                                                                        <span className="text-[14px] font-extrabold text-indigo-700 dark:text-indigo-300 truncate max-w-[260px]">{ofertaFileInput.name}</span>
+                                                                                        <span className="text-[11px] font-bold text-indigo-500/70 mt-1 bg-indigo-100/50 dark:bg-indigo-500/20 px-3 py-0.5 rounded-full">
+                                                                                            {(ofertaFileInput.size / (1024 * 1024)).toFixed(1)} MB · Haz clic para cambiar
+                                                                                        </span>
+                                                                                    </div>
+                                                                                </div>
+                                                                            ) : (
+                                                                                <div className="flex flex-col items-center text-center px-6 space-y-4 z-0">
+                                                                                    <div className="w-16 h-16 rounded-[1.5rem] bg-white dark:bg-slate-800 flex items-center justify-center text-slate-400 group-hover:text-indigo-500 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-500/20 transition-all duration-500 shadow-sm border border-slate-200 dark:border-slate-700 group-hover:scale-110 group-hover:-translate-y-1">
+                                                                                        <Upload className="w-7 h-7" />
+                                                                                    </div>
+                                                                                    <div className="flex flex-col items-center">
+                                                                                        <span className="text-[15px] font-extrabold text-slate-700 dark:text-slate-200">Arrastra tu PDF aquí</span>
+                                                                                        <span className="text-[12px] font-semibold text-slate-400 dark:text-slate-500 mt-1">
+                                                                                            o <span className="text-indigo-500 cursor-pointer underline decoration-indigo-500 underline-offset-4 font-bold hover:text-indigo-600 transition-colors">explora tus archivos</span>
+                                                                                        </span>
+                                                                                    </div>
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
                                                                 </div>
 
                                                                 {/* Footer */}
@@ -1048,7 +1020,7 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                                                                         </button>
                                                                         <button
                                                                             onClick={() => handleOfertaSave(adj.id_adjudicacion)}
-                                                                            disabled={savingOferta || (ofertaMode === "file" ? !ofertaFileInput : !ofertaUrlInput.trim())}
+                                                                            disabled={savingOferta || !ofertaFileInput}
                                                                             className="flex items-center justify-center gap-2 px-6 py-3 min-w-[160px] bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 disabled:opacity-100 disabled:from-[#aebbf1] disabled:to-[#b7bdf8] disabled:cursor-not-allowed disabled:shadow-none text-white rounded-[0.8rem] text-[14px] font-extrabold transition-all shadow-xl shadow-indigo-500/20 hover:shadow-indigo-500/40 hover:-translate-y-0.5 active:translate-y-0 outline-none"
                                                                         >
                                                                             {savingOferta ? <Loader2 className="w-[18px] h-[18px] animate-spin" /> : <Save className="w-[18px] h-[18px]" />}
