@@ -83,9 +83,17 @@ export const licitacionService = {
     uploadOfertaFile: async (id_adjudicacion: string, file: File) => {
         const formData = new FormData();
         formData.append('file', file);
-        const response = await api.post(`/api/licitaciones/adjudicaciones/${id_adjudicacion}/oferta_upload`, formData);
+        const response = await api.post(
+            `/api/licitaciones/adjudicaciones/${id_adjudicacion}/oferta_upload`,
+            formData,
+            {
+                timeout: 0, // No timeout for large file uploads
+                headers: { 'Content-Type': 'multipart/form-data' },
+            }
+        );
         return response.data;
     },
+
 
     // Export Data (PDF/Excel/CSV)
     exportData: async (format: 'pdf' | 'excel' | 'csv', ids: string[], allMatches: boolean, filters: SearchFilters = {}) => {
