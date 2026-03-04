@@ -153,6 +153,12 @@ def _get_historial(db: Session, cui: str) -> list[dict]:
                 COALESCE(SUM(monto_girado), 0) as girado
             FROM mef_ejecucion
             WHERE producto_proyecto = :cui
+              AND fecha_importacion = (
+                  SELECT MAX(fecha_importacion) 
+                  FROM mef_ejecucion m2 
+                  WHERE m2.producto_proyecto = mef_ejecucion.producto_proyecto 
+                    AND m2.ano_eje = mef_ejecucion.ano_eje
+              )
             GROUP BY ano_eje
             ORDER BY ano_eje DESC
         """), {"cui": cui}).fetchall()
@@ -196,6 +202,7 @@ def get_ejecucion_by_cui(db: Session, cui: str, years: list[int]) -> dict:
                 FROM mef_ejecucion
                 WHERE producto_proyecto = :cui
                   AND ano_eje = :year
+                  AND fecha_importacion = (SELECT MAX(fecha_importacion) FROM mef_ejecucion WHERE producto_proyecto = :cui AND ano_eje = :year)
             """), {
                 "cui": cui,
                 "year": year,
@@ -507,29 +514,29 @@ def get_ejecucion_financiera(db: Session, ruc: str, year: int, description: str 
     print(f"[MEF] Searching with years={years}, dept={departamento}, desc={desc_preview}")
 
     # ── Step 1: CUI extracted from description → SSI real-time ──
+    cui = None
     if description:
         cui = extract_cui(description)
         if cui:
-            print(f"[MEF-SSI] CUI extracted from description: {cui}")
+            print(f"[MEF-SSI] CUI extracted from description: {cui}. Trying SSI real-time first...")
             result = get_ejecucion_by_cui_ssi(cui)
             if result and result.get("encontrado") and result.get("pim", 0) > 0:
+                print(f"[MEF-SSI] Found CUI {cui} via SSI API.")
                 return result
+            
             print(f"[MEF-SSI] CUI {cui} via SSI API returned no data. Trying local DB...")
             # Fallback to local DB for extracted CUI
             local = get_ejecucion_by_cui(db, cui, years)
             if local["encontrado"] and local.get("pim", 0) > 0:
+                print(f"[MEF-LOCAL] Found CUI {cui} locally with PIM > 0.")
                 return local
+            
             print(f"[MEF-LOCAL] CUI {cui} also no data in local DB.")
+            return _empty_result(f"El proyecto CUI {cui} no registra presupuesto modificado vigente (PIM) en el MEF.", cui=cui)
 
-    # ── Step 2: No CUI → SSI text search ──
-    if description:
-        print(f"[MEF-SSI] No CUI found, attempting text-based SSI search...")
-        result = search_project_by_text_ssi(description)
-        if result and result.get("encontrado") and result.get("pim", 0) > 0:
-            return result
-
-    # ── Step 3: Local DB SNIP exact match ──
-    if description:
+    # ── Step 2: Local DB SNIP exact match ──
+    snip = None
+    if description and not cui:
         snip = extract_snip(description)
         if snip:
             print(f"[MEF-LOCAL] SNIP extracted: {snip}. Trying direct local DB lookup...")
@@ -538,6 +545,14 @@ def get_ejecucion_financiera(db: Session, ruc: str, year: int, description: str 
                 local_snip["match_score"] = 1.0
                 local_snip["match_type"] = "snip_exact"
                 return local_snip
+            return _empty_result(f"El proyecto SNIP {snip} no registra presupuesto modificado vigente (PIM) en el MEF.", cui=snip)
+
+    # ── Step 3: No CUI/SNIP → SSI text search ──
+    if description and not cui and not snip:
+        print(f"[MEF-SSI] No CUI/SNIP found, attempting text-based SSI search...")
+        result = search_project_by_text_ssi(description)
+        if result and result.get("encontrado") and result.get("pim", 0) > 0:
+            return result
 
     # ── Step 4: Route code search on local DB (for road projects) ──
     if description:

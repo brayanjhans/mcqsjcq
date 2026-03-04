@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -16,18 +16,12 @@ import {
     Activity,
     ExternalLink,
     Loader2,
-    Download,
-    Pencil,
-    Save,
-    X,
-    Link,
-    Upload,
-    Trash2
+    Download
 } from "lucide-react";
-import { createPortal } from "react-dom";
 import type { Licitacion, Adjudicacion, EjecucionFinanciera, GarantiasResponse, HistorialAnual } from "@/types/licitacion";
 import { licitacionService } from "@/lib/services/licitacionService";
 import { integracionService } from "@/lib/services/integracionService";
+import { createPortal } from "react-dom";
 import { generateLicitacionPDF } from "@/lib/utils/generateLicitacionPDF";
 
 const PdfIcon = ({ className }: { className?: string }) => (
@@ -43,7 +37,7 @@ interface Props {
     basePath?: string;
 }
 
-// ─── Historial Table (replaces chart) ──────────────────────────────────────
+// ÔöÇÔöÇÔöÇ Historial Table (replaces chart) ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
 function HistorialChart({ historial }: { historial: HistorialAnual[] }) {
     const [expanded, setExpanded] = React.useState(false);
     const [expandedYears, setExpandedYears] = React.useState<number[]>([]);
@@ -70,10 +64,10 @@ function HistorialChart({ historial }: { historial: HistorialAnual[] }) {
                 <table className="w-full min-w-[700px] text-left">
                     <thead>
                         <tr className="bg-slate-50 dark:bg-white/5 border-b border-slate-200 dark:border-white/10">
-                            <th className="py-2.5 px-4 text-[10px] font-bold uppercase text-slate-500 tracking-wider">Año</th>
+                            <th className="py-2.5 px-4 text-[10px] font-bold uppercase text-slate-500 tracking-wider">A├▒o</th>
                             <th className="py-2.5 px-4 text-[10px] font-bold uppercase text-slate-500 tracking-wider text-right">PIA</th>
                             <th className="py-2.5 px-4 text-[10px] font-bold uppercase text-slate-500 tracking-wider text-right">PIM</th>
-                            <th className="py-2.5 px-4 text-[10px] font-bold uppercase text-slate-500 tracking-wider text-right">Certificación</th>
+                            <th className="py-2.5 px-4 text-[10px] font-bold uppercase text-slate-500 tracking-wider text-right">Certificaci├│n</th>
                             <th className="py-2.5 px-4 text-[10px] font-bold uppercase text-slate-500 tracking-wider text-right">Comp. Anual</th>
                             <th className="py-2.5 px-4 text-[10px] font-bold uppercase text-slate-500 tracking-wider text-right">Devengado</th>
                             <th className="py-2.5 px-4 text-[10px] font-bold uppercase text-slate-500 tracking-wider text-right">Girado</th>
@@ -92,7 +86,7 @@ function HistorialChart({ historial }: { historial: HistorialAnual[] }) {
                                     >
                                         <td className="py-3 px-4 text-sm font-black text-slate-800 dark:text-white flex items-center gap-2">
                                             {hasMonths ? (
-                                                <span className="text-slate-400 font-normal text-[9px]">{isYearExpanded ? '▼' : '▶'}</span>
+                                                <span className="text-slate-400 font-normal text-[9px]">{isYearExpanded ? 'Ôû╝' : 'ÔûÂ'}</span>
                                             ) : (
                                                 <span className="w-2.5"></span>
                                             )}
@@ -103,13 +97,13 @@ function HistorialChart({ historial }: { historial: HistorialAnual[] }) {
                                         <td className="py-3 px-4 text-xs text-slate-500 dark:text-slate-400 text-right font-mono">{fmt(h.certificado)}</td>
                                         <td className="py-3 px-4 text-xs text-slate-500 dark:text-slate-400 text-right font-mono">{fmt(h.compromiso_anual)}</td>
                                         <td className="py-3 px-4 text-xs font-bold text-blue-600 dark:text-blue-400 text-right font-mono">{fmt(h.devengado)}</td>
-                                        <td className="py-3 px-4 text-xs font-bold text-emerald-600 dark:text-emerald-400 text-right font-mono">{h.girado > 0 ? fmt(h.girado) : <span className="text-slate-400">—</span>}</td>
+                                        <td className="py-3 px-4 text-xs font-bold text-emerald-600 dark:text-emerald-400 text-right font-mono">{h.girado > 0 ? fmt(h.girado) : <span className="text-slate-400">ÔÇö</span>}</td>
                                         <td className="py-3 px-4 text-right">
                                             <span className={`text-xs font-black ${h.avance_pct >= 80 ? 'text-emerald-600' :
                                                 h.avance_pct >= 40 ? 'text-amber-600' :
                                                     h.avance_pct > 0 ? 'text-blue-600' : 'text-slate-400'
                                                 }`}>
-                                                {h.avance_pct > 0 ? `${h.avance_pct}%` : '—'}
+                                                {h.avance_pct > 0 ? `${h.avance_pct}%` : 'ÔÇö'}
                                             </span>
                                         </td>
                                     </tr>
@@ -120,7 +114,7 @@ function HistorialChart({ historial }: { historial: HistorialAnual[] }) {
                                                     <div className="flex items-center justify-between mb-2">
                                                         <h4 className="text-[10px] font-bold uppercase text-indigo-500 tracking-wider">Desglose Mensual {h.year}</h4>
                                                         <span className="text-[9px] text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-400/10 border border-amber-200 dark:border-amber-400/20 rounded-full px-2 py-0.5">
-                                                            ⚠ Solo meses con devengado ejecutado
+                                                            ÔÜá Solo meses con devengado ejecutado
                                                         </span>
                                                     </div>
                                                     <table className="w-full text-left">
@@ -129,7 +123,7 @@ function HistorialChart({ historial }: { historial: HistorialAnual[] }) {
                                                                 <th className="py-2 px-3 text-[9px] font-bold uppercase text-slate-500 tracking-wider">Mes</th>
                                                                 <th className="py-2 px-3 text-[9px] font-bold uppercase text-slate-500 tracking-wider text-right">PIA</th>
                                                                 <th className="py-2 px-3 text-[9px] font-bold uppercase text-slate-500 tracking-wider text-right">PIM</th>
-                                                                <th className="py-2 px-3 text-[9px] font-bold uppercase text-slate-500 tracking-wider text-right">Certificación</th>
+                                                                <th className="py-2 px-3 text-[9px] font-bold uppercase text-slate-500 tracking-wider text-right">Certificaci├│n</th>
                                                                 <th className="py-2 px-3 text-[9px] font-bold uppercase text-slate-500 tracking-wider text-right">Comp. Anual</th>
                                                                 <th className="py-2 px-3 text-[9px] font-bold uppercase text-slate-500 tracking-wider text-right">Devengado</th>
                                                                 <th className="py-2 px-3 text-[9px] font-bold uppercase text-slate-500 tracking-wider text-right">Girado</th>
@@ -146,7 +140,7 @@ function HistorialChart({ historial }: { historial: HistorialAnual[] }) {
                                                                     <td className="py-2 px-3 text-[10px] font-mono text-slate-500 text-right">{fmt(m.certificado)}</td>
                                                                     <td className="py-2 px-3 text-[10px] font-mono text-slate-500 text-right">{fmt(m.compromiso_anual)}</td>
                                                                     <td className="py-2 px-3 text-[10px] font-mono font-bold text-blue-600 dark:text-blue-400 text-right">{fmt(m.devengado)}</td>
-                                                                    <td className="py-2 px-3 text-[10px] font-mono font-bold text-emerald-600 dark:text-emerald-400 text-right">{(m.girado ?? 0) > 0 ? fmt(m.girado) : <span className="text-slate-400">—</span>}</td>
+                                                                    <td className="py-2 px-3 text-[10px] font-mono font-bold text-emerald-600 dark:text-emerald-400 text-right">{(m.girado ?? 0) > 0 ? fmt(m.girado) : <span className="text-slate-400">ÔÇö</span>}</td>
                                                                 </tr>
                                                             ))}
                                                         </tbody>
@@ -169,14 +163,14 @@ function HistorialChart({ historial }: { historial: HistorialAnual[] }) {
                     className="mt-2 w-full flex items-center justify-center gap-1.5 py-2 text-[11px] font-bold text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-lg border border-slate-200 dark:border-white/10 transition-colors"
                 >
                     {expanded
-                        ? <>↑ Mostrar solo los últimos 3 años</>
-                        : <>↓ Ver historial completo ({historial.length} años)</>}
+                        ? <>Ôåæ Mostrar solo los ├║ltimos 3 a├▒os</>
+                        : <>Ôåô Ver historial completo ({historial.length} a├▒os)</>}
                 </button>
             )}
         </div>
     );
 }
-// ───────────────────────────────────────────────────────────────────────────
+// ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
 
 export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: Props) {
     const router = useRouter();
@@ -190,8 +184,6 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
     const [garantiasData, setGarantiasData] = useState<GarantiasResponse | null>(null);
     const [loadingIntegracion, setLoadingIntegracion] = useState(false);
     const [exporting, setExporting] = useState(false);
-
-    // Portal states
     const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(null);
     const [portalContainerLeft, setPortalContainerLeft] = useState<HTMLElement | null>(null);
 
@@ -201,84 +193,14 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
         setPortalContainerLeft(document.getElementById('portal-header-left'));
     }, []);
 
-    // Oferta Edit states
-    const [editingOfertaId, setEditingOfertaId] = useState<string | null>(null);
-    const [savingOferta, setSavingOferta] = useState(false);
-    const [uploadProgress, setUploadProgress] = useState<number>(0);
-    const [ofertaFileInput, setOfertaFileInput] = useState<File | null>(null);
-
-    // Oferta Delete states
-    const [deletingOfertaId, setDeletingOfertaId] = useState<string | null>(null);
-    const [isDeleting, setIsDeleting] = useState(false);
-
-    const [isMounted, setIsMounted] = useState(false);
-    useEffect(() => {
-        setIsMounted(true);
-    }, []);
-
-    const handleOfertaSave = async (id_adjudicacion: string) => {
-        if (!ofertaFileInput) return;
-        setSavingOferta(true);
-        setUploadProgress(0);
-        try {
-            const uploadRes = await licitacionService.uploadOfertaFile(
-                id_adjudicacion,
-                ofertaFileInput,
-                (pct) => setUploadProgress(pct)
-            );
-            const finalUrl = uploadRes.url_pdf_oferta;
-
-            setLicitacion(prev => {
-                if (!prev) return prev;
-                return {
-                    ...prev,
-                    adjudicaciones: prev.adjudicaciones?.map(a =>
-                        a.id_adjudicacion === id_adjudicacion ? { ...a, url_pdf_oferta: finalUrl } : a
-                    )
-                };
-            });
-            setEditingOfertaId(null);
-            setOfertaFileInput(null);
-            setUploadProgress(0);
-        } catch (err: any) {
-            console.error("Error saving oferta:", err);
-            const status = err?.response?.status;
-            const msg = err?.response?.data?.detail || err?.message || "Error desconocido";
-            alert(`Error al guardar la oferta (${status ?? 'red'}): ${msg}`);
-        } finally {
-            setSavingOferta(false);
-        }
-    };
-
-    const handleOfertaDelete = async (id_adjudicacion: string) => {
-        setIsDeleting(true);
-        try {
-            await licitacionService.updateOferta(id_adjudicacion, "");
-            setLicitacion(prev => {
-                if (!prev) return prev;
-                return {
-                    ...prev,
-                    adjudicaciones: prev.adjudicaciones?.map(a =>
-                        a.id_adjudicacion === id_adjudicacion ? { ...a, url_pdf_oferta: "" } : a
-                    )
-                };
-            });
-            setDeletingOfertaId(null);
-        } catch (err) {
-            console.error("Error al eliminar oferta:", err);
-            alert("Hubo un error al eliminar el documento.");
-        } finally {
-            setIsDeleting(false);
-        }
-    };
-
     const handleExportPDF = async () => {
         if (!licitacion || exporting) return;
         setExporting(true);
         try {
             generateLicitacionPDF(licitacion, ejecucion, garantiasData);
-        } catch (err) {
+        } catch (err: any) {
             console.error('Error exporting PDF:', err);
+            alert('Error generando PDF: ' + err.message);
         } finally {
             setExporting(false);
         }
@@ -292,7 +214,7 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                 if (data && !data.error) {
                     setLicitacion(data);
                 } else {
-                    setError("No se encontró la licitación.");
+                    setError("No se encontr├│ la licitaci├│n.");
                 }
             } catch (err: any) {
                 console.error("Error fetching detail:", err);
@@ -351,7 +273,7 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
     const renderSemaforoBadge = (estado: string, diasRestantes?: number | null) => {
         const config: Record<string, { bg: string; text: string; label: string }> = {
             verde: { bg: "bg-emerald-100 border-emerald-200", text: "text-emerald-700", label: "VIGENTE" },
-            ambar: { bg: "bg-amber-100 border-amber-200", text: "text-amber-700", label: `PRÓXIMA (${diasRestantes ?? '?'}d)` },
+            ambar: { bg: "bg-amber-100 border-amber-200", text: "text-amber-700", label: `PR├ôXIMA (${diasRestantes ?? '?'}d)` },
             rojo: { bg: "bg-red-100 border-red-200", text: "text-red-700", label: "VENCIDA" },
             gris: { bg: "bg-slate-100 border-slate-200", text: "text-slate-500", label: "SIN DATOS" },
         };
@@ -373,20 +295,18 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
         </div>
     );
 
-    if (error || !licitacion) {
-        return (
-            <div className="flex h-screen items-center justify-center bg-slate-50 dark:bg-[#0b122b]">
-                <div className="text-center">
-                    <button
-                        onClick={() => router.push(basePath)}
-                        className="text-indigo-600 font-bold hover:underline"
-                    >
-                        &larr; Volver a resultados
-                    </button>
-                </div>
+    if (error || !licitacion) return (
+        <div className="flex h-screen items-center justify-center bg-slate-50 dark:bg-[#0b122b]">
+            <div className="text-center">
+                <button
+                    onClick={() => router.push(basePath)}
+                    className="text-indigo-600 font-bold hover:underline"
+                >
+                    &larr; Volver a resultados
+                </button>
             </div>
-        );
-    }
+        </div>
+    );
 
     const adjudicaciones = licitacion.adjudicaciones || [];
 
@@ -482,6 +402,10 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                                     {licitacion.categoria || "BIENES"}
                                 </span>
                             </div>
+
+                            <p className="text-sm font-medium text-slate-600 leading-relaxed dark:text-slate-300 bg-slate-50 dark:bg-white/5 p-4 rounded-xl border border-slate-100 dark:border-white/5">
+                                {licitacion.descripcion}
+                            </p>
                         </div>
 
                         <div className="w-full md:w-auto p-5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700">
@@ -522,7 +446,7 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                         <div className="space-y-4">
                             <div className="flex items-center gap-2 text-slate-900 font-bold dark:text-white mb-2">
                                 <FileText className="w-4 h-4 text-slate-400" />
-                                <h3 className="text-sm uppercase tracking-wide">Detalles Técnicos</h3>
+                                <h3 className="text-sm uppercase tracking-wide">Detalles T├®cnicos</h3>
                             </div>
                             <div className="grid grid-cols-1 gap-3 pl-6">
                                 <div>
@@ -546,7 +470,7 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                         <div className="space-y-4">
                             <div className="flex items-center gap-2 text-slate-900 font-bold dark:text-white mb-2">
                                 <DollarSign className="w-4 h-4 text-slate-400" />
-                                <h3 className="text-sm uppercase tracking-wide">Resumen de Adjudicación</h3>
+                                <h3 className="text-sm uppercase tracking-wide">Resumen de Adjudicaci├│n</h3>
                             </div>
                             <div className="space-y-3 pl-6">
                                 <div className="flex justify-between items-center p-2 rounded bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5">
@@ -559,8 +483,8 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                                         <span className="text-sm font-bold text-slate-700 dark:text-white">{licitacion.total_adjudicaciones || 0}</span>
                                     </div>
                                     <div className="bg-slate-50 dark:bg-white/5 p-2 rounded border border-slate-100 dark:border-white/5">
-                                        <span className="text-[10px] block text-slate-400 uppercase font-bold">Sin Garantía</span>
-                                        <span className="text-sm font-bold text-slate-700 dark:text-white">{licitacion.con_garantia_bancaria === 0 ? "Sí" : "No"}</span>
+                                        <span className="text-[10px] block text-slate-400 uppercase font-bold">Sin Garant├¡a</span>
+                                        <span className="text-sm font-bold text-slate-700 dark:text-white">{licitacion.con_garantia_bancaria === 0 ? "S├¡" : "No"}</span>
                                     </div>
                                 </div>
                             </div>
@@ -569,12 +493,12 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                     </div>
                 </div>
 
-                {/* ========== EJECUCIÓN FINANCIERA CARD (NEW) ========== */}
+                {/* ========== EJECUCI├ôN FINANCIERA CARD (NEW) ========== */}
                 {adjudicaciones.length > 0 && (
                     <div className="rounded-2xl border border-slate-200 bg-white p-6 md:p-8 shadow-md dark:border-white/10 dark:bg-[#111c44] animate-in fade-in slide-in-from-bottom-5 duration-500 delay-75 border-t-4 border-t-cyan-500">
                         <div className="flex items-center gap-3 mb-6">
                             <Activity className="w-5 h-5 text-blue-500" />
-                            <h3 className="text-lg font-bold text-slate-900 dark:text-white uppercase">ESTADO DE EJECUCIÓN FINANCIERA</h3>
+                            <h3 className="text-lg font-bold text-slate-900 dark:text-white uppercase">ESTADO DE EJECUCI├ôN FINANCIERA</h3>
                             {loadingIntegracion && <Loader2 className="w-4 h-4 text-slate-400 animate-spin" />}
                             {/* 5.1: Confidence badge */}
                             {!loadingIntegracion && ejecucion && (
@@ -591,9 +515,9 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                                             : 'bg-red-500'
                                         }`} />
                                     {ejecucion.encontrado && (ejecucion.match_type === 'cui_ssi' || ejecucion.match_type === 'cui_exact' || ejecucion.match_type === 'snip_exact' || ejecucion.source === 'ssi_api')
-                                        ? `Datos exactos · CUI ${ejecucion.cui} · ${ejecucion.year_found ?? ejecucion.year ?? '—'}`
+                                        ? `Datos exactos ┬À CUI ${ejecucion.cui} ┬À ${ejecucion.year_found ?? ejecucion.year ?? 'ÔÇö'}`
                                         : ejecucion.encontrado
-                                            ? `Aprox. ${ejecucion.match_score != null ? Math.round(ejecucion.match_score * 100) + '%' : ''} · ${ejecucion.year_found ?? ejecucion.year ?? '—'}`
+                                            ? `Aprox. ${ejecucion.match_score != null ? Math.round(ejecucion.match_score * 100) + '%' : ''} ┬À ${ejecucion.year_found ?? ejecucion.year ?? 'ÔÇö'}`
                                             : 'Sin datos MEF'}
                                 </span>
                             )}
@@ -617,7 +541,7 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                                             <tr className="bg-slate-50 dark:bg-white/5 border-b border-slate-200 dark:border-white/10">
                                                 <th className="py-3 px-4 text-[10px] font-bold uppercase text-slate-500 tracking-wider">PIA</th>
                                                 <th className="py-3 px-4 text-[10px] font-bold uppercase text-slate-500 tracking-wider">PIM</th>
-                                                <th className="py-3 px-4 text-[10px] font-bold uppercase text-slate-500 tracking-wider">Certificación</th>
+                                                <th className="py-3 px-4 text-[10px] font-bold uppercase text-slate-500 tracking-wider">Certificaci├│n</th>
                                                 <th className="py-3 px-4 text-[10px] font-bold uppercase text-slate-500 tracking-wider">Comp. Anual</th>
                                                 <th className="py-3 px-4 text-[10px] font-bold uppercase text-slate-500 tracking-wider">Devengado</th>
                                                 <th className="py-3 px-4 text-[10px] font-bold uppercase text-slate-500 tracking-wider">Girado</th>
@@ -661,20 +585,20 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
 
                                 {/* Progress Bar */}
                                 <div className="flex justify-between text-[10px] text-slate-400 font-bold uppercase mt-2">
-                                    <span>Avance de Ejecución (Sobre PIM)</span>
+                                    <span>Avance de Ejecuci├│n (Sobre PIM)</span>
                                 </div>
 
                                 {!ejecucion.encontrado && (
                                     <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-100 rounded-xl">
-                                        <span className="text-amber-600 text-xs font-bold">⚠ Ejecución financiera pendiente</span>
-                                        <span className="text-amber-500 text-[10px]">— Este contrato aún no registra pagos en el MEF</span>
+                                        <span className="text-amber-600 text-xs font-bold">ÔÜá Ejecuci├│n financiera pendiente</span>
+                                        <span className="text-amber-500 text-[10px]">ÔÇö Este contrato a├║n no registra pagos en el MEF</span>
                                     </div>
                                 )}
 
-                                {/* Historial anual de ejecución (B) */}
+                                {/* Historial anual de ejecuci├│n (B) */}
                                 {ejecucion.historial && ejecucion.historial.length > 0 && (
                                     <div className="mt-2 pt-4 border-t border-slate-100 dark:border-white/5">
-                                        <p className="text-[10px] uppercase font-bold text-slate-400 mb-3 tracking-wider">Historial de Ejecución por Año · CUI {ejecucion.cui}</p>
+                                        <p className="text-[10px] uppercase font-bold text-slate-400 mb-3 tracking-wider">Historial de Ejecuci├│n por A├▒o ┬À CUI {ejecucion.cui}</p>
                                         <div className="overflow-x-auto">
                                             <HistorialChart historial={ejecucion.historial} />
                                         </div>
@@ -683,8 +607,8 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                             </div>
                         ) : (
                             <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-100 rounded-xl">
-                                <span className="text-amber-600 text-xs font-bold">⚠ Ejecución financiera pendiente</span>
-                                <span className="text-amber-500 text-[10px]">— No se pudo consultar la API del MEF</span>
+                                <span className="text-amber-600 text-xs font-bold">ÔÜá Ejecuci├│n financiera pendiente</span>
+                                <span className="text-amber-500 text-[10px]">ÔÇö No se pudo consultar la API del MEF</span>
                             </div>
                         )}
                     </div>
@@ -695,7 +619,7 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                     <div className="rounded-2xl border border-slate-200 bg-white p-6 md:p-8 shadow-md dark:border-white/10 dark:bg-[#111c44] animate-in fade-in slide-in-from-bottom-5 duration-500 delay-100 border-t-4 border-t-emerald-500">
                         <div className="flex items-center gap-3 mb-6">
                             <ShieldCheck className="w-5 h-5 text-emerald-500" />
-                            <h3 className="text-lg font-bold text-slate-900 dark:text-white uppercase">DETALLE DE ADJUDICACIONES Y GARANTÍAS</h3>
+                            <h3 className="text-lg font-bold text-slate-900 dark:text-white uppercase">DETALLE DE ADJUDICACIONES Y GARANT├ìAS</h3>
                         </div>
 
                         <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
@@ -707,7 +631,7 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                                             <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">Monto Adjudicado</th>
                                             <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">Monto Girado (S/)</th>
                                             <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">% Avance</th>
-                                            <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">Garantía</th>
+                                            <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">Garant├¡a</th>
                                             <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">Emitido Por</th>
                                             <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">Fecha</th>
                                             <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">Estado</th>
@@ -754,7 +678,7 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                                                             </div>
                                                         </div>
                                                     ) : (
-                                                        <span className="text-[10px] text-slate-400 italic">—</span>
+                                                        <span className="text-[10px] text-slate-400 italic">ÔÇö</span>
                                                     )}
                                                 </td>
                                                 <td className="py-4 px-4 text-center">
@@ -765,7 +689,7 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                                                                 {(adj.tipo_garantia && adj.tipo_garantia !== "SIN_GARANTIA" ? adj.tipo_garantia : licitacion.tipo_garantia || "").replace(/_/g, " ")}
                                                             </span>
                                                         ) : (
-                                                            <span className="text-[10px] text-slate-400 italic">Sin Garantía</span>
+                                                            <span className="text-[10px] text-slate-400 italic">Sin Garant├¡a</span>
                                                         )}
                                                     </div>
                                                 </td>
@@ -778,7 +702,7 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                                                                 {adj.entidad_financiera || licitacion.entidades_financieras}
                                                             </div>
                                                         ) : (
-                                                            <span className="text-[10px] text-slate-400 italic">—</span>
+                                                            <span className="text-[10px] text-slate-400 italic">ÔÇö</span>
                                                         )}
                                                     </div>
                                                 </td>
@@ -801,17 +725,17 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                     <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm dark:border-white/5 dark:bg-[#111c44] text-center">
                         <ShieldCheck className="w-10 h-10 text-slate-200 mx-auto mb-3" />
                         <h3 className="text-sm font-bold text-slate-900 dark:text-white">Sin Adjudicaciones</h3>
-                        <p className="text-xs text-slate-500 mt-1">Este proceso aún no reporta ganadores o items adjudicados.</p>
+                        <p className="text-xs text-slate-500 mt-1">Este proceso a├║n no reporta ganadores o items adjudicados.</p>
                     </div>
                 )}
 
 
-                {/* Documentación y Consorcios Section (MODIFIED: tooltip on Fianza button) */}
+                {/* Documentaci├│n y Consorcios Section (MODIFIED: tooltip on Fianza button) */}
                 {adjudicaciones.length > 0 && (
                     <div className="rounded-2xl border border-slate-200 bg-white p-6 md:p-8 shadow-md dark:border-white/10 dark:bg-[#111c44] animate-in fade-in slide-in-from-bottom-5 duration-500 delay-200 mt-6 border-t-4 border-t-violet-500">
                         <div className="flex items-center gap-3 mb-6">
                             <FileText className="w-5 h-5 text-indigo-500" />
-                            <h3 className="text-lg font-bold text-slate-900 dark:text-white uppercase">DOCUMENTACIÓN CONTRACTUAL Y CONSORCIOS</h3>
+                            <h3 className="text-lg font-bold text-slate-900 dark:text-white uppercase">DOCUMENTACI├ôN CONTRACTUAL Y CONSORCIOS</h3>
                         </div>
 
                         <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
@@ -819,9 +743,8 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                                 <table className="w-full text-left">
                                     <thead>
                                         <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
-                                            <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">Adjudicación / Ganador</th>
+                                            <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">Adjudicaci├│n / Ganador</th>
                                             <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">Integrantes del Consorcio</th>
-                                            <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">Oferta</th>
                                             <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">Contrato</th>
                                             <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">Consorcio</th>
                                             <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">Fianza</th>
@@ -857,270 +780,6 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                                                     ) : (
                                                         <span className="text-[10px] text-slate-400 italic">No es consorcio</span>
                                                     )}
-                                                </td>
-                                                <td className="py-4 px-4 align-middle text-center w-[120px] relative">
-                                                    <div className="relative inline-flex flex-col items-center justify-center gap-1 min-w-[80px] group/cell">
-                                                        {adj.url_pdf_oferta ? (
-                                                            <div className="relative inline-flex flex-col items-center justify-center gap-1">
-                                                                {/* Floating Edit/Delete buttons visible only on hover */}
-                                                                <div className="absolute -top-10 left-1/2 -translate-x-1/2 flex items-center gap-1 opacity-0 group-hover/cell:opacity-100 transition-opacity duration-300 bg-white dark:bg-slate-800 py-1 px-1.5 rounded-lg shadow-md border border-slate-200 dark:border-slate-700 z-10">
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={(e) => {
-                                                                            e.preventDefault();
-                                                                            e.stopPropagation();
-                                                                            setEditingOfertaId(adj.id_adjudicacion);
-                                                                        }}
-                                                                        className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 text-indigo-600 dark:text-indigo-400 rounded transition-colors cursor-pointer"
-                                                                        title="Editar oferta"
-                                                                    >
-                                                                        <Pencil className="w-3.5 h-3.5" />
-                                                                    </button>
-                                                                    <div className="w-px h-3 bg-slate-300 dark:bg-slate-600"></div>
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={(e) => {
-                                                                            e.preventDefault();
-                                                                            e.stopPropagation();
-                                                                            setDeletingOfertaId(adj.id_adjudicacion);
-                                                                        }}
-                                                                        className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 text-rose-600 dark:text-rose-400 rounded transition-colors cursor-pointer"
-                                                                        title="Eliminar oferta"
-                                                                    >
-                                                                        <Trash2 className="w-3.5 h-3.5" />
-                                                                    </button>
-                                                                </div>
-
-                                                                <a
-                                                                    href={adj.url_pdf_oferta}
-                                                                    target="_blank"
-                                                                    rel="noopener noreferrer"
-                                                                    className="group inline-flex flex-col items-center justify-center gap-1 transition-all hover:scale-105"
-                                                                >
-                                                                    <PdfIcon className="w-8 h-8 transition-transform group-hover:-translate-y-1" />
-                                                                    <span className="bg-slate-900 text-white text-[9px] py-1 px-2 rounded font-bold whitespace-nowrap shadow-sm">
-                                                                        Descargar PDF
-                                                                    </span>
-                                                                </a>
-                                                            </div>
-                                                        ) : (
-                                                            <div className="relative inline-flex flex-col items-center justify-center gap-2 opacity-100 group/upload p-3">
-                                                                {/* Intense Notification Style - Static dimensions to prevent scrollbar overflow */}
-                                                                <div className="absolute top-1 bottom-1 left-2 right-2 bg-slate-300 rounded-2xl blur-[14px] opacity-70 animate-pulse transition-opacity duration-500"></div>
-
-                                                                <div className="relative z-10 flex flex-col items-center gap-2">
-                                                                    <PdfIcon className="w-8 h-8 filter grayscale opacity-60 transition-transform group-hover/upload:-translate-y-1" />
-
-                                                                    <button
-                                                                        onClick={() => {
-                                                                            setEditingOfertaId(adj.id_adjudicacion);
-                                                                        }}
-                                                                        className="bg-white hover:bg-slate-50 text-[#828f9f] hover:text-slate-600 text-[9px] py-1.5 px-3.5 rounded-md font-extrabold whitespace-nowrap shadow-xl border-[1.5px] border-slate-300 hover:border-slate-400 transition-all cursor-pointer flex items-center justify-center uppercase ring-2 ring-white"
-                                                                        title="Haz clic para cargar oferta"
-                                                                    >
-                                                                        CARGAR
-                                                                    </button>
-                                                                </div>
-                                                            </div>
-                                                        )}
-                                                    </div>
-
-                                                    {/* Portal Modal for Editing */}
-                                                    {editingOfertaId === adj.id_adjudicacion && isMounted && createPortal(
-                                                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md sm:p-6 transition-all" onClick={() => setEditingOfertaId(null)}>
-                                                            <div
-                                                                className="w-full max-w-md bg-white dark:bg-[#0b1437] rounded-3xl shadow-2xl shadow-indigo-500/10 border border-slate-200 dark:border-indigo-500/20 overflow-hidden transform transition-all ring-1 ring-black/5 dark:ring-white/5"
-                                                                onClick={(e) => e.stopPropagation()}
-                                                            >
-                                                                {/* Header */}
-                                                                <div className="relative flex items-center justify-between px-8 py-6 border-b border-slate-100 dark:border-white/5 bg-white dark:bg-[#0b1437] overflow-hidden">
-                                                                    {/* Decorative gradient blur in header */}
-                                                                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 via-indigo-500 to-purple-500 opacity-70"></div>
-                                                                    <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-indigo-500/10 rounded-full blur-2xl"></div>
-
-                                                                    <div className="flex items-center gap-4 relative z-10">
-                                                                        <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-indigo-500/20 dark:to-blue-500/20 rounded-2xl text-indigo-600 dark:text-indigo-400 shadow-sm border border-indigo-100/50 dark:border-indigo-500/30">
-                                                                            <Upload className="w-5 h-5" />
-                                                                        </div>
-                                                                        <div>
-                                                                            <h3 className="text-[17px] font-extrabold text-slate-800 dark:text-white leading-tight tracking-tight">
-                                                                                {adj.url_pdf_oferta ? "Editar Oferta" : "Agregar Oferta"}
-                                                                            </h3>
-                                                                            <p className="text-[12px] font-medium text-slate-500 dark:text-slate-400 mt-0.5">
-                                                                                {adj.url_pdf_oferta ? "Actualiza el documento actual" : "Sube un archivo PDF"}
-                                                                            </p>
-                                                                        </div>
-                                                                    </div>
-                                                                    <button
-                                                                        onClick={() => setEditingOfertaId(null)}
-                                                                        className="relative z-10 flex items-center justify-center text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-all bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-full p-2 shadow-sm ring-1 ring-slate-200 dark:ring-slate-700 hover:scale-105"
-                                                                        title="Cerrar"
-                                                                    >
-                                                                        <X className="w-5 h-5 stroke-[2.5]" />
-                                                                    </button>
-                                                                </div>
-
-                                                                <div className="p-8 space-y-6 bg-slate-50/30 dark:bg-transparent">
-                                                                    {/* File Upload Section */}
-                                                                    <div className="space-y-4">
-                                                                        <div className="flex items-center justify-between">
-                                                                            <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                                                                                <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.8)]"></div>
-                                                                                Archivo PDF
-                                                                            </label>
-                                                                            {adj.url_pdf_oferta && (
-                                                                                <a href={adj.url_pdf_oferta} target="_blank" rel="noopener noreferrer"
-                                                                                    className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-500/10 dark:hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 rounded-lg text-[10px] font-bold transition-colors border border-indigo-100 dark:border-indigo-500/20 max-w-[200px]">
-                                                                                    <FileText className="w-3.5 h-3.5 flex-none" />
-                                                                                    <span className="truncate">Documento Actual</span>
-                                                                                </a>
-                                                                            )}
-                                                                        </div>
-
-                                                                        {/* Drop Zone */}
-                                                                        <div className={`relative group flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-[2rem] transition-all duration-500 cursor-pointer overflow-hidden ${savingOferta ? 'border-indigo-400 bg-indigo-50/50 dark:bg-indigo-500/10 cursor-not-allowed' : ofertaFileInput ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-500/10 shadow-[0_8px_30px_rgba(99,102,241,0.15)] ring-4 ring-indigo-50 dark:ring-indigo-500/5' : 'border-slate-300 dark:border-slate-600 hover:border-indigo-400 hover:shadow-[0_8px_30px_rgba(99,102,241,0.1)] hover:bg-white dark:hover:bg-[#111c44]/50'}`}>
-                                                                            {!savingOferta && (
-                                                                                <input type="file" accept=".pdf,application/pdf" onChange={(e) => { if (e.target.files && e.target.files.length > 0) setOfertaFileInput(e.target.files[0]); }} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
-                                                                            )}
-                                                                            {savingOferta ? (
-                                                                                <div className="flex flex-col items-center text-center px-6 space-y-3 z-0">
-                                                                                    <Loader2 className="w-10 h-10 text-indigo-500 animate-spin" />
-                                                                                    <div className="flex flex-col items-center gap-1 w-full max-w-[240px]">
-                                                                                        <span className="text-[13px] font-extrabold text-indigo-600 dark:text-indigo-400">
-                                                                                            Subiendo archivo... {uploadProgress}%
-                                                                                        </span>
-                                                                                        <div className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                                                                                            <div
-                                                                                                className="h-full bg-gradient-to-r from-indigo-500 to-blue-500 rounded-full transition-all duration-300"
-                                                                                                style={{ width: `${uploadProgress}%` }}
-                                                                                            />
-                                                                                        </div>
-                                                                                        <span className="text-[11px] text-slate-400 dark:text-slate-500">
-                                                                                            {ofertaFileInput ? `${(ofertaFileInput.size / (1024 * 1024)).toFixed(1)} MB` : ''} · No cierres esta ventana
-                                                                                        </span>
-                                                                                    </div>
-                                                                                </div>
-                                                                            ) : ofertaFileInput ? (
-                                                                                <div className="flex flex-col items-center text-center px-6 space-y-3 z-0 group-hover:scale-105 transition-transform">
-                                                                                    <div className="w-14 h-14 rounded-full bg-white dark:bg-[#0b1437] flex items-center justify-center text-indigo-600 dark:text-indigo-400 shadow-lg border border-indigo-100 dark:border-indigo-500/30">
-                                                                                        <FileText className="w-7 h-7" />
-                                                                                    </div>
-                                                                                    <div className="flex flex-col items-center">
-                                                                                        <span className="text-[14px] font-extrabold text-indigo-700 dark:text-indigo-300 truncate max-w-[260px]">{ofertaFileInput.name}</span>
-                                                                                        <span className="text-[11px] font-bold text-indigo-500/70 mt-1 bg-indigo-100/50 dark:bg-indigo-500/20 px-3 py-0.5 rounded-full">
-                                                                                            {(ofertaFileInput.size / (1024 * 1024)).toFixed(1)} MB · Haz clic para cambiar
-                                                                                        </span>
-                                                                                    </div>
-                                                                                </div>
-                                                                            ) : (
-                                                                                <div className="flex flex-col items-center text-center px-6 space-y-4 z-0">
-                                                                                    <div className="w-16 h-16 rounded-[1.5rem] bg-white dark:bg-slate-800 flex items-center justify-center text-slate-400 group-hover:text-indigo-500 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-500/20 transition-all duration-500 shadow-sm border border-slate-200 dark:border-slate-700 group-hover:scale-110 group-hover:-translate-y-1">
-                                                                                        <Upload className="w-7 h-7" />
-                                                                                    </div>
-                                                                                    <div className="flex flex-col items-center">
-                                                                                        <span className="text-[15px] font-extrabold text-slate-700 dark:text-slate-200">Arrastra tu PDF aquí</span>
-                                                                                        <span className="text-[12px] font-semibold text-slate-400 dark:text-slate-500 mt-1">
-                                                                                            o <span className="text-indigo-500 cursor-pointer underline decoration-indigo-500 underline-offset-4 font-bold hover:text-indigo-600 transition-colors">explora tus archivos</span>
-                                                                                        </span>
-                                                                                    </div>
-                                                                                </div>
-                                                                            )}
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-
-                                                                {/* Footer */}
-                                                                <div className="px-8 py-6 border-t border-slate-100 dark:border-white/5 bg-white dark:bg-[#0b1437] flex items-center justify-between rounded-b-3xl">
-                                                                    <div>
-                                                                        {adj.url_pdf_oferta && (
-                                                                            <button
-                                                                                onClick={() => {
-                                                                                    setDeletingOfertaId(adj.id_adjudicacion);
-                                                                                    setEditingOfertaId(null);
-                                                                                }}
-                                                                                className="flex items-center justify-center gap-2 px-6 py-3 min-w-[130px] text-[13px] font-extrabold text-red-500 hover:text-white hover:bg-red-500 bg-red-50 hover:border-transparent border border-red-200 dark:bg-red-500/10 dark:border-red-500/30 rounded-[0.8rem] transition-all outline-none group/del"
-                                                                                title="Eliminar esta oferta permanentemente"
-                                                                            >
-                                                                                <Trash2 className="w-[18px] h-[18px] group-hover/del:scale-110 group-hover/del:-rotate-12 transition-transform" />
-                                                                                <span className="hidden sm:inline">Eliminar</span>
-                                                                            </button>
-                                                                        )}
-                                                                    </div>
-                                                                    <div className="flex items-center gap-3">
-                                                                        <button
-                                                                            onClick={() => {
-                                                                                setEditingOfertaId(null);
-                                                                                setOfertaFileInput(null);
-                                                                            }}
-                                                                            className="px-4 py-3 text-[14px] font-extrabold text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10 rounded-[0.8rem] transition-all border border-transparent focus:ring-2 focus:ring-slate-200 outline-none"
-                                                                            disabled={savingOferta}
-                                                                        >
-                                                                            Cancelar
-                                                                        </button>
-                                                                        <button
-                                                                            onClick={() => handleOfertaSave(adj.id_adjudicacion)}
-                                                                            disabled={savingOferta || !ofertaFileInput}
-                                                                            className="flex items-center justify-center gap-2 px-6 py-3 min-w-[160px] bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 disabled:opacity-100 disabled:from-[#aebbf1] disabled:to-[#b7bdf8] disabled:cursor-not-allowed disabled:shadow-none text-white rounded-[0.8rem] text-[14px] font-extrabold transition-all shadow-xl shadow-indigo-500/20 hover:shadow-indigo-500/40 hover:-translate-y-0.5 active:translate-y-0 outline-none"
-                                                                        >
-                                                                            {savingOferta ? <Loader2 className="w-[18px] h-[18px] animate-spin" /> : <Save className="w-[18px] h-[18px]" />}
-                                                                            <span className="leading-tight text-center">{savingOferta ? 'Guardando...' : 'Confirmar\n& Guardar'}</span>
-                                                                        </button>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        , document.body)}
-
-                                                    {/* Portal Modal for Deleting Confirmation */}
-                                                    {deletingOfertaId === adj.id_adjudicacion && isMounted && createPortal(
-                                                        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md sm:p-6 transition-all" onClick={() => !isDeleting && setDeletingOfertaId(null)}>
-                                                            <div
-                                                                className="w-full max-w-sm bg-white dark:bg-[#0b1437] rounded-3xl shadow-2xl shadow-rose-500/10 border border-slate-200 dark:border-rose-500/20 overflow-hidden transform transition-all ring-1 ring-black/5"
-                                                                onClick={(e) => e.stopPropagation()}
-                                                            >
-                                                                {/* Decorative Top Line */}
-                                                                <div className="h-1.5 w-full bg-gradient-to-r from-red-500 to-rose-400"></div>
-
-                                                                <div className="p-8 text-center flex flex-col items-center">
-                                                                    <div className="w-16 h-16 bg-red-50 dark:bg-rose-500/10 rounded-full flex items-center justify-center mb-6 shadow-sm border border-red-100 dark:border-rose-500/20">
-                                                                        <Trash2 className="w-8 h-8 text-red-500" />
-                                                                    </div>
-                                                                    <h3 className="text-xl font-extrabold text-slate-800 dark:text-white mb-2 leading-tight">
-                                                                        ¿Eliminar Documento?
-                                                                    </h3>
-                                                                    <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed mb-8">
-                                                                        Estás a punto de borrar permanentemente la oferta vinculada a este procedimiento. Esta acción no se puede deshacer.
-                                                                    </p>
-
-                                                                    <div className="flex w-full gap-3">
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={() => setDeletingOfertaId(null)}
-                                                                            disabled={isDeleting}
-                                                                            className="flex-1 px-4 py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl font-bold transition-colors disabled:opacity-50"
-                                                                        >
-                                                                            Cancelar
-                                                                        </button>
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={() => handleOfertaDelete(adj.id_adjudicacion)}
-                                                                            disabled={isDeleting}
-                                                                            className="flex-1 px-4 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold transition-all shadow-md shadow-red-500/20 disabled:bg-red-300 disabled:cursor-wait flex items-center justify-center gap-2"
-                                                                        >
-                                                                            {isDeleting ? (
-                                                                                <>
-                                                                                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                                                                    <span>Borrando...</span>
-                                                                                </>
-                                                                            ) : (
-                                                                                "Sí, eliminar"
-                                                                            )}
-                                                                        </button>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        , document.body)}
                                                 </td>
                                                 <td className="py-4 px-4 align-middle text-center w-[120px]">
                                                     {adj.url_pdf_contrato ? (
@@ -1187,7 +846,7 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                                                                     <div className="bg-slate-900 text-white text-[10px] py-2 px-3 rounded-lg shadow-xl whitespace-nowrap font-medium">
                                                                         <div className="flex items-center gap-1.5 mb-1">
                                                                             <ShieldCheck className="w-3 h-3 text-emerald-400" />
-                                                                            <span className="font-bold">Vencimiento oficial según OSCE:</span>
+                                                                            <span className="font-bold">Vencimiento oficial seg├║n OSCE:</span>
                                                                         </div>
                                                                         <div className="text-slate-300">
                                                                             {formatDate(garantiasData.garantias[0]?.fecha_vencimiento)}
