@@ -31,9 +31,18 @@ def get_dashboard_kpis(
         params = {}
         
         if year and year > 0:
-            where_clauses.append("YEAR(fecha_publicacion) = :year")
-            params['year'] = year
-        if mes and mes > 0:
+            if mes and mes > 0:
+                import calendar
+                last_day = calendar.monthrange(year, mes)[1]
+                where_clauses.append("fecha_publicacion >= :date_start AND fecha_publicacion <= :date_end")
+                params['date_start'] = f"{year}-{mes:02d}-01"
+                params['date_end'] = f"{year}-{mes:02d}-{last_day}"
+            else:
+                where_clauses.append("fecha_publicacion >= :date_start AND fecha_publicacion <= :date_end")
+                params['date_start'] = f"{year}-01-01"
+                params['date_end'] = f"{year}-12-31"
+        elif mes and mes > 0:
+            # Only month across all years 
             where_clauses.append("MONTH(fecha_publicacion) = :mes")
             params['mes'] = mes
         if estado:
@@ -164,10 +173,19 @@ def get_distribution_by_type(
         where_clauses = ["categoria IS NOT NULL", "categoria != ''"]
         params = {}
         
-        if year > 0:
-            where_clauses.append("YEAR(fecha_publicacion) = :year")
-            params['year'] = year
-        if mes and mes > 0:
+        if year and year > 0:
+            if mes and mes > 0:
+                import calendar
+                last_day = calendar.monthrange(year, mes)[1]
+                where_clauses.append("fecha_publicacion >= :date_start AND fecha_publicacion <= :date_end")
+                params['date_start'] = f"{year}-{mes:02d}-01"
+                params['date_end'] = f"{year}-{mes:02d}-{last_day}"
+            else:
+                where_clauses.append("fecha_publicacion >= :date_start AND fecha_publicacion <= :date_end")
+                params['date_start'] = f"{year}-01-01"
+                params['date_end'] = f"{year}-12-31"
+        elif mes and mes > 0:
+            # Only month across all years 
             where_clauses.append("MONTH(fecha_publicacion) = :mes")
             params['mes'] = mes
         if estado:
@@ -255,10 +273,19 @@ def get_stats_by_status(
         where_clauses = ["estado_proceso IS NOT NULL", "estado_proceso != ''"]
         params = {}
         
-        if year > 0:
-            where_clauses.append("YEAR(fecha_publicacion) = :year")
-            params['year'] = year
-        if mes and mes > 0:
+        if year and year > 0:
+            if mes and mes > 0:
+                import calendar
+                last_day = calendar.monthrange(year, mes)[1]
+                where_clauses.append("fecha_publicacion >= :date_start AND fecha_publicacion <= :date_end")
+                params['date_start'] = f"{year}-{mes:02d}-01"
+                params['date_end'] = f"{year}-{mes:02d}-{last_day}"
+            else:
+                where_clauses.append("fecha_publicacion >= :date_start AND fecha_publicacion <= :date_end")
+                params['date_start'] = f"{year}-01-01"
+                params['date_end'] = f"{year}-12-31"
+        elif mes and mes > 0:
+            # Only month across all years 
             where_clauses.append("MONTH(fecha_publicacion) = :mes")
             params['mes'] = mes
         if estado:
@@ -306,10 +333,19 @@ def get_monthly_trend(
         where_clauses = []
         params = {}
         
-        if year > 0:
-            where_clauses.append("YEAR(fecha_publicacion) = :year")
-            params['year'] = year
-        if mes and mes > 0:
+        if year and year > 0:
+            if mes and mes > 0:
+                import calendar
+                last_day = calendar.monthrange(year, mes)[1]
+                where_clauses.append("fecha_publicacion >= :date_start AND fecha_publicacion <= :date_end")
+                params['date_start'] = f"{year}-{mes:02d}-01"
+                params['date_end'] = f"{year}-{mes:02d}-{last_day}"
+            else:
+                where_clauses.append("fecha_publicacion >= :date_start AND fecha_publicacion <= :date_end")
+                params['date_start'] = f"{year}-01-01"
+                params['date_end'] = f"{year}-12-31"
+        elif mes and mes > 0:
+            # Only month across all years 
             where_clauses.append("MONTH(fecha_publicacion) = :mes")
             params['mes'] = mes
         if estado:
@@ -369,10 +405,19 @@ def get_department_ranking(
         where_clauses = ["departamento IS NOT NULL", "departamento != ''"]
         params = {}
         
-        if year > 0:
-            where_clauses.append("YEAR(fecha_publicacion) = :year")
-            params['year'] = year
-        if mes and mes > 0:
+        if year and year > 0:
+            if mes and mes > 0:
+                import calendar
+                last_day = calendar.monthrange(year, mes)[1]
+                where_clauses.append("fecha_publicacion >= :date_start AND fecha_publicacion <= :date_end")
+                params['date_start'] = f"{year}-{mes:02d}-01"
+                params['date_end'] = f"{year}-{mes:02d}-{last_day}"
+            else:
+                where_clauses.append("fecha_publicacion >= :date_start AND fecha_publicacion <= :date_end")
+                params['date_start'] = f"{year}-01-01"
+                params['date_end'] = f"{year}-12-31"
+        elif mes and mes > 0:
+            # Only month across all years 
             where_clauses.append("MONTH(fecha_publicacion) = :mes")
             params['mes'] = mes
         if estado:
@@ -419,12 +464,21 @@ def get_financial_entities_ranking(
         where_clauses = []
         params = {}
         
-        if year > 0:
-            where_clauses.append("YEAR(c.fecha_publicacion) = :year")
-            params["year"] = year
-        if mes and mes > 0:
+        if year and year > 0:
+            if mes and mes > 0:
+                import calendar
+                last_day = calendar.monthrange(year, mes)[1]
+                where_clauses.append("c.fecha_publicacion >= :date_start AND c.fecha_publicacion <= :date_end")
+                params['date_start'] = f"{year}-{mes:02d}-01"
+                params['date_end'] = f"{year}-{mes:02d}-{last_day}"
+            else:
+                where_clauses.append("c.fecha_publicacion >= :date_start AND c.fecha_publicacion <= :date_end")
+                params['date_start'] = f"{year}-01-01"
+                params['date_end'] = f"{year}-12-31"
+        elif mes and mes > 0:
+            # Only month across all years 
             where_clauses.append("MONTH(c.fecha_publicacion) = :mes")
-            params["mes"] = mes
+            params['mes'] = mes
         if departamento:
             where_clauses.append("c.departamento = :department")
             params["department"] = departamento
@@ -524,10 +578,19 @@ def get_province_ranking(
         where_clauses = ["departamento = :department", "provincia IS NOT NULL", "provincia != ''"]
         params = {"department": department}
         
-        if year > 0:
-            where_clauses.append("YEAR(fecha_publicacion) = :year")
-            params["year"] = year
-        if mes and mes > 0:
+        if year and year > 0:
+            if mes and mes > 0:
+                import calendar
+                last_day = calendar.monthrange(year, mes)[1]
+                where_clauses.append("fecha_publicacion >= :date_start AND fecha_publicacion <= :date_end")
+                params['date_start'] = f"{year}-{mes:02d}-01"
+                params['date_end'] = f"{year}-{mes:02d}-{last_day}"
+            else:
+                where_clauses.append("fecha_publicacion >= :date_start AND fecha_publicacion <= :date_end")
+                params['date_start'] = f"{year}-01-01"
+                params['date_end'] = f"{year}-12-31"
+        elif mes and mes > 0:
+            # Only month across all years 
             where_clauses.append("MONTH(fecha_publicacion) = :mes")
             params['mes'] = mes
         if estado:

@@ -117,12 +117,12 @@ def get_all_filters(db: Session = Depends(get_db)):
 
     try:
         # 1. Departamentos
-        depts = db.execute(text("SELECT DISTINCT UPPER(TRIM(departamento)) FROM licitaciones_cabecera WHERE departamento IS NOT NULL AND TRIM(departamento) != '' ORDER BY 1")).fetchall()
-        departamentos = [r[0] for r in depts if r[0]]
+        depts = db.execute(text("SELECT DISTINCT departamento FROM licitaciones_cabecera WHERE departamento IS NOT NULL AND TRIM(departamento) != '' ORDER BY 1")).fetchall()
+        departamentos = [r[0].strip().upper() for r in depts if r[0]]
         if not departamentos: departamentos = DEFAULTS["departamentos"]
 
         # 2. Categorias
-        cats_raw = db.execute(text("SELECT DISTINCT UPPER(TRIM(categoria)) FROM licitaciones_cabecera WHERE categoria IS NOT NULL AND TRIM(categoria) != '' ORDER BY 1")).fetchall()
+        cats_raw = db.execute(text("SELECT DISTINCT categoria FROM licitaciones_cabecera WHERE categoria IS NOT NULL AND TRIM(categoria) != '' ORDER BY 1")).fetchall()
         
         # Normalization Map
         CAT_MAP = {
@@ -145,8 +145,8 @@ def get_all_filters(db: Session = Depends(get_db)):
         if not categorias: categorias = DEFAULTS["categorias"]
 
         # 3. Estados
-        ests = db.execute(text("SELECT DISTINCT UPPER(TRIM(estado_proceso)) FROM licitaciones_cabecera WHERE estado_proceso IS NOT NULL AND TRIM(estado_proceso) != '' ORDER BY 1")).fetchall()
-        estados = [r[0] for r in ests if r[0]]
+        ests = db.execute(text("SELECT DISTINCT estado_proceso FROM licitaciones_cabecera WHERE estado_proceso IS NOT NULL AND TRIM(estado_proceso) != '' ORDER BY 1")).fetchall()
+        estados = [r[0].strip().upper() for r in ests if r[0]]
         if not estados: estados = DEFAULTS["estados"]
 
         # 4. Aseguradoras in adjudicaciones
@@ -163,8 +163,8 @@ def get_all_filters(db: Session = Depends(get_db)):
         entidades = ENTIDADES_COMPRADORAS
 
         # NEW: 7. Tipos de Garantia
-        garantia_sql = text("SELECT DISTINCT UPPER(TRIM(tipo_garantia)) FROM licitaciones_adjudicaciones WHERE tipo_garantia IS NOT NULL AND TRIM(tipo_garantia) != ''")
-        raw_garantias = [r[0] for r in db.execute(garantia_sql).fetchall() if r[0]]
+        garantia_sql = text("SELECT DISTINCT tipo_garantia FROM licitaciones_adjudicaciones WHERE tipo_garantia IS NOT NULL AND TRIM(tipo_garantia) != ''")
+        raw_garantias = [r[0].strip().upper() for r in db.execute(garantia_sql).fetchall() if r[0]]
         
         if not raw_garantias:
              raw_garantias = ["CARTA FIANZA", "POLIZA DE CAUCION", "RETENCION", "FIDEICOMISO", "CERTIFICADO BANCARIO"]
@@ -182,8 +182,8 @@ def get_all_filters(db: Session = Depends(get_db)):
         tipos_garantia = sorted(list(garantias_set))
 
         # NEW: 8. Tipos de Procedimiento (For Dashboard)
-        proc_sql = text("SELECT DISTINCT UPPER(TRIM(tipo_procedimiento)) FROM licitaciones_cabecera WHERE tipo_procedimiento IS NOT NULL AND TRIM(tipo_procedimiento) != '' ORDER BY 1")
-        tipos_entidad = [r[0] for r in db.execute(proc_sql).fetchall() if r[0]]
+        proc_sql = text("SELECT DISTINCT tipo_procedimiento FROM licitaciones_cabecera WHERE tipo_procedimiento IS NOT NULL AND TRIM(tipo_procedimiento) != '' ORDER BY 1")
+        tipos_entidad = [r[0].strip().upper() for r in db.execute(proc_sql).fetchall() if r[0]]
         
         return {
             "departamentos": departamentos,
@@ -261,7 +261,7 @@ def get_licitaciones(
                 # B1. Search Consortium Members directly (Get IDs first)
                 cons_sql = text("""
                     SELECT id_contrato FROM detalle_consorcios 
-                    WHERE UPPER(nombre_miembro) LIKE :search OR ruc_miembro LIKE :search
+                    WHERE nombre_miembro LIKE :search OR ruc_miembro LIKE :search
                     LIMIT :limit
                 """)
                 cons_contract_ids = db.execute(cons_sql, {"search": search_like, "limit": limit_subquery}).scalars().all()
@@ -285,9 +285,9 @@ def get_licitaciones(
                 adj_sql = text("""
                     SELECT id_convocatoria FROM licitaciones_adjudicaciones 
                     WHERE (
-                        UPPER(ganador_nombre) LIKE :search OR 
+                        ganador_nombre LIKE :search OR 
                         ganador_ruc LIKE :search OR 
-                        UPPER(entidad_financiera) LIKE :search OR 
+                        entidad_financiera LIKE :search OR 
                         id_contrato LIKE :search
                     )
                     LIMIT :limit
@@ -324,7 +324,7 @@ def get_licitaciones(
                 where_clauses.append("1=0")
 
         if estado:
-            where_clauses.append("UPPER(TRIM(estado_proceso)) = :estado")
+            where_clauses.append("estado_proceso = :estado")
             params['estado'] = estado
         if categoria:
             # Reverse Normalization for Search (Handle English/Spanish mix)
@@ -336,25 +336,26 @@ def get_licitaciones(
                 cat_search.extend(['CONSULTING SERVICES', 'CONSULTORIA'])
             
             if len(cat_search) > 1:
-                where_clauses.append("UPPER(TRIM(categoria)) IN :categoria_list")
+                where_clauses.append("categoria IN :categoria_list")
                 params['categoria_list'] = tuple(cat_search)
             else:
-                where_clauses.append("UPPER(TRIM(categoria)) = :categoria")
+                where_clauses.append("categoria = :categoria")
                 params['categoria'] = categoria
         if departamento:
-            where_clauses.append("UPPER(TRIM(departamento)) = :departamento")
+            where_clauses.append("departamento = :departamento")
             params['departamento'] = departamento
         if provincia:
-            where_clauses.append("UPPER(TRIM(provincia)) = :provincia")
+            where_clauses.append("provincia = :provincia")
             params['provincia'] = provincia
         if distrito:
-            where_clauses.append("UPPER(TRIM(distrito)) = :distrito")
+            where_clauses.append("distrito = :distrito")
             params['distrito'] = distrito
         if year:
-            where_clauses.append("EXTRACT(YEAR FROM licitaciones_cabecera.fecha_publicacion) = :year")
-            params['year'] = year
+            where_clauses.append("fecha_publicacion >= :year_start AND fecha_publicacion <= :year_end")
+            params['year_start'] = f"{year}-01-01"
+            params['year_end'] = f"{year}-12-31"
         if comprador:
-            where_clauses.append("UPPER(TRIM(comprador)) = :comprador")
+            where_clauses.append("comprador = :comprador")
             params['comprador'] = comprador
         if tipo_procedimiento:
             # 1. Symbol Normalization (Ordinal 'º' -> Degree '°')
@@ -363,7 +364,7 @@ def get_licitaciones(
             # 2. Spacing Normalization (Handle "N° 123" vs "N°123")
             # We compare both sides with 'N° ' replaced by 'N°' to ignore that specific space.
             where_clauses.append("""
-                REPLACE(UPPER(TRIM(tipo_procedimiento)), 'N° ', 'N°') = REPLACE(:tipo_procedimiento, 'N° ', 'N°')
+                REPLACE(tipo_procedimiento, 'N° ', 'N°') = REPLACE(:tipo_procedimiento, 'N° ', 'N°')
             """)
             params['tipo_procedimiento'] = normalized_proc
             
@@ -395,7 +396,7 @@ def get_licitaciones(
                 EXISTS (
                     SELECT 1 FROM licitaciones_adjudicaciones la 
                     WHERE la.id_convocatoria = licitaciones_cabecera.id_convocatoria 
-                    AND UPPER(la.tipo_garantia) LIKE :garantia
+                    AND la.tipo_garantia LIKE :garantia
                 )
             """)
             params['garantia'] = f"%{tipo_garantia.upper()}%"
@@ -410,11 +411,11 @@ def get_licitaciones(
                     EXISTS (
                         SELECT 1 FROM licitaciones_adjudicaciones la 
                         WHERE la.id_convocatoria = licitaciones_cabecera.id_convocatoria 
-                        AND (UPPER(la.entidad_financiera) LIKE '%CREDITO%' 
-                             OR UPPER(la.entidad_financiera) LIKE '%BCP%'
-                             OR UPPER(la.entidad_financiera) = 'MI'
-                             OR UPPER(la.entidad_financiera) LIKE '%| MI'
-                             OR UPPER(la.entidad_financiera) LIKE '%MI |%')
+                        AND (la.entidad_financiera LIKE '%CREDITO%' 
+                             OR la.entidad_financiera LIKE '%BCP%'
+                             OR la.entidad_financiera = 'MI'
+                             OR la.entidad_financiera LIKE '%| MI'
+                             OR la.entidad_financiera LIKE '%MI |%')
                     )
                 """)
             elif search_entidad == "BBVA":
@@ -422,7 +423,7 @@ def get_licitaciones(
                     EXISTS (
                         SELECT 1 FROM licitaciones_adjudicaciones la 
                         WHERE la.id_convocatoria = licitaciones_cabecera.id_convocatoria 
-                        AND (UPPER(la.entidad_financiera) LIKE '%BBVA%' OR UPPER(la.entidad_financiera) LIKE '%CONTINENTAL%')
+                        AND (la.entidad_financiera LIKE '%BBVA%' OR la.entidad_financiera LIKE '%CONTINENTAL%')
                     )
                 """)
             elif search_entidad == "INTERBANK":
@@ -430,7 +431,7 @@ def get_licitaciones(
                     EXISTS (
                         SELECT 1 FROM licitaciones_adjudicaciones la 
                         WHERE la.id_convocatoria = licitaciones_cabecera.id_convocatoria 
-                        AND (UPPER(la.entidad_financiera) LIKE '%INTERBANK%' OR UPPER(la.entidad_financiera) LIKE '%INTERNACIONAL%')
+                        AND (la.entidad_financiera LIKE '%INTERBANK%' OR la.entidad_financiera LIKE '%INTERNACIONAL%')
                     )
                 """)
             elif search_entidad == "CESCE":
@@ -438,7 +439,7 @@ def get_licitaciones(
                     EXISTS (
                         SELECT 1 FROM licitaciones_adjudicaciones la 
                         WHERE la.id_convocatoria = licitaciones_cabecera.id_convocatoria 
-                        AND (UPPER(la.entidad_financiera) LIKE '%CESCE%' OR UPPER(la.entidad_financiera) LIKE '%SECREX%')
+                        AND (la.entidad_financiera LIKE '%CESCE%' OR la.entidad_financiera LIKE '%SECREX%')
                     )
                 """)
             elif search_entidad == "BANCOM":
@@ -446,7 +447,7 @@ def get_licitaciones(
                     EXISTS (
                         SELECT 1 FROM licitaciones_adjudicaciones la 
                         WHERE la.id_convocatoria = licitaciones_cabecera.id_convocatoria 
-                        AND (UPPER(la.entidad_financiera) LIKE '%BANCOM%' OR UPPER(la.entidad_financiera) = 'M')
+                        AND (la.entidad_financiera LIKE '%BANCOM%' OR la.entidad_financiera = 'M')
                     )
                 """)
             elif "PICHINCHA" in search_entidad:
@@ -454,7 +455,7 @@ def get_licitaciones(
                     EXISTS (
                         SELECT 1 FROM licitaciones_adjudicaciones la 
                         WHERE la.id_convocatoria = licitaciones_cabecera.id_convocatoria 
-                        AND (UPPER(la.entidad_financiera) LIKE '%PICHINCHA%' OR UPPER(la.entidad_financiera) LIKE '%FINANCIERO%')
+                        AND (la.entidad_financiera LIKE '%PICHINCHA%' OR la.entidad_financiera LIKE '%FINANCIERO%')
                     )
                 """)
             elif "SCOTIABANK" in search_entidad:
@@ -462,7 +463,7 @@ def get_licitaciones(
                     EXISTS (
                         SELECT 1 FROM licitaciones_adjudicaciones la 
                         WHERE la.id_convocatoria = licitaciones_cabecera.id_convocatoria 
-                        AND (UPPER(la.entidad_financiera) LIKE '%SCOTIABANK%' OR UPPER(la.entidad_financiera) LIKE '%SCOTIA%')
+                        AND (la.entidad_financiera LIKE '%SCOTIABANK%' OR la.entidad_financiera LIKE '%SCOTIA%')
                     )
                 """)
             elif "GNB" in search_entidad:
@@ -470,7 +471,7 @@ def get_licitaciones(
                     EXISTS (
                         SELECT 1 FROM licitaciones_adjudicaciones la 
                         WHERE la.id_convocatoria = licitaciones_cabecera.id_convocatoria 
-                        AND (UPPER(la.entidad_financiera) LIKE '%GNB%')
+                        AND (la.entidad_financiera LIKE '%GNB%')
                     )
                 """)
             elif "COMERCIO" in search_entidad:
@@ -478,7 +479,7 @@ def get_licitaciones(
                     EXISTS (
                         SELECT 1 FROM licitaciones_adjudicaciones la 
                         WHERE la.id_convocatoria = licitaciones_cabecera.id_convocatoria 
-                        AND (UPPER(la.entidad_financiera) LIKE '%COMERCIO%')
+                        AND (la.entidad_financiera LIKE '%COMERCIO%')
                     )
                 """)
             else:
@@ -486,7 +487,7 @@ def get_licitaciones(
                     EXISTS (
                         SELECT 1 FROM licitaciones_adjudicaciones la 
                         WHERE la.id_convocatoria = licitaciones_cabecera.id_convocatoria 
-                        AND UPPER(la.entidad_financiera) LIKE :entidad
+                        AND la.entidad_financiera LIKE :entidad
                     )
                 """)
                 params['entidad'] = f"%{search_entidad}%"
@@ -1030,9 +1031,9 @@ def get_locations_old(
             
             # Get Provincias
             prov_sql = text("""
-                SELECT DISTINCT UPPER(TRIM(provincia)) 
+                SELECT DISTINCT provincia 
                 FROM licitaciones_cabecera 
-                WHERE UPPER(TRIM(departamento)) = :dept AND provincia IS NOT NULL AND TRIM(provincia) != '' 
+                WHERE departamento = :dept AND provincia IS NOT NULL AND TRIM(provincia) != '' 
                 ORDER BY 1
             """)
             provincias = [row[0] for row in db.execute(prov_sql, {"dept": dept_normalized}).fetchall() if row[0]]
@@ -1043,9 +1044,9 @@ def get_locations_old(
                 
                 # Get Distritos
                 dist_sql = text("""
-                    SELECT DISTINCT UPPER(TRIM(distrito)) 
+                    SELECT DISTINCT distrito 
                     FROM licitaciones_cabecera 
-                    WHERE UPPER(TRIM(departamento)) = :dept AND UPPER(TRIM(provincia)) = :prov AND distrito IS NOT NULL AND TRIM(distrito) != '' 
+                    WHERE departamento = :dept AND provincia = :prov AND distrito IS NOT NULL AND TRIM(distrito) != '' 
                     ORDER BY 1
                 """)
                 distritos = [row[0] for row in db.execute(dist_sql, {"dept": dept_normalized, "prov": prov_normalized}).fetchall() if row[0]]

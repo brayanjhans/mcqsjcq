@@ -256,206 +256,216 @@ export function HeaderActions() {
         }
     };
 
+    const handleUpdateMefClick = () => {
+        window.location.reload();
+    };
+
     return (
         <>
-            <div className="absolute top-6 right-6 z-50 flex items-center gap-4">
-                {/* MEF Update Button (Responsive) */}
-                <div className="relative flex flex-col items-center">
+            <div className="w-full h-14 sm:h-16 bg-white dark:bg-[#0b122b] border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-2 sm:px-6 z-40 shrink-0 shadow-sm transition-colors duration-300">
+
+                {/* Left side: Back Button Portal Target */}
+                <div id="portal-header-left" className="flex items-center min-w-0"></div>
+
+                {/* Right side: Actions */}
+                <div className="flex items-center justify-end gap-1 sm:gap-3 shrink-0 ml-auto">
+                    {/* Last Updated Label - Hidden on mobile */}
+                    <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
+                        {mefLastUpdated || isUpdatingMef ? (
+                            isUpdatingMef ? (
+                                <span className="text-xs sm:text-sm text-blue-500 font-medium whitespace-nowrap">
+                                    <i className="fas fa-database fa-fade"></i> Trabajando...
+                                </span>
+                            ) : (
+                                <span className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium whitespace-nowrap">
+                                    Datos al {mefLastUpdated}
+                                </span>
+                            )
+                        ) : null}
+                    </div>
+
+                    {/* Refresh Button */}
                     <button
-                        onClick={() => window.location.reload()}
-                        className={`flex h-12 px-4 rounded-full backdrop-blur-md border border-gray-200 dark:border-slate-700 shadow-lg items-center justify-center gap-2 transition-all 
-                            ${isUpdatingMef ? 'bg-blue-50/50 dark:bg-blue-900/30' : 'bg-white/50 dark:bg-slate-800/50 hover:bg-white dark:hover:bg-slate-800 active:scale-95'} 
-                            text-slate-700 dark:text-blue-300`}
+                        onClick={handleUpdateMefClick}
+                        className={`flex h-10 px-4 rounded-full backdrop-blur-md border border-gray-200 dark:border-slate-700 shadow-sm items-center justify-center gap-2 transition-all 
+                            ${isUpdatingMef ? 'bg-blue-50/50 dark:bg-blue-900/30' : 'bg-white hover:bg-slate-50 dark:bg-slate-800/50 dark:hover:bg-slate-800 active:scale-95'} 
+                            text-slate-700 dark:text-blue-300 font-medium text-sm`}
                         title="Refrescar vista"
                     >
                         <i className={`fas fa-sync ${isUpdatingMef ? 'fa-spin text-blue-500' : ''}`}></i>
-                        <span className="hidden md:inline text-sm font-bold text-center">
+                        <span className="hidden md:inline">
                             Refrescar
                         </span>
                     </button>
-                    {(mefLastUpdated || isUpdatingMef) && (
-                        <div className="absolute -bottom-5 flex items-center justify-center w-full gap-1">
-                            {isUpdatingMef ? (
-                                <span className="text-[10px] text-blue-500 dark:text-blue-400 font-bold whitespace-nowrap animate-pulse flex items-center gap-1">
-                                    <i className="fas fa-database fa-fade"></i> API Trabajando...
-                                </span>
-                            ) : (
-                                <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium whitespace-nowrap">
-                                    Datos al {mefLastUpdated}
-                                </span>
-                            )}
-                        </div>
-                    )}
-                </div>
 
-                {/* Dark Mode Toggle (Desktop) */}
-                <button
-                    onClick={toggleTheme}
-                    className="hidden lg:flex w-12 h-12 rounded-full bg-white/50 dark:bg-slate-800/50 backdrop-blur-md border border-gray-200 dark:border-slate-700 shadow-lg items-center justify-center text-slate-700 dark:text-blue-300 hover:bg-white dark:hover:bg-slate-800 transition-all group"
-                    title={darkMode ? "Cambiar a Modo Claro" : "Cambiar a Modo Oscuro"}
-                >
-                    <i className={`fas ${darkMode ? 'fa-sun' : 'fa-moon'} text-xl transition-transform group-hover:rotate-12`}></i>
-                </button>
+                    {/* Portal Target for Page-Specific Actions like Export */}
+                    <div id="portal-header-actions" className="flex items-center"></div>
 
-                {/* Notifications (Desktop) */}
-                <div className="hidden lg:flex w-12 h-12 rounded-full bg-white/50 dark:bg-slate-800/50 backdrop-blur-md border border-gray-200 dark:border-slate-700 shadow-lg items-center justify-center transition-all">
-                    <NotificationDropdown
-                        isOpen={activeDropdown === 'notifications'}
-                        onToggle={() => setActiveDropdown(activeDropdown === 'notifications' ? null : 'notifications')}
-                        onClose={() => setActiveDropdown(null)}
-                    />
-                </div>
+                    {/* Vertical line separator */}
+                    <div className="hidden xs:flex h-6 items-center">
+                        <div className="h-6 w-px bg-slate-200 dark:bg-slate-700 mx-1 sm:mx-2"></div>
+                    </div>
 
-                {/* User Profile (Visible always) */}
-                <div className="relative">
-                    <button
-                        onClick={() => setActiveDropdown(isProfileOpen ? null : 'profile')}
-                        className="w-12 h-12 rounded-full bg-white/50 dark:bg-slate-800/50 backdrop-blur-md border border-gray-200 dark:border-slate-700 shadow-lg flex items-center justify-center text-gray-700 dark:text-gray-200 hover:bg-white dark:hover:bg-slate-800 transition-all hover:scale-110 active:scale-95 group p-0.5"
-                    >
-                        <div className="w-full h-full rounded-full bg-gradient-to-tr from-blue-600 to-cyan-500 flex items-center justify-center text-white text-lg font-bold shadow-md overflow-hidden">
-                            {user?.avatar_url ? (
-                                <img src={user.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
-                            ) : (
-                                user?.nombre?.charAt(0).toUpperCase() || user?.username?.charAt(0).toUpperCase() || 'U'
-                            )}
-                        </div>
-                    </button>
+                    {/* Notifications */}
+                    <div className="flex w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-slate-50 dark:bg-slate-800/50 backdrop-blur-md items-center justify-center transition-all relative shrink-0">
+                        <NotificationDropdown
+                            isOpen={activeDropdown === 'notifications'}
+                            onToggle={() => setActiveDropdown(activeDropdown === 'notifications' ? null : 'notifications')}
+                            onClose={() => setActiveDropdown(null)}
+                        />
+                    </div>
 
-                    {/* Dropdown Menu */}
-                    {isProfileOpen && (
-                        <div className="absolute right-0 top-full mt-2 w-72 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-gray-100 dark:border-slate-700 overflow-hidden animate-in fade-in zoom-in-95 duration-200 origin-top-right z-[9999]">
-                            <div className="p-4 border-b border-gray-100 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-900/50">
-                                <p className="font-bold text-gray-900 dark:text-white mb-1">{user?.nombre || 'Usuario'}</p>
-                                <p className="text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">{user?.job_title || 'Sin cargo definido'}</p>
-                                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user?.email || 'usuario@example.com'}</p>
+                    {/* User Profile */}
+                    <div className="relative shrink-0">
+                        <button
+                            onClick={() => setActiveDropdown(isProfileOpen ? null : 'profile')}
+                            className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-slate-100 dark:bg-slate-800/50 backdrop-blur-md flex items-center justify-center text-gray-700 dark:text-gray-200 hover:scale-105 active:scale-95 group p-0"
+                        >
+                            <div className="w-full h-full rounded-full bg-gradient-to-tr from-blue-600 to-cyan-500 flex items-center justify-center text-white text-lg font-bold shadow-sm overflow-hidden border-2 border-white dark:border-slate-800">
+                                {user?.avatar_url ? (
+                                    <img src={user.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                                ) : (
+                                    user?.nombre?.charAt(0).toUpperCase() || user?.username?.charAt(0).toUpperCase() || 'U'
+                                )}
                             </div>
+                        </button>
 
-                            {/* Mobile Icons Row */}
-                            <div className="lg:hidden flex items-center justify-around gap-4 p-3 m-2 bg-gray-50/80 dark:bg-slate-900/50 rounded-xl border border-gray-100 dark:border-slate-700">
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        toggleTheme();
-                                    }}
-                                    className="flex flex-col items-center gap-1 group"
-                                >
-                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center shadow-sm border transition-all ${darkMode ? 'bg-slate-800 border-slate-700 text-blue-300' : 'bg-white border-gray-200 text-amber-500'} group-active:scale-95`}>
-                                        <i className={`fas ${darkMode ? 'fa-moon' : 'fa-sun'} text-lg`}></i>
-                                    </div>
-                                    <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400">Tema</span>
-                                </button>
+                        {/* Dropdown Menu */}
+                        {isProfileOpen && (
+                            <div className="absolute right-0 top-full mt-2 w-72 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-gray-100 dark:border-slate-700 overflow-hidden animate-in fade-in zoom-in-95 duration-200 origin-top-right z-[9999]">
+                                <div className="p-4 border-b border-gray-100 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-900/50">
+                                    <p className="font-bold text-gray-900 dark:text-white mb-1">{user?.nombre || 'Usuario'}</p>
+                                    <p className="text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">{user?.job_title || 'Sin cargo definido'}</p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user?.email || 'usuario@example.com'}</p>
+                                </div>
 
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setActiveDropdown(null);
-                                        setIsNotificationModalOpen(true);
-                                    }}
-                                    className="flex flex-col items-center gap-1 group"
-                                >
-                                    <div className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center shadow-sm border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-300 group-active:scale-95 relative">
-                                        <i className="fas fa-bell text-lg"></i>
-                                        <span className="absolute top-2 right-2.5 w-2 h-2 bg-red-500 rounded-full border border-white dark:border-slate-800"></span>
-                                    </div>
-                                    <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400">Alertas</span>
-                                </button>
-                            </div>
+                                {/* Mobile Icons Row */}
+                                <div className="lg:hidden flex items-center justify-around gap-4 p-3 m-2 bg-gray-50/80 dark:bg-slate-900/50 rounded-xl border border-gray-100 dark:border-slate-700">
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            toggleTheme();
+                                        }}
+                                        className="flex flex-col items-center gap-1 group"
+                                    >
+                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center shadow-sm border transition-all ${darkMode ? 'bg-slate-800 border-slate-700 text-blue-300' : 'bg-white border-gray-200 text-amber-500'} group-active:scale-95`}>
+                                            <i className={`fas ${darkMode ? 'fa-moon' : 'fa-sun'} text-lg`}></i>
+                                        </div>
+                                        <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400">Tema</span>
+                                    </button>
 
-                            <div className="p-2">
-                                {['admin', 'director', 'DIRECTOR', 'ADMIN'].includes(user?.role) && (
-                                    <>
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleUpdateMef();
-                                            }}
-                                            disabled={isUpdatingMef}
-                                            className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-900/20 text-sm font-medium text-blue-700 dark:text-blue-400 flex items-center gap-3 transition-colors"
-                                            title="Actualizar base de datos del MEF"
-                                        >
-                                            <div className="w-6 flex justify-center">
-                                                <i className={`fas ${updateSuccess ? 'fa-check text-emerald-500' : 'fa-database'} ${isUpdatingMef ? 'fa-spin' : ''}`}></i>
-                                            </div>
-                                            {isUpdatingMef || updateSuccess || mefStatusText.includes('Error') ? mefStatusText : 'Extraer Datos MEF'}
-                                        </button>
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleUpdateOsce();
-                                            }}
-                                            disabled={isUpdatingOsce}
-                                            className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-emerald-50 dark:hover:bg-emerald-900/20 text-sm font-medium text-emerald-700 dark:text-emerald-400 flex items-center gap-3 transition-colors"
-                                            title="Actualizar datos OSCE/SEACE (modo incremental)"
-                                        >
-                                            <div className="w-6 flex justify-center">
-                                                <i className={`fas ${osceStatusText === 'Actualizado con datos nuevos' ? 'fa-check text-emerald-500' :
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setActiveDropdown(null);
+                                            setIsNotificationModalOpen(true);
+                                        }}
+                                        className="flex flex-col items-center gap-1 group"
+                                    >
+                                        <div className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center shadow-sm border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-300 group-active:scale-95 relative">
+                                            <i className="fas fa-bell text-lg"></i>
+                                            <span className="absolute top-2 right-2.5 w-2 h-2 bg-red-500 rounded-full border border-white dark:border-slate-800"></span>
+                                        </div>
+                                        <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400">Alertas</span>
+                                    </button>
+                                </div>
+
+                                <div className="p-2">
+                                    {['admin', 'director', 'DIRECTOR', 'ADMIN'].includes(user?.role) && (
+                                        <>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleUpdateMef();
+                                                }}
+                                                disabled={isUpdatingMef}
+                                                className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-900/20 text-sm font-medium text-blue-700 dark:text-blue-400 flex items-center gap-3 transition-colors"
+                                                title="Actualizar base de datos del MEF"
+                                            >
+                                                <div className="w-6 flex justify-center">
+                                                    <i className={`fas ${updateSuccess ? 'fa-check text-emerald-500' : 'fa-database'} ${isUpdatingMef ? 'fa-spin' : ''}`}></i>
+                                                </div>
+                                                {isUpdatingMef || updateSuccess || mefStatusText.includes('Error') ? mefStatusText : 'Extraer Datos MEF'}
+                                            </button>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleUpdateOsce();
+                                                }}
+                                                disabled={isUpdatingOsce}
+                                                className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-emerald-50 dark:hover:bg-emerald-900/20 text-sm font-medium text-emerald-700 dark:text-emerald-400 flex items-center gap-3 transition-colors"
+                                                title="Actualizar datos OSCE/SEACE (modo incremental)"
+                                            >
+                                                <div className="w-6 flex justify-center">
+                                                    <i className={`fas ${osceStatusText === 'Actualizado con datos nuevos' ? 'fa-check text-emerald-500' :
                                                         osceStatusText === 'Sin cambios nuevos' ? 'fa-circle-check text-blue-400' :
                                                             osceStatusText.includes('Error') ? 'fa-triangle-exclamation text-red-400' :
                                                                 'fa-satellite-dish'
-                                                    } ${isUpdatingOsce ? 'fa-pulse' : ''}`}></i>
-                                            </div>
-                                            <span className={
-                                                osceStatusText === 'Sin cambios nuevos' ? 'text-blue-500 dark:text-blue-400' :
-                                                    osceStatusText.includes('Error') ? 'text-red-500' : ''
-                                            }>
-                                                {isUpdatingOsce || osceStatusText !== 'Actualizando SEACE...' ? osceStatusText : 'Actualizar SEACE'}
-                                            </span>
-                                        </button>
-                                        <div className="h-px bg-gray-100 dark:bg-slate-700 my-1"></div>
-                                    </>
-                                )}
-                                <button
-                                    onClick={() => {
-                                        setActiveDropdown(null);
-                                        router.push('/profile');
-                                    }}
-                                    className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700/50 text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-3 transition-colors"
-                                >
-                                    <div className="w-6 flex justify-center">
-                                        <i className="fas fa-user-circle text-gray-400"></i>
-                                    </div>
-                                    Editar perfil
-                                </button>
-                                <button
-                                    onClick={() => {
-                                        setActiveDropdown(null);
-                                        setIsSettingsModalOpen(true);
-                                    }}
-                                    className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700/50 text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-3 transition-colors"
-                                >
-                                    <div className="w-6 flex justify-center">
-                                        <i className="fas fa-cog text-gray-400"></i>
-                                    </div>
-                                    Configuración
-                                </button>
-                                <button
-                                    onClick={() => {
-                                        setActiveDropdown(null);
-                                        setIsSupportModalOpen(true);
-                                    }}
-                                    className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700/50 text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-3 transition-colors"
-                                >
-                                    <div className="w-6 flex justify-center">
-                                        <i className="fas fa-circle-info text-gray-400"></i>
-                                    </div>
-                                    Soporte
-                                </button>
-                                <div className="h-px bg-gray-100 dark:bg-slate-700 my-1"></div>
-                                <button
-                                    onClick={() => {
-                                        setActiveDropdown(null);
-                                        setIsLogoutModalOpen(true);
-                                    }}
-                                    className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 text-sm font-medium text-red-600 dark:text-red-400 flex items-center gap-3 transition-colors"
-                                >
-                                    <div className="w-6 flex justify-center">
-                                        <i className="fas fa-right-from-bracket"></i>
-                                    </div>
-                                    Cerrar Sesión
-                                </button>
+                                                        } ${isUpdatingOsce ? 'fa-pulse' : ''}`}></i>
+                                                </div>
+                                                <span className={
+                                                    osceStatusText === 'Sin cambios nuevos' ? 'text-blue-500 dark:text-blue-400' :
+                                                        osceStatusText.includes('Error') ? 'text-red-500' : ''
+                                                }>
+                                                    {isUpdatingOsce || osceStatusText !== 'Actualizando SEACE...' ? osceStatusText : 'Actualizar SEACE'}
+                                                </span>
+                                            </button>
+                                            <div className="h-px bg-gray-100 dark:bg-slate-700 my-1"></div>
+                                        </>
+                                    )}
+                                    <button
+                                        onClick={() => {
+                                            setActiveDropdown(null);
+                                            router.push('/profile');
+                                        }}
+                                        className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700/50 text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-3 transition-colors"
+                                    >
+                                        <div className="w-6 flex justify-center">
+                                            <i className="fas fa-user-circle text-gray-400"></i>
+                                        </div>
+                                        Editar perfil
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            setActiveDropdown(null);
+                                            setIsSettingsModalOpen(true);
+                                        }}
+                                        className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700/50 text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-3 transition-colors"
+                                    >
+                                        <div className="w-6 flex justify-center">
+                                            <i className="fas fa-cog text-gray-400"></i>
+                                        </div>
+                                        Configuración
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            setActiveDropdown(null);
+                                            setIsSupportModalOpen(true);
+                                        }}
+                                        className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700/50 text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-3 transition-colors"
+                                    >
+                                        <div className="w-6 flex justify-center">
+                                            <i className="fas fa-circle-info text-gray-400"></i>
+                                        </div>
+                                        Soporte
+                                    </button>
+                                    <div className="h-px bg-gray-100 dark:bg-slate-700 my-1"></div>
+                                    <button
+                                        onClick={() => {
+                                            setActiveDropdown(null);
+                                            setIsLogoutModalOpen(true);
+                                        }}
+                                        className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 text-sm font-medium text-red-600 dark:text-red-400 flex items-center gap-3 transition-colors"
+                                    >
+                                        <div className="w-6 flex justify-center">
+                                            <i className="fas fa-right-from-bracket"></i>
+                                        </div>
+                                        Cerrar Sesión
+                                    </button>
+                                </div>
                             </div>
-                        </div>
-                    )}
+                        )}
+                    </div>
                 </div>
             </div>
 
