@@ -36,6 +36,7 @@ class AdjudicacionSchema(BaseModel):
     url_pdf_contrato: Optional[str] = None
     url_pdf_consorcio: Optional[str] = None
     url_pdf_cartafianza: Optional[str] = None
+    url_pdf_oferta: Optional[str] = None
     ubicacion_completa: Optional[str] = None
     departamento: Optional[str] = None
     provincia: Optional[str] = None
@@ -88,6 +89,7 @@ class AdjudicacionCreate(BaseModel):
     url_pdf_contrato: Optional[str] = None
     url_pdf_consorcio: Optional[str] = None
     url_pdf_cartafianza: Optional[str] = None
+    url_pdf_oferta: Optional[str] = None
     ubicacion_completa: Optional[str] = None
     departamento: Optional[str] = None
     provincia: Optional[str] = None
@@ -201,6 +203,9 @@ class PaginatedLicitacionesSchema(BaseModel):
     page: int
     limit: int
     total_pages: int
+
+class AdjudicacionOfertaUpdate(BaseModel):
+    url_pdf_oferta: Optional[str] = None
 
 
 # ============================================

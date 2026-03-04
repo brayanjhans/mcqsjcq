@@ -56,6 +56,7 @@ export interface Adjudicacion {
     url_pdf_contrato?: string;
     url_pdf_consorcio?: string;
     url_pdf_cartafianza?: string;
+    url_pdf_oferta?: string;
     estado_item?: string;
 }
 

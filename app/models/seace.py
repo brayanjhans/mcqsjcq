@@ -55,6 +55,7 @@ class LicitacionesAdjudicaciones(Base):
     url_pdf_contrato = Column(String(500))
     url_pdf_consorcio = Column(String(500))
     url_pdf_cartafianza = Column(String(500))
+    url_pdf_oferta = Column(String(500))
     ubicacion_completa = Column(String(500))  # Ubicación específica del item
     departamento = Column(String(100))  # Departamento del item
     provincia = Column(String(100))  # Provincia del item

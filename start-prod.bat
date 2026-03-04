@@ -5,13 +5,13 @@ echo ========================================
 echo.
 
 echo [1/2] Iniciando Backend (Produccion)...
-start "SEACE Backend PROD" cmd /k "cd /d C:\laragon\www\proyecto_garantias && venv\Scripts\python.exe -m uvicorn app.main:app --host 0.0.0.0 --port 8000"
+start "SEACE Backend PROD" cmd /k "cd /d %~dp0 && venv\Scripts\python.exe -m uvicorn app.main:app --host 0.0.0.0 --port 8000"
 
 timeout /t 3 /nobreak >nul
 
 echo [2/2] Iniciando Frontend (Produccion)...
 echo NOTA: Debes haber ejecutado 'npm run build' primero.
-start "SEACE Frontend PROD" cmd /k "cd /d C:\laragon\www\proyecto_garantias\frontend && npm start"
+start "SEACE Frontend PROD" cmd /k "cd /d %~dp0frontend && npm start"
 
 timeout /t 5 /nobreak >nul
 

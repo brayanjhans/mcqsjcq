@@ -712,6 +712,126 @@ def get_locations(
             "distritos": []
         }
 
+from fastapi import UploadFile, File
+from pathlib import Path
+import shutil
+
+OFERTAS_DIR = Path(__file__).parent.parent.parent / "ofertas_pdfs"
+
+@router.post("/adjudicaciones/{id_adjudicacion}/oferta_upload")
+def upload_adjudicacion_oferta(
+    id_adjudicacion: str,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
+    try:
+        # Check if exists using raw SQL
+        check_query = text("SELECT id_adjudicacion FROM licitaciones_adjudicaciones WHERE id_adjudicacion = :id")
+        result = db.execute(check_query, {"id": id_adjudicacion}).fetchone()
+        
+        if not result:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Adjudicación {id_adjudicacion} no encontrada"
+            )
+            
+        if not file.filename.lower().endswith(".pdf"):
+            raise HTTPException(
+                status_code=400,
+                detail="Solo se permiten archivos PDF"
+            )
+
+        OFERTAS_DIR.mkdir(parents=True, exist_ok=True)
+        
+        file_extension = Path(file.filename).suffix
+        safe_filename = f"oferta_{id_adjudicacion}{file_extension}"
+        file_path = OFERTAS_DIR / safe_filename
+        
+        with open(file_path, "wb") as f:
+            shutil.copyfileobj(file.file, f)
+
+        final_url = f"/api/licitaciones/ofertas/download/{safe_filename}"
+        
+        update_query = text("""
+            UPDATE licitaciones_adjudicaciones 
+            SET url_pdf_oferta = :url 
+            WHERE id_adjudicacion = :id
+        """)
+        db.execute(update_query, {"url": final_url, "id": id_adjudicacion})
+        db.commit()
+
+        return {"message": "Archivo subido exitosamente", "url_pdf_oferta": final_url}
+        
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        db.rollback()
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            detail=f"Error interno al guardar archivo: {str(e)}"
+        )
+
+@router.get("/ofertas/download/{filename}")
+async def download_oferta(filename: str):
+    from fastapi.responses import FileResponse
+    file_path = OFERTAS_DIR / filename
+    
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Archivo no encontrado")
+        
+    return FileResponse(
+        path=file_path,
+        filename=filename,
+        media_type='application/pdf'
+    )
+
+from pydantic import BaseModel
+
+class OfertaUpdateReq(BaseModel):
+    url_pdf_oferta: str
+
+@router.put("/adjudicaciones/{id_adjudicacion}/oferta")
+def update_adjudicacion_oferta(
+    id_adjudicacion: str,
+    req: OfertaUpdateReq,
+    db: Session = Depends(get_db)
+):
+    try:
+        # Check if exists
+        check_query = text("SELECT id_adjudicacion FROM licitaciones_adjudicaciones WHERE id_adjudicacion = :id")
+        result = db.execute(check_query, {"id": id_adjudicacion}).fetchone()
+        
+        if not result:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Adjudicación {id_adjudicacion} no encontrada"
+            )
+            
+        # Update using raw SQL to prevent deadlock
+        update_query = text("""
+            UPDATE licitaciones_adjudicaciones 
+            SET url_pdf_oferta = :url 
+            WHERE id_adjudicacion = :id
+        """)
+        
+        db.execute(update_query, {
+            "url": req.url_pdf_oferta,
+            "id": id_adjudicacion
+        })
+        db.commit()
+        
+        return {"message": "Oferta actualizada exitosamente"}
+        
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            detail=f"Error al actualizar oferta: {str(e)}"
+        )
 
 @router.get("/{id_convocatoria}")
 def get_licitacion_detail(
@@ -787,7 +907,7 @@ def get_licitacion_detail(
                 monto_adjudicado, fecha_adjudicacion,
                 estado_item, entidad_financiera, tipo_garantia, moneda,
                 id_contrato, url_pdf_cartafianza,
-                url_pdf_contrato, url_pdf_consorcio
+                url_pdf_contrato, url_pdf_consorcio, url_pdf_oferta
             FROM licitaciones_adjudicaciones
             WHERE id_convocatoria = :id
         """)
@@ -811,7 +931,8 @@ def get_licitacion_detail(
                 "id_contrato": adj_row[9],
                 "url_pdf_cartafianza": adj_row[10],
                 "url_pdf_contrato": adj_row[11],
-                "url_pdf_consorcio": adj_row[12]
+                "url_pdf_consorcio": adj_row[12],
+                "url_pdf_oferta": adj_row[13] if len(adj_row) > 13 else None
             })
         
         licitacion["adjudicaciones"] = adjudicaciones

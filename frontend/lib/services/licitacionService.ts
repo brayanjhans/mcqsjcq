@@ -73,6 +73,20 @@ export const licitacionService = {
         return response.data;
     },
 
+    // Update Adjudicacion Oferta
+    updateOferta: async (id_adjudicacion: string, url_pdf_oferta: string) => {
+        const response = await api.put(`/api/licitaciones/adjudicaciones/${id_adjudicacion}/oferta`, { url_pdf_oferta });
+        return response.data;
+    },
+
+    // Upload Oferta File
+    uploadOfertaFile: async (id_adjudicacion: string, file: File) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        const response = await api.post(`/api/licitaciones/adjudicaciones/${id_adjudicacion}/oferta_upload`, formData);
+        return response.data;
+    },
+
     // Export Data (PDF/Excel/CSV)
     exportData: async (format: 'pdf' | 'excel' | 'csv', ids: string[], allMatches: boolean, filters: SearchFilters = {}) => {
         const response = await api.post('/api/export', {

@@ -1,9 +1,10 @@
 """
 Licitaciones endpoints for listing and detail views.
 """
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import and_, or_
+from pathlib import Path
 from app.database import get_db
 from app.models.seace import LicitacionesCabecera, LicitacionesAdjudicaciones
 from app.schemas import (
@@ -698,6 +699,92 @@ def update_licitacion(
 
     return existing_licitacion
 
+@router.put("/adjudicaciones/{id_adjudicacion}/oferta")
+def update_adjudicacion_oferta(
+    id_adjudicacion: str,
+    oferta_data: dict,  # Or use a specific schema like AdjudicacionOfertaUpdate if imported
+    db: Session = Depends(get_db)
+):
+    from app.models.seace import LicitacionesAdjudicaciones
+    
+    adjudicacion = db.query(LicitacionesAdjudicaciones).filter(
+        LicitacionesAdjudicaciones.id_adjudicacion == id_adjudicacion
+    ).first()
+    
+    if not adjudicacion:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Adjudicación {id_adjudicacion} no encontrada"
+        )
+        
+    adjudicacion.url_pdf_oferta = oferta_data.get("url_pdf_oferta")
+    db.commit()
+    db.refresh(adjudicacion)
+    
+    return {"message": "Oferta actualizada exitosamente", "url_pdf_oferta": adjudicacion.url_pdf_oferta}
+
+OFERTAS_DIR = Path(__file__).parent.parent.parent / "ofertas_pdfs"
+
+@router.post("/adjudicaciones/{id_adjudicacion}/oferta_upload")
+def upload_adjudicacion_oferta(
+    id_adjudicacion: str,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
+    import shutil
+    from sqlalchemy import text
+    
+    # Check if exists using raw SQL
+    check_query = text("SELECT id_adjudicacion FROM licitaciones_adjudicaciones WHERE id_adjudicacion = :id")
+    result = db.execute(check_query, {"id": id_adjudicacion}).fetchone()
+    
+    if not result:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Adjudicación {id_adjudicacion} no encontrada"
+        )
+        
+    if not file.filename.lower().endswith(".pdf"):
+        raise HTTPException(
+            status_code=400,
+            detail="Solo se permiten archivos PDF"
+        )
+
+    OFERTAS_DIR.mkdir(parents=True, exist_ok=True)
+    
+    file_extension = Path(file.filename).suffix
+    safe_filename = f"oferta_{id_adjudicacion}{file_extension}"
+    file_path = OFERTAS_DIR / safe_filename
+    
+    with open(file_path, "wb") as f:
+        shutil.copyfileobj(file.file, f)
+
+    final_url = f"/api/licitaciones/ofertas/download/{safe_filename}"
+    
+    update_query = text("""
+        UPDATE licitaciones_adjudicaciones 
+        SET url_pdf_oferta = :url 
+        WHERE id_adjudicacion = :id
+    """)
+    db.execute(update_query, {"url": final_url, "id": id_adjudicacion})
+    db.commit()
+
+    return {"message": "Archivo subido exitosamente", "url_pdf_oferta": final_url}
+
+@router.get("/ofertas/download/{filename}")
+async def download_oferta(filename: str):
+    from fastapi.responses import FileResponse
+    file_path = OFERTAS_DIR / filename
+    
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Archivo no encontrado")
+        
+    try:
+        file_path.resolve().relative_to(OFERTAS_DIR.resolve())
+    except ValueError:
+        raise HTTPException(status_code=403, detail="Acceso denegado")
+        
+    return FileResponse(path=file_path, filename=filename, media_type='application/pdf')
 
 @router.delete("/{id_convocatoria}")
 def delete_licitacion(
