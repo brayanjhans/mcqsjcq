@@ -339,8 +339,8 @@ export function HeaderActions() {
                                     <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user?.email || 'usuario@example.com'}</p>
                                 </div>
 
-                                {/* Mobile Icons Row */}
-                                <div className="lg:hidden flex items-center justify-around gap-4 p-3 m-2 bg-gray-50/80 dark:bg-slate-900/50 rounded-xl border border-gray-100 dark:border-slate-700">
+                                {/* Theme & Alerts Row */}
+                                <div className="flex items-center justify-around gap-4 p-3 m-2 bg-gray-50/80 dark:bg-slate-900/50 rounded-xl border border-gray-100 dark:border-slate-700">
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
