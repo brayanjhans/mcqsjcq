@@ -58,6 +58,11 @@ export interface Adjudicacion {
     url_pdf_cartafianza?: string;
     url_pdf_oferta?: string;
     estado_item?: string;
+    // Fianzas y Pagaré document fields
+    fiel_cumplimiento?: string;
+    adelanto_materiales?: string;
+    adelanto_directo?: string;
+    doc_completo?: string;
 }
 
 export interface SearchFilters {

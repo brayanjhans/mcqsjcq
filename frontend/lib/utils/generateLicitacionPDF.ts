@@ -5,6 +5,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import type { Licitacion, EjecucionFinanciera, GarantiasResponse } from '@/types/licitacion';
+import { LOGO_MQS_B64, LOGO_JCQ_B64 } from './pdfAssets';
 
 // ── Color palette ──
 const COLORS = {
@@ -105,43 +106,41 @@ export function generateLicitacionPDF(
         y += Math.max(lines.length * 4, 5);
     };
 
-    // ═══════════════════════════════════════════════════
-    //  1. HEADER BAND
-    // ═══════════════════════════════════════════════════
-    doc.setFillColor(...COLORS.headerBg);
-    doc.rect(0, 0, pageW, 36, 'F');
+    // ═══════════════════════════════════════════════
+    //  1. HEADER WITH LOGOS
+    // ═══════════════════════════════════════════════
+    const logoSize = 18;
 
-    // Accent stripe
-    doc.setFillColor(...COLORS.primary);
-    doc.rect(0, 36, pageW, 2, 'F');
+    // Left logo (MQS)
+    try { doc.addImage(LOGO_MQS_B64, 'PNG', margin, 8, logoSize, logoSize); } catch (_) { }
 
-    // Title text
-    doc.setFontSize(18);
+    // Right logo (JCQ)
+    try { doc.addImage(LOGO_JCQ_B64, 'PNG', pageW - margin - logoSize, 8, logoSize, logoSize); } catch (_) { }
+
+    // Centered title
+    doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...COLORS.white);
-    doc.text('INFORME DE PROCESO', margin, 16);
+    doc.setTextColor(...COLORS.dark);
+    doc.text(`INFORME DE PROCESO N° ${licitacion.id_convocatoria}`, pageW / 2, 16, { align: 'center' });
 
-    doc.setFontSize(10);
+    // Subtitle
+    doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
-    doc.setTextColor(180, 190, 210);
-    doc.text(`Proceso ${licitacion.id_convocatoria}`, margin, 24);
+    doc.setTextColor(...COLORS.medium);
+    doc.text('MQS JCQ — Sistema de Inteligencia SEACE', pageW / 2, 22, { align: 'center' });
 
-    // Right side: System name
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...COLORS.white);
-    doc.text('MQS JCQ', pageW - margin, 16, { align: 'right' });
-    doc.setFontSize(7);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(140, 160, 190);
-    doc.text('Sistema de Inteligencia SEACE', pageW - margin, 22, { align: 'right' });
-
+    // Date
     const today = new Date().toLocaleDateString('es-PE', { day: '2-digit', month: 'long', year: 'numeric' });
     doc.setFontSize(7);
-    doc.setTextColor(140, 160, 190);
-    doc.text(`Fecha de emisión: ${today}`, pageW - margin, 28, { align: 'right' });
+    doc.setTextColor(...COLORS.medium);
+    doc.text(`Fecha de emisión: ${today}`, pageW / 2, 27, { align: 'center' });
 
-    y = 44;
+    // Separator line under header
+    doc.setDrawColor(...COLORS.primary);
+    doc.setLineWidth(0.7);
+    doc.line(margin, 30, pageW - margin, 30);
+
+    y = 36;
 
     // ═══════════════════════════════════════════════════
     //  2. INFORMACIÓN DEL PROCESO

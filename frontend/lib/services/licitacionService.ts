@@ -80,7 +80,7 @@ export const licitacionService = {
     },
 
     // Upload Oferta File
-    uploadOfertaFile: async (id_adjudicacion: string, file: File) => {
+    uploadOfertaFile: async (id_adjudicacion: string, file: File, onProgress?: (pct: number) => void) => {
         const formData = new FormData();
         formData.append('file', file);
         const response = await api.post(
@@ -89,11 +89,38 @@ export const licitacionService = {
             {
                 timeout: 0, // No timeout for large file uploads
                 headers: { 'Content-Type': 'multipart/form-data' },
+                onUploadProgress: onProgress ? (progressEvent: any) => {
+                    const pct = Math.round((progressEvent.loaded * 100) / (progressEvent.total || 1));
+                    onProgress(pct);
+                } : undefined,
             }
         );
         return response.data;
     },
 
+    // Upload Fianza Document (fiel_cumplimiento | adelanto_materiales | adelanto_directo | doc_completo)
+    uploadFianzaFile: async (id_adjudicacion: string, field: string, file: File) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        const response = await api.post(
+            `/api/licitaciones/adjudicaciones/${id_adjudicacion}/fianza_upload/${field}`,
+            formData,
+            {
+                timeout: 0,
+                headers: { 'Content-Type': 'multipart/form-data' },
+            }
+        );
+        return response.data;
+    },
+
+    // Update (clear) Fianza Document
+    updateFianza: async (id_adjudicacion: string, field: string, url: string) => {
+        const response = await api.put(
+            `/api/licitaciones/adjudicaciones/${id_adjudicacion}/fianza/${field}`,
+            { url }
+        );
+        return response.data;
+    },
 
     // Export Data (PDF/Excel/CSV)
     exportData: async (format: 'pdf' | 'excel' | 'csv', ids: string[], allMatches: boolean, filters: SearchFilters = {}) => {

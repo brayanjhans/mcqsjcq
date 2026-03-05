@@ -834,6 +834,92 @@ def update_adjudicacion_oferta(
             detail=f"Error al actualizar oferta: {str(e)}"
         )
 
+# ── Fianzas: Generic Upload / Update / Download for the 4 new document columns ──
+FIANZAS_DIR = Path(__file__).parent.parent.parent / "fianzas_pdfs"
+ALLOWED_FIANZA_FIELDS = {"fiel_cumplimiento", "adelanto_materiales", "adelanto_directo", "doc_completo"}
+
+@router.post("/adjudicaciones/{id_adjudicacion}/fianza_upload/{field}")
+def upload_fianza_doc(
+    id_adjudicacion: str,
+    field: str,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
+    if field not in ALLOWED_FIANZA_FIELDS:
+        raise HTTPException(status_code=400, detail=f"Campo '{field}' no válido. Opciones: {ALLOWED_FIANZA_FIELDS}")
+    try:
+        check_query = text("SELECT id_adjudicacion FROM licitaciones_adjudicaciones WHERE id_adjudicacion = :id")
+        result = db.execute(check_query, {"id": id_adjudicacion}).fetchone()
+        if not result:
+            raise HTTPException(status_code=404, detail=f"Adjudicación {id_adjudicacion} no encontrada")
+        if not file.filename.lower().endswith(".pdf"):
+            raise HTTPException(status_code=400, detail="Solo se permiten archivos PDF")
+
+        FIANZAS_DIR.mkdir(parents=True, exist_ok=True)
+        file_extension = Path(file.filename).suffix
+        safe_filename = f"{field}_{id_adjudicacion}{file_extension}"
+        file_path = FIANZAS_DIR / safe_filename
+
+        with open(file_path, "wb") as f:
+            shutil.copyfileobj(file.file, f)
+
+        final_url = f"/api/licitaciones/fianzas/download/{safe_filename}"
+
+        update_query = text(f"""
+            UPDATE licitaciones_adjudicaciones
+            SET {field} = :url
+            WHERE id_adjudicacion = :id
+        """)
+        db.execute(update_query, {"url": final_url, "id": id_adjudicacion})
+        db.commit()
+        return {"message": "Archivo subido exitosamente", "field": field, "url": final_url}
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        db.rollback()
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error interno al guardar archivo: {str(e)}")
+
+@router.get("/fianzas/download/{filename}")
+async def download_fianza(filename: str):
+    from fastapi.responses import FileResponse
+    file_path = FIANZAS_DIR / filename
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Archivo no encontrado")
+    return FileResponse(path=file_path, filename=filename, media_type='application/pdf')
+
+class FianzaUpdateReq(BaseModel):
+    url: str
+
+@router.put("/adjudicaciones/{id_adjudicacion}/fianza/{field}")
+def update_fianza_doc(
+    id_adjudicacion: str,
+    field: str,
+    req: FianzaUpdateReq,
+    db: Session = Depends(get_db)
+):
+    if field not in ALLOWED_FIANZA_FIELDS:
+        raise HTTPException(status_code=400, detail=f"Campo '{field}' no válido.")
+    try:
+        check_query = text("SELECT id_adjudicacion FROM licitaciones_adjudicaciones WHERE id_adjudicacion = :id")
+        result = db.execute(check_query, {"id": id_adjudicacion}).fetchone()
+        if not result:
+            raise HTTPException(status_code=404, detail=f"Adjudicación {id_adjudicacion} no encontrada")
+        update_query = text(f"""
+            UPDATE licitaciones_adjudicaciones
+            SET {field} = :url
+            WHERE id_adjudicacion = :id
+        """)
+        db.execute(update_query, {"url": req.url, "id": id_adjudicacion})
+        db.commit()
+        return {"message": f"{field} actualizado exitosamente"}
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error al actualizar {field}: {str(e)}")
+
 @router.get("/{id_convocatoria}")
 def get_licitacion_detail(
     id_convocatoria: str,
@@ -908,7 +994,8 @@ def get_licitacion_detail(
                 monto_adjudicado, fecha_adjudicacion,
                 estado_item, entidad_financiera, tipo_garantia, moneda,
                 id_contrato, url_pdf_cartafianza,
-                url_pdf_contrato, url_pdf_consorcio, url_pdf_oferta
+                url_pdf_contrato, url_pdf_consorcio, url_pdf_oferta,
+                fiel_cumplimiento, adelanto_materiales, adelanto_directo, doc_completo
             FROM licitaciones_adjudicaciones
             WHERE id_convocatoria = :id
         """)
@@ -933,7 +1020,11 @@ def get_licitacion_detail(
                 "url_pdf_cartafianza": adj_row[10],
                 "url_pdf_contrato": adj_row[11],
                 "url_pdf_consorcio": adj_row[12],
-                "url_pdf_oferta": adj_row[13] if len(adj_row) > 13 else None
+                "url_pdf_oferta": adj_row[13] if len(adj_row) > 13 else None,
+                "fiel_cumplimiento": adj_row[14] if len(adj_row) > 14 else None,
+                "adelanto_materiales": adj_row[15] if len(adj_row) > 15 else None,
+                "adelanto_directo": adj_row[16] if len(adj_row) > 16 else None,
+                "doc_completo": adj_row[17] if len(adj_row) > 17 else None,
             })
         
         licitacion["adjudicaciones"] = adjudicaciones

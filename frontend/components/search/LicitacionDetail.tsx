@@ -211,6 +211,16 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
     const [deletingOfertaId, setDeletingOfertaId] = useState<string | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
 
+    // Fianza Upload states
+    const [editingFianzaId, setEditingFianzaId] = useState<string | null>(null);
+    const [editingFianzaField, setEditingFianzaField] = useState<string | null>(null);
+    const [editingFianzaLabel, setEditingFianzaLabel] = useState<string>("");
+    const [fianzaFileInput, setFianzaFileInput] = useState<File | null>(null);
+    const [savingFianza, setSavingFianza] = useState(false);
+    const [fianzaUploadProgress, setFianzaUploadProgress] = useState<number>(0);
+    const [deletingFianzaKey, setDeletingFianzaKey] = useState<{ id: string, field: string, label: string } | null>(null);
+    const [isDeletingFianza, setIsDeletingFianza] = useState(false);
+
     const [isMounted, setIsMounted] = useState(false);
     useEffect(() => {
         setIsMounted(true);
@@ -269,6 +279,57 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
             alert("Hubo un error al eliminar el documento.");
         } finally {
             setIsDeleting(false);
+        }
+    };
+
+    const handleFianzaSave = async () => {
+        if (!fianzaFileInput || !editingFianzaId || !editingFianzaField) return;
+        setSavingFianza(true);
+        setFianzaUploadProgress(0);
+        try {
+            const res = await licitacionService.uploadFianzaFile(editingFianzaId, editingFianzaField, fianzaFileInput);
+            setLicitacion(prev => {
+                if (!prev) return prev;
+                return {
+                    ...prev,
+                    adjudicaciones: prev.adjudicaciones?.map(a =>
+                        a.id_adjudicacion === editingFianzaId ? { ...a, [editingFianzaField!]: res.url } : a
+                    )
+                };
+            });
+            setEditingFianzaId(null);
+            setEditingFianzaField(null);
+            setFianzaFileInput(null);
+            setFianzaUploadProgress(0);
+        } catch (err: any) {
+            console.error("Error saving fianza:", err);
+            const msg = err?.response?.data?.detail || err?.message || "Error desconocido";
+            alert(`Error al guardar ${editingFianzaLabel}: ${msg}`);
+        } finally {
+            setSavingFianza(false);
+        }
+    };
+
+    const handleFianzaDelete = async () => {
+        if (!deletingFianzaKey) return;
+        setIsDeletingFianza(true);
+        try {
+            await licitacionService.updateFianza(deletingFianzaKey.id, deletingFianzaKey.field, "");
+            setLicitacion(prev => {
+                if (!prev) return prev;
+                return {
+                    ...prev,
+                    adjudicaciones: prev.adjudicaciones?.map(a =>
+                        a.id_adjudicacion === deletingFianzaKey!.id ? { ...a, [deletingFianzaKey!.field]: "" } : a
+                    )
+                };
+            });
+            setDeletingFianzaKey(null);
+        } catch (err) {
+            console.error("Error al eliminar fianza:", err);
+            alert("Hubo un error al eliminar el documento.");
+        } finally {
+            setIsDeletingFianza(false);
         }
     };
 
@@ -1226,6 +1287,243 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                         </div>
                     </div>
                 )}
+
+                {/* FIANZAS Y PAGARÉ Section (Always visible as requested) */}
+                <div className="rounded-2xl border border-slate-200 bg-white p-6 md:p-8 shadow-md dark:border-white/10 dark:bg-[#111c44] animate-in fade-in slide-in-from-bottom-5 duration-500 delay-300 mt-6 border-t-4 border-t-emerald-500">
+                    <div className="flex items-center gap-3 mb-6">
+                        <ShieldCheck className="w-5 h-5 text-emerald-500" />
+                        <h3 className="text-lg font-bold text-slate-900 dark:text-white uppercase">FIANZAS Y PAGARÉ</h3>
+                    </div>
+
+                    {adjudicaciones.length > 0 ? (
+                        <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left">
+                                    <thead>
+                                        <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
+                                            <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">Adjudicación / Ganador</th>
+                                            <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">Fiel Cumplimiento</th>
+                                            <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">Adelanto Materiales</th>
+                                            <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">Adelanto Directo</th>
+                                            <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">Doc Completo</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
+                                        {adjudicaciones.map((adj) => {
+                                            const fianzaFields = [
+                                                { key: "fiel_cumplimiento", label: "Fiel Cumplimiento" },
+                                                { key: "adelanto_materiales", label: "Adelanto Materiales" },
+                                                { key: "adelanto_directo", label: "Adelanto Directo" },
+                                                { key: "doc_completo", label: "Doc Completo" },
+                                            ] as const;
+
+                                            return (
+                                                <tr key={adj.id_adjudicacion} className="group hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors">
+                                                    <td className="py-4 px-4 align-top text-center">
+                                                        <div className="flex flex-col items-center">
+                                                            <span className="text-xs font-bold text-slate-800 dark:text-white uppercase line-clamp-2">{adj.ganador_nombre}</span>
+                                                            <span className="text-[10px] text-slate-400 font-mono mt-0.5">RUC: {adj.ganador_ruc}</span>
+                                                            <span className="text-[10px] text-indigo-500 font-bold mt-1.5 flex items-center gap-1">
+                                                                <Tag className="w-3 h-3" />
+                                                                {formatCurrency(adj.monto_adjudicado, licitacion.moneda)}
+                                                            </span>
+                                                        </div>
+                                                    </td>
+                                                    {fianzaFields.map(({ key, label }) => {
+                                                        const url = (adj as any)[key] as string | undefined;
+                                                        return (
+                                                            <td key={key} className="py-4 px-4 align-middle text-center w-[130px]">
+                                                                <div className="inline-flex flex-col items-center justify-center gap-1">
+                                                                    {url ? (
+                                                                        <div className="relative group/fianzacell inline-flex flex-col items-center justify-center gap-1">
+                                                                            {/* Floating delete button on hover */}
+                                                                            <div className="absolute -top-8 left-1/2 -translate-x-1/2 flex items-center gap-1 opacity-0 group-hover/fianzacell:opacity-100 transition-opacity duration-300 bg-white dark:bg-slate-800 py-1 px-1.5 rounded-lg shadow-md border border-slate-200 dark:border-slate-700 z-10">
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={() => setDeletingFianzaKey({ id: adj.id_adjudicacion, field: key, label })}
+                                                                                    className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 text-rose-600 dark:text-rose-400 rounded transition-colors cursor-pointer"
+                                                                                    title={`Eliminar ${label}`}
+                                                                                >
+                                                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                                                </button>
+                                                                            </div>
+                                                                            <a href={url} target="_blank" rel="noopener noreferrer" className="group inline-flex flex-col items-center justify-center gap-1 transition-all hover:scale-105">
+                                                                                <PdfIcon className="w-8 h-8 transition-transform group-hover:-translate-y-1" />
+                                                                                <span className="bg-slate-900 text-white text-[9px] py-1 px-2 rounded font-bold whitespace-nowrap shadow-sm">Descargar PDF</span>
+                                                                            </a>
+                                                                        </div>
+                                                                    ) : (
+                                                                        <div className="relative inline-flex flex-col items-center justify-center gap-2 group/upload p-3">
+                                                                            <div className="absolute top-1 bottom-1 left-2 right-2 bg-slate-300 rounded-2xl blur-[14px] opacity-70 animate-pulse transition-opacity duration-500"></div>
+                                                                            <div className="relative z-10 flex flex-col items-center gap-2">
+                                                                                <PdfIcon className="w-8 h-8 filter grayscale opacity-60 transition-transform group-hover/upload:-translate-y-1" />
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={() => {
+                                                                                        setEditingFianzaId(adj.id_adjudicacion);
+                                                                                        setEditingFianzaField(key);
+                                                                                        setEditingFianzaLabel(label);
+                                                                                        setFianzaFileInput(null);
+                                                                                    }}
+                                                                                    className="bg-white hover:bg-slate-50 text-[#828f9f] hover:text-slate-600 text-[9px] py-1.5 px-3.5 rounded-md font-extrabold whitespace-nowrap shadow-xl border-[1.5px] border-slate-300 hover:border-slate-400 transition-all cursor-pointer flex items-center justify-center uppercase ring-2 ring-white"
+                                                                                >
+                                                                                    CARGAR
+                                                                                </button>
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </td>
+                                                        );
+                                                    })}
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/50 p-8 shadow-inner dark:border-slate-700 dark:bg-[#0b122b]/50 text-center">
+                            <ShieldCheck className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
+                            <h3 className="text-sm font-bold text-slate-500 dark:text-slate-400">Sin Datos Registrados</h3>
+                            <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Todavía no hay Fianzas ni Pagarés vinculados a este proceso.</p>
+                        </div>
+                    )}
+                </div>
+
+                {/* Fianza Upload Modal */}
+                {editingFianzaId && editingFianzaField && isMounted && createPortal(
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md sm:p-6 transition-all" onClick={() => { if (!savingFianza) { setEditingFianzaId(null); setEditingFianzaField(null); setFianzaFileInput(null); } }}>
+                        <div className="w-full max-w-md bg-white dark:bg-[#0b1437] rounded-3xl shadow-2xl shadow-emerald-500/10 border border-slate-200 dark:border-emerald-500/20 overflow-hidden transform transition-all ring-1 ring-black/5 dark:ring-white/5" onClick={(e) => e.stopPropagation()}>
+                            {/* Header */}
+                            <div className="relative flex items-center justify-between px-8 py-6 border-b border-slate-100 dark:border-white/5 bg-white dark:bg-[#0b1437] overflow-hidden">
+                                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-400 via-teal-500 to-green-500 opacity-70"></div>
+                                <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-emerald-500/10 rounded-full blur-2xl"></div>
+                                <div className="flex items-center gap-4 relative z-10">
+                                    <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-500/20 dark:to-teal-500/20 rounded-2xl text-emerald-600 dark:text-emerald-400 shadow-sm border border-emerald-100/50 dark:border-emerald-500/30">
+                                        <Upload className="w-5 h-5" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-[17px] font-extrabold text-slate-800 dark:text-white leading-tight tracking-tight">
+                                            Agregar {editingFianzaLabel}
+                                        </h3>
+                                        <p className="text-[12px] font-medium text-slate-500 dark:text-slate-400 mt-0.5">Sube un archivo PDF</p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => { setEditingFianzaId(null); setEditingFianzaField(null); setFianzaFileInput(null); }}
+                                    className="relative z-10 flex items-center justify-center text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-all bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-full p-2 shadow-sm ring-1 ring-slate-200 dark:ring-slate-700 hover:scale-105"
+                                    title="Cerrar"
+                                    disabled={savingFianza}
+                                >
+                                    <X className="w-5 h-5 stroke-[2.5]" />
+                                </button>
+                            </div>
+
+                            <div className="p-8 space-y-6 bg-slate-50/30 dark:bg-transparent">
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]"></div>
+                                            Archivo PDF
+                                        </label>
+                                    </div>
+
+                                    {/* Drop Zone */}
+                                    <div className={`relative group flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-[2rem] transition-all duration-500 cursor-pointer overflow-hidden ${savingFianza ? 'border-emerald-400 bg-emerald-50/50 dark:bg-emerald-500/10 cursor-not-allowed' : fianzaFileInput ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-500/10 shadow-[0_8px_30px_rgba(16,185,129,0.15)] ring-4 ring-emerald-50 dark:ring-emerald-500/5' : 'border-slate-300 dark:border-slate-600 hover:border-emerald-400 hover:shadow-[0_8px_30px_rgba(16,185,129,0.1)] hover:bg-white dark:hover:bg-[#111c44]/50'}`}>
+                                        {!savingFianza && (
+                                            <input type="file" accept=".pdf,application/pdf" onChange={(e) => { if (e.target.files && e.target.files.length > 0) setFianzaFileInput(e.target.files[0]); }} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
+                                        )}
+                                        {savingFianza ? (
+                                            <div className="flex flex-col items-center text-center px-6 space-y-3 z-0">
+                                                <Loader2 className="w-10 h-10 text-emerald-500 animate-spin" />
+                                                <div className="flex flex-col items-center gap-1 w-full max-w-[240px]">
+                                                    <span className="text-[13px] font-extrabold text-emerald-600 dark:text-emerald-400">
+                                                        Subiendo archivo... {fianzaUploadProgress}%
+                                                    </span>
+                                                    <div className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                                                        <div className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full transition-all duration-300" style={{ width: `${fianzaUploadProgress}%` }} />
+                                                    </div>
+                                                    <span className="text-[11px] text-slate-400 dark:text-slate-500">
+                                                        {fianzaFileInput ? `${(fianzaFileInput.size / (1024 * 1024)).toFixed(1)} MB` : ''} · No cierres esta ventana
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        ) : fianzaFileInput ? (
+                                            <div className="flex flex-col items-center text-center px-6 space-y-3 z-0 group-hover:scale-105 transition-transform">
+                                                <div className="w-14 h-14 rounded-full bg-white dark:bg-[#0b1437] flex items-center justify-center text-emerald-600 dark:text-emerald-400 shadow-lg border border-emerald-100 dark:border-emerald-500/30">
+                                                    <FileText className="w-7 h-7" />
+                                                </div>
+                                                <div className="flex flex-col items-center">
+                                                    <span className="text-[14px] font-extrabold text-emerald-700 dark:text-emerald-300 truncate max-w-[260px]">{fianzaFileInput.name}</span>
+                                                    <span className="text-[11px] font-bold text-emerald-500/70 mt-1 bg-emerald-100/50 dark:bg-emerald-500/20 px-3 py-0.5 rounded-full">
+                                                        {(fianzaFileInput.size / (1024 * 1024)).toFixed(1)} MB · Haz clic para cambiar
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="flex flex-col items-center text-center px-6 space-y-4 z-0">
+                                                <div className="w-16 h-16 rounded-[1.5rem] bg-white dark:bg-slate-800 flex items-center justify-center text-slate-400 group-hover:text-emerald-500 group-hover:bg-emerald-50 dark:group-hover:bg-emerald-500/20 transition-all duration-500 shadow-sm border border-slate-200 dark:border-slate-700 group-hover:scale-110 group-hover:-translate-y-1">
+                                                    <Upload className="w-7 h-7" />
+                                                </div>
+                                                <div className="flex flex-col items-center">
+                                                    <span className="text-[15px] font-extrabold text-slate-700 dark:text-slate-200">Arrastra tu PDF aquí</span>
+                                                    <span className="text-[12px] font-semibold text-slate-400 dark:text-slate-500 mt-1">
+                                                        o <span className="text-emerald-500 cursor-pointer underline decoration-emerald-500 underline-offset-4 font-bold hover:text-emerald-600 transition-colors">explora tus archivos</span>
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Footer */}
+                            <div className="px-8 py-6 border-t border-slate-100 dark:border-white/5 bg-white dark:bg-[#0b1437] flex items-center justify-end gap-3 rounded-b-3xl">
+                                <button
+                                    onClick={() => { setEditingFianzaId(null); setEditingFianzaField(null); setFianzaFileInput(null); }}
+                                    className="px-4 py-3 text-[14px] font-extrabold text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10 rounded-[0.8rem] transition-all border border-transparent focus:ring-2 focus:ring-slate-200 outline-none"
+                                    disabled={savingFianza}
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={handleFianzaSave}
+                                    disabled={savingFianza || !fianzaFileInput}
+                                    className="flex items-center justify-center gap-2 px-6 py-3 min-w-[160px] bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 disabled:opacity-100 disabled:from-[#a3d9c8] disabled:to-[#a8dbc0] disabled:cursor-not-allowed disabled:shadow-none text-white rounded-[0.8rem] text-[14px] font-extrabold transition-all shadow-xl shadow-emerald-500/20 hover:shadow-emerald-500/40 hover:-translate-y-0.5 active:translate-y-0 outline-none"
+                                >
+                                    {savingFianza ? <Loader2 className="w-[18px] h-[18px] animate-spin" /> : <Save className="w-[18px] h-[18px]" />}
+                                    <span className="leading-tight text-center">{savingFianza ? 'Guardando...' : 'Confirmar\n& Guardar'}</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    , document.body)}
+
+                {/* Fianza Delete Confirmation Modal */}
+                {deletingFianzaKey && isMounted && createPortal(
+                    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md sm:p-6 transition-all" onClick={() => !isDeletingFianza && setDeletingFianzaKey(null)}>
+                        <div className="w-full max-w-sm bg-white dark:bg-[#0b1437] rounded-3xl shadow-2xl shadow-rose-500/10 border border-slate-200 dark:border-rose-500/20 overflow-hidden transform transition-all ring-1 ring-black/5" onClick={(e) => e.stopPropagation()}>
+                            <div className="h-1.5 w-full bg-gradient-to-r from-red-500 to-rose-400"></div>
+                            <div className="p-8 text-center flex flex-col items-center">
+                                <div className="w-16 h-16 bg-red-50 dark:bg-rose-500/10 rounded-full flex items-center justify-center mb-6 shadow-sm border border-red-100 dark:border-rose-500/20">
+                                    <Trash2 className="w-8 h-8 text-red-500" />
+                                </div>
+                                <h3 className="text-xl font-extrabold text-slate-800 dark:text-white mb-2 leading-tight">¿Eliminar {deletingFianzaKey.label}?</h3>
+                                <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed mb-8">
+                                    Estás a punto de borrar permanentemente este documento. Esta acción no se puede deshacer.
+                                </p>
+                                <div className="flex w-full gap-3">
+                                    <button type="button" onClick={() => setDeletingFianzaKey(null)} disabled={isDeletingFianza} className="flex-1 px-4 py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl font-bold transition-colors disabled:opacity-50">Cancelar</button>
+                                    <button type="button" onClick={handleFianzaDelete} disabled={isDeletingFianza} className="flex-1 px-4 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold transition-all shadow-md shadow-red-500/20 disabled:bg-red-300 disabled:cursor-wait flex items-center justify-center gap-2">
+                                        {isDeletingFianza ? (<><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /><span>Borrando...</span></>) : "Sí, eliminar"}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    , document.body)}
             </div>
         </div>
     );
