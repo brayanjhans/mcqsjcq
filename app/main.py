@@ -78,13 +78,13 @@ async def startup_event():
     start_mef_scheduler()
     
     # Capture Main Event Loop for Sync-to-Async Bridge (Notifications -> Chatbot)
-    # try:
-    #     import asyncio
-    #     from app.services.chatbot import websocket
-    #     websocket.global_loop = asyncio.get_running_loop()
-    #     print(f"DEBUG: Main Event Loop captured for Chatbot Bridge: {websocket.global_loop}")
-    # except Exception as e:
-    #     print(f"ERROR: Failed to capture event loop: {e}")
+    try:
+        import asyncio
+        from app.services.chatbot import websocket
+        websocket.global_loop = asyncio.get_running_loop()
+        print(f"DEBUG: Main Event Loop captured for Chatbot Bridge: {websocket.global_loop}")
+    except Exception as e:
+        print(f"ERROR: Failed to capture event loop: {e}")
 
 @app.on_event("shutdown")
 def shutdown_event():

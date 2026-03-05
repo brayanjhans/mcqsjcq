@@ -49,7 +49,8 @@ export const licitacionService = {
 
     // Get single licitacion details
     getById: async (id: string) => {
-        const response = await api.get(`/api/licitaciones/${id}`, {
+        const safeId = encodeURIComponent(encodeURIComponent(id));
+        const response = await api.get(`/api/licitaciones/${safeId}`, {
             params: { _t: new Date().getTime() }
         });
         return response.data;
@@ -63,13 +64,15 @@ export const licitacionService = {
 
     // Update existing licitacion
     update: async (id: string, data: Partial<Licitacion>) => {
-        const response = await api.put(`/api/licitaciones/${id}`, data);
+        const safeId = encodeURIComponent(encodeURIComponent(id));
+        const response = await api.put(`/api/licitaciones/${safeId}`, data);
         return response.data;
     },
 
     // Delete licitacion
     delete: async (id: string, pin: string) => {
-        const response = await api.delete(`/api/licitaciones/${id}?pin=${pin}`);
+        const safeId = encodeURIComponent(encodeURIComponent(id));
+        const response = await api.delete(`/api/licitaciones/${safeId}?pin=${pin}`);
         return response.data;
     },
 

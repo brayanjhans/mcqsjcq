@@ -19,6 +19,7 @@ from app.utils.dependencies import get_current_user
 from app.models.user import User
 from typing import Optional
 from datetime import date, datetime
+from urllib.parse import unquote
 import math
 import uuid
 
@@ -339,6 +340,7 @@ def get_licitacion_detalle(
     - Adjudication details
     - Consortium members (if any)
     """
+    id_convocatoria = unquote(id_convocatoria)
     print(f"DEBUG: Buscando licitación id_convocatoria='{id_convocatoria}' type={type(id_convocatoria)}")
     
     # Cleaning
@@ -534,6 +536,27 @@ def create_licitacion(
                 
                 db.commit()
     
+    # Notification: new licitacion created (broadcast to all active users)
+    try:
+        from app.services.notification_service import notification_service
+        from app.models.notification import NotificationType, NotificationPriority
+        from sqlalchemy import text as sql_text
+        
+        active_user_ids = [row[0] for row in db.execute(sql_text("SELECT id FROM usuarios WHERE activo = 1")).fetchall()]
+        monto_str = f"S/ {licitacion.monto_estimado:,.2f}" if licitacion.monto_estimado else "Sin monto"
+        for uid in active_user_ids:
+            notification_service.create_notification(
+                db=db,
+                user_id=uid,
+                type=NotificationType.LICITACION,
+                priority=NotificationPriority.MEDIUM,
+                title=f"Nueva Licitación Creada",
+                message=f"{licitacion.nomenclatura or 'Sin nomenclatura'} — {licitacion.comprador or 'Sin entidad'} ({monto_str})",
+                link=f"/seace/busqueda/{new_licitacion.id_convocatoria}"
+            )
+    except Exception as e:
+        print(f"Error creating notification for new licitacion: {e}")
+    
     return new_licitacion
 
 
@@ -547,6 +570,7 @@ def update_licitacion(
     """
     Update an existing tender.
     """
+    id_convocatoria = unquote(id_convocatoria)
     existing_licitacion = db.query(LicitacionesCabecera).filter(
         LicitacionesCabecera.id_convocatoria == id_convocatoria
     ).first()
@@ -666,36 +690,37 @@ def update_licitacion(
     db.commit()
     db.refresh(existing_licitacion)
     
-    # Notify if state changed
-    if new_estado and old_estado != new_estado:
-        try:
-            # We need the current user to assign the notification (or notify admins).
-            # Limitation: The current endpoint didn't require auth explicitly in signature before, 
-            # but we can try to get it or just assign to the user who triggered it if we inject dependency.
-            # Ideally notifications go to interested parties, but for this demo, notifying the user themselves or "admins" is key.
-            # The prompt implies the user sees the notification in THEIR bell.
-            
-            # Since I cannot easily change the signature dynamically without re-reading imports,
-            # I will assume 'current_user' is available if I add it to the function args.
-            
-            # Create notification
-            from app.services.notification_service import notification_service
-            from app.models.notification import NotificationType, NotificationPriority
-            
-            # Ensure we have a user ID. If not logged in (public API?), we skip.
-            # But this is an admin action usually.
-            if current_user:
-                 notification_service.create_notification(
+    # Notification: state change or general edit (broadcast to all active users)
+    try:
+        from app.services.notification_service import notification_service
+        from app.models.notification import NotificationType, NotificationPriority
+        from sqlalchemy import text as sql_text
+        
+        active_user_ids = [row[0] for row in db.execute(sql_text("SELECT id FROM usuarios WHERE activo = 1")).fetchall()]
+        
+        for uid in active_user_ids:
+            if new_estado and old_estado != new_estado:
+                notification_service.create_notification(
                     db=db,
-                    user_id=current_user.id,
+                    user_id=uid,
                     type=NotificationType.LICITACION,
-                    priority=NotificationPriority.MEDIUM,
+                    priority=NotificationPriority.HIGH,
                     title=f"Cambio de Estado: {existing_licitacion.nomenclatura or 'Licitación'}",
-                    message=f"Estado cambiado: {old_estado} -> {new_estado}",
-                    link=f"/seace/licitaciones/{id_convocatoria}" # Assuming this route exists or is desired
+                    message=f"Estado cambiado: {old_estado} → {new_estado}",
+                    link=f"/seace/busqueda/{id_convocatoria}"
                 )
-        except Exception as e:
-            print(f"Error creating notification: {e}")
+            else:
+                notification_service.create_notification(
+                    db=db,
+                    user_id=uid,
+                    type=NotificationType.LICITACION,
+                    priority=NotificationPriority.LOW,
+                    title=f"Licitación Editada: {existing_licitacion.nomenclatura or 'Licitación'}",
+                    message=f"Se actualizaron datos del proceso {id_convocatoria}",
+                    link=f"/seace/busqueda/{id_convocatoria}"
+                )
+    except Exception as e:
+        print(f"Error creating notification: {e}")
 
     return existing_licitacion
 
@@ -794,6 +819,7 @@ def delete_licitacion(
     """
     Delete a tender.
     """
+    id_convocatoria = unquote(id_convocatoria)
     existing_licitacion = db.query(LicitacionesCabecera).filter(
         LicitacionesCabecera.id_convocatoria == id_convocatoria
     ).first()
@@ -804,7 +830,31 @@ def delete_licitacion(
             detail=f"Licitación con id_convocatoria={id_convocatoria} no encontrada"
         )
     
+    # Save info before deleting for notification
+    nomenclatura = existing_licitacion.nomenclatura or id_convocatoria
+    comprador = existing_licitacion.comprador or 'Sin entidad'
+    
     db.delete(existing_licitacion)
     db.commit()
+    
+    # Notification: licitacion deleted (broadcast to all active users)
+    try:
+        from app.services.notification_service import notification_service
+        from app.models.notification import NotificationType, NotificationPriority
+        from sqlalchemy import text as sql_text
+        
+        active_user_ids = [row[0] for row in db.execute(sql_text("SELECT id FROM usuarios WHERE activo = 1")).fetchall()]
+        for uid in active_user_ids:
+            notification_service.create_notification(
+                db=db,
+                user_id=uid,
+                type=NotificationType.LICITACION,
+                priority=NotificationPriority.HIGH,
+                title=f"Licitación Eliminada",
+                message=f"Se eliminó: {nomenclatura} — {comprador}",
+                link=f"/seace/busqueda"
+            )
+    except Exception as e:
+        print(f"Error creating notification for delete: {e}")
     
     return {"message": "Licitación eliminada correctamente"}

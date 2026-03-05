@@ -6,6 +6,8 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.services.notification_service import notification_service
 from app.models.notification import NotificationType, NotificationPriority
+from app.utils.dependencies import get_current_user
+from app.models.user import User
 from typing import List, Optional
 from pydantic import BaseModel
 
@@ -43,9 +45,10 @@ def get_notifications(
     unread_only: bool = False,
     limit: int = 50,
     offset: int = 0,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    current_user_id = 11 
+    current_user_id = current_user.id
     
     notifs = notification_service.get_user_notifications(
         db=db, 
@@ -82,28 +85,28 @@ def get_notifications(
     }
 
 @router.get("/unread-count", response_model=UnreadCountResponse)
-def get_unread_count(db: Session = Depends(get_db)):
-    current_user_id = 11
+def get_unread_count(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    current_user_id = current_user.id
     count = notification_service.get_unread_count(db=db, user_id=current_user_id)
     return {"count": count}
 
 @router.put("/{notification_id}/read")
-def mark_as_read(notification_id: int, db: Session = Depends(get_db)):
-    current_user_id = 11
+def mark_as_read(notification_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    current_user_id = current_user.id
     updated = notification_service.mark_as_read(db=db, notification_id=notification_id, user_id=current_user_id)
     if updated:
         return {"success": True}
     raise HTTPException(status_code=404, detail="Notification not found")
 
 @router.put("/read-all")
-def mark_all_as_read(db: Session = Depends(get_db)):
-    current_user_id = 11
+def mark_all_as_read(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    current_user_id = current_user.id
     count = notification_service.mark_all_as_read(db=db, user_id=current_user_id)
     return {"message": f"{count} notifications marked as read"}
 
 @router.delete("/{notification_id}")
-def delete_notification(notification_id: int, db: Session = Depends(get_db)):
-    current_user_id = 11
+def delete_notification(notification_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    current_user_id = current_user.id
     success = notification_service.delete_notification(db=db, notification_id=notification_id, user_id=current_user_id)
     if success:
         return {"success": True}
@@ -132,10 +135,18 @@ def create_notification_internal(
         db = SessionLocal()
         try:
             # Determine target users
-            # For this specific user's request, we target the main active user (ID 11) 
-            # or the user performing the action if passed.
-            # In a real scenario, we might want to query all admins.
-            target_ids = [user_id] if user_id else [11] 
+            target_ids = []
+            if user_id:
+                target_ids = [user_id]
+            else:
+                from app.models.user import User
+                # Broadcast to all active users if no specific user is targeted
+                active_users = db.query(User).filter(User.activo == True).all()
+                target_ids = [u.id for u in active_users]
+                
+                # Fallback just in case no users are active
+                if not target_ids:
+                    target_ids = [11]
             
             # Map strings to Enums safely
             try:
@@ -162,28 +173,29 @@ def create_notification_internal(
                 )
             
             # --- WEBSOCKET BROADCAST (SYNC BRIDGE) ---
-            try:
-                from app.services.chatbot import websocket
-                import asyncio
-                
-                # Only broadcast valid business alerts (prevent spam if needed)
-                ws_payload = {
-                    "type": "alert",
-                    "content": f"**{title}**\n\n{message}",
-                    "speech": message,
-                    "suggestions": ["Ver detalles", "Ignorar"]
-                }
-                
-                if websocket.global_loop and websocket.global_loop.is_running():
-                    asyncio.run_coroutine_threadsafe(
-                        websocket.manager.broadcast(ws_payload), 
-                        websocket.global_loop
-                    )
-                else:
-                    print(f"WS WARN: Global loop not active. Skipping broadcast for '{title}'")
-                    
-            except Exception as wse:
-                 print(f"WS BROADCAST ERROR: {wse}")
+            # Deshabilitado por petición del usuario (evitar audio y popup del chatbot)
+            # try:
+            #     from app.services.chatbot import websocket
+            #     import asyncio
+            #     
+            #     # Only broadcast valid business alerts (prevent spam if needed)
+            #     ws_payload = {
+            #         "type": "alert",
+            #         "content": f"**{title}**\n\n{message}",
+            #         "speech": message,
+            #         "suggestions": ["Ver detalles", "Ignorar"]
+            #     }
+            #     
+            #     if websocket.global_loop and websocket.global_loop.is_running():
+            #         asyncio.run_coroutine_threadsafe(
+            #             websocket.manager.broadcast(ws_payload), 
+            #             websocket.global_loop
+            #         )
+            #     else:
+            #         print(f"WS WARN: Global loop not active. Skipping broadcast for '{title}'")
+            #         
+            # except Exception as wse:
+            #      print(f"WS BROADCAST ERROR: {wse}")
                  
         finally:
             db.close()

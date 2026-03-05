@@ -11,6 +11,7 @@ from datetime import date
 from fastapi import APIRouter, Depends, Query, HTTPException, status
 from app.models.user import User
 from app.utils.dependencies import get_current_user
+from urllib.parse import unquote
 import uuid
 
 router = APIRouter(prefix="/api/licitaciones", tags=["Licitaciones"])
@@ -928,6 +929,7 @@ def get_licitacion_detail(
     """
     Get licitacion detail with adjudicaciones.
     """
+    id_convocatoria = unquote(id_convocatoria)
     print(f"DEBUG: get_licitacion_detail received id='{id_convocatoria}' type={type(id_convocatoria)}")
     
     try:
@@ -1370,6 +1372,7 @@ def update_licitacion(id: str, licitacion: LicitacionCreate, db: Session = Depen
     """
     Update existing licitacion (Raw SQL)
     """
+    id = unquote(id)
     try:
         # Detect State Change
         old_state = "DESCONOCIDO"
@@ -1606,6 +1609,7 @@ def delete_licitacion(
     Delete licitacion and cascade (Raw SQL).
     REQUIRES USER PIN for confirmation.
     """
+    id = unquote(id)
     if not pin:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

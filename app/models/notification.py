@@ -10,19 +10,19 @@ import enum
 
 class NotificationType(str, enum.Enum):
     """Tipos de notificaciones"""
-    LICITACION = "licitacion"
-    CARTA_FIANZA = "carta_fianza"
-    ADJUDICACION = "adjudicacion"
-    CONSORCIO = "consorcio"
-    REPORTE = "reporte"
-    SISTEMA = "sistema"
+    LICITACION = "LICITACION"
+    CARTA_FIANZA = "CARTA_FIANZA"
+    ADJUDICACION = "ADJUDICACION"
+    CONSORCIO = "CONSORCIO"
+    REPORTE = "REPORTE"
+    SISTEMA = "SISTEMA"
 
 
 class NotificationPriority(str, enum.Enum):
     """Prioridades de notificaciones"""
-    HIGH = "high"      # Rojo - Urgente
-    MEDIUM = "medium"  # Amarillo - Importante
-    LOW = "low"        # Azul - Informativo
+    HIGH = "HIGH"      # Rojo - Urgente
+    MEDIUM = "MEDIUM"  # Amarillo - Importante
+    LOW = "LOW"        # Azul - Informativo
 
 
 class Notification(Base):

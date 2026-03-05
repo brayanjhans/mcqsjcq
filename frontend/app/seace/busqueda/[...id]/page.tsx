@@ -6,7 +6,9 @@ import LicitacionDetail from "@/components/search/LicitacionDetail";
 
 export default function BusquedaDetailPage() {
     const params = useParams();
-    const id = params.id as string;
+    const id = Array.isArray(params.id)
+        ? params.id.map(decodeURIComponent).join('/')
+        : params.id as string;
 
     return <LicitacionDetail id={id} basePath="/seace/busqueda" />;
 }
