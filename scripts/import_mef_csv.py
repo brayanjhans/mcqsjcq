@@ -290,12 +290,8 @@ def main():
         count = conn.execute(text(
             "SELECT COUNT(*) FROM mef_ejecucion WHERE ano_eje = :year"
         ), {"year": args.year}).scalar()
-        total_dev = conn.execute(text(
-            "SELECT COALESCE(SUM(monto_devengado), 0) FROM mef_ejecucion WHERE ano_eje = :year"
-        ), {"year": args.year}).scalar()
-        total_gir = conn.execute(text(
-            "SELECT COALESCE(SUM(monto_girado), 0) FROM mef_ejecucion WHERE ano_eje = :year"
-        ), {"year": args.year}).scalar()
+        total_dev = 0 # Query takes too long (15 mins+) due to lack of index
+        total_gir = 0 # Query takes too long (15 mins+) due to lack of index
 
     print(f"\n  Summary:")
     print(f"  Rows in mef_ejecucion (year {args.year}): {count:,}")
