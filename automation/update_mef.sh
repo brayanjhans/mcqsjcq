@@ -37,10 +37,14 @@ process_year() {
     echo "Downloading $URL..." >> "$LOG_FILE"
     curl -L -o "$FILE" "$URL" >> "$LOG_FILE" 2>&1
     
-        if [ $? -eq 0 ]; then
+    if [ $? -eq 0 ]; then
         echo "Download successful." >> "$LOG_FILE"
         # Import ALL rows to handle projects without explicit CUI in description
-        python3 "$IMPORT_SCRIPT" --year "$YEAR" --all-rows >> "$LOG_FILE" 2>&1
+        python3 "$IMPORT_SCRIPT" --year "$YEAR" --all-rows --incremental >> "$LOG_FILE" 2>&1
+        
+        # Remove the CSV file after successful import to save disk space
+        echo "Removing CSV file..." >> "$LOG_FILE"
+        rm -f "$FILE"
     else
         echo "ERROR: Download failed for $YEAR" >> "$LOG_FILE"
     fi
