@@ -5,7 +5,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import type { Licitacion, EjecucionFinanciera, GarantiasResponse } from '@/types/licitacion';
-import { LOGO_MQS_B64, LOGO_JCQ_B64 } from './pdfAssets';
+import { LOGO_MQS_B64, LOGO_JCQ_B64, PDF_ICON_B64 } from './pdfAssets';
 
 // ── Color palette ──
 const COLORS = {
@@ -382,18 +382,40 @@ export function generateLicitacionPDF(
             y = (doc as any).lastAutoTable.finalY + 6;
         }
 
+        const drawPDFIcon = (doc: any, cellX: number, cellY: number, cellW: number, cellH: number, url: string) => {
+            const w = 9; // Made smaller per user request
+            const h = 12;
+            const cx = cellX + cellW / 2 - w / 2;
+            const cy = cellY + cellH / 2 - h / 2;
+
+            try {
+                doc.addImage(PDF_ICON_B64, 'PNG', cx, cy, w, h);
+            } catch (error) {
+                // Fallback if image fails to load
+                doc.setFillColor(220, 38, 38);
+                doc.roundedRect(cx, cy, w, h, 1, 1, 'F');
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(4.5);
+                doc.setTextColor(255, 255, 255);
+                doc.text('PDF', cx + w / 2, cy + h - 2, { align: 'center' });
+            }
+
+            // Clickable link overlay
+            doc.link(cellX, cellY, cellW, cellH, { url: url });
+        };
+
         // ── Documentación Contractual (links) ──
-        checkPageBreak(20);
+        checkPageBreak(25);
         sectionTitle('Documentación Contractual', [139, 92, 246]);
 
         const docBody: string[][] = [];
         adjudicaciones.forEach((adj: any) => {
             docBody.push([
                 adj.ganador_nombre || '—',
-                adj.url_pdf_oferta ? '✓ Disponible' : '✗ No disponible',
-                adj.url_pdf_contrato ? '✓ Disponible' : '✗ No disponible',
-                adj.url_pdf_consorcio ? '✓ Disponible' : '✗ No disponible',
-                adj.url_pdf_cartafianza ? '✓ Disponible' : '✗ No disponible',
+                adj.url_pdf_oferta ? '' : '',
+                adj.url_pdf_contrato ? '' : '',
+                adj.url_pdf_consorcio ? '' : '',
+                adj.url_pdf_cartafianza ? '' : '',
             ]);
         });
 
@@ -414,7 +436,8 @@ export function generateLicitacionPDF(
                 fontSize: 7,
                 textColor: COLORS.dark,
                 halign: 'center',
-                cellPadding: 3,
+                valign: 'middle',
+                minCellHeight: 18, // Needs space for icon
             },
             columnStyles: {
                 0: { halign: 'left', fontStyle: 'bold', cellWidth: 45 },
@@ -427,50 +450,69 @@ export function generateLicitacionPDF(
                     if (data.column.index === 2) url = adj?.url_pdf_contrato || '';
                     if (data.column.index === 3) url = adj?.url_pdf_consorcio || '';
                     if (data.column.index === 4) url = adj?.url_pdf_cartafianza || '';
+
                     if (url) {
-                        doc.link(data.cell.x, data.cell.y, data.cell.width, data.cell.height, { url });
+                        drawPDFIcon(doc, data.cell.x, data.cell.y, data.cell.width, data.cell.height, url);
                     }
                 }
             },
         });
-        y = (doc as any).lastAutoTable.finalY + 4;
+        y = (doc as any).lastAutoTable.finalY + 8;
 
-        // List full URLs below table for reference
-        doc.setFontSize(7);
-        doc.setFont('helvetica', 'italic');
-        doc.setTextColor(...COLORS.medium);
-        doc.text('Enlaces de descarga directa:', margin + 6, y);
-        y += 4;
+        // ── Fianzas y Pagaré (links) ──
+        checkPageBreak(25);
+        sectionTitle('Fianzas y Pagaré', [16, 185, 129]);
 
+        const fianzaBody: string[][] = [];
         adjudicaciones.forEach((adj: any) => {
-            const links = [
-                { label: 'Oferta', url: adj.url_pdf_oferta },
-                { label: 'Contrato', url: adj.url_pdf_contrato },
-                { label: 'Consorcio', url: adj.url_pdf_consorcio },
-                { label: 'Fianza', url: adj.url_pdf_cartafianza },
-            ].filter((l: any) => l.url);
-
-            if (links.length > 0) {
-                checkPageBreak(6);
-                doc.setFont('helvetica', 'bold');
-                doc.setFontSize(7);
-                doc.setTextColor(...COLORS.dark);
-                doc.text(`${adj.ganador_nombre || 'Adjudicación'}:`, margin + 6, y);
-                y += 4;
-
-                links.forEach((link: any) => {
-                    checkPageBreak(5);
-                    doc.setFont('helvetica', 'normal');
-                    doc.setFontSize(6.5);
-                    doc.setTextColor(37, 99, 235);
-                    const linkText = `${link.label}: ${link.url}`;
-                    const truncated = linkText.length > 110 ? linkText.substring(0, 107) + '...' : linkText;
-                    doc.textWithLink(truncated, margin + 8, y, { url: link.url });
-                    y += 3.5;
-                });
-                y += 2;
-            }
+            fianzaBody.push([
+                adj.ganador_nombre || '—',
+                adj.fiel_cumplimiento ? '' : '',
+                adj.adelanto_materiales ? '' : '',
+                adj.adelanto_directo ? '' : '',
+                adj.doc_completo ? '' : '',
+            ]);
         });
+
+        autoTable(doc, {
+            startY: y,
+            margin: { left: margin, right: margin },
+            head: [['Adjudicación / Ganador', 'Fiel Cumplimiento', 'Adelanto Materiales', 'Adelanto Directo', 'Doc Completo']],
+            body: fianzaBody,
+            theme: 'grid',
+            headStyles: {
+                fillColor: COLORS.headerBg,
+                textColor: COLORS.white,
+                fontSize: 7,
+                fontStyle: 'bold',
+                halign: 'center',
+            },
+            bodyStyles: {
+                fontSize: 7,
+                textColor: COLORS.dark,
+                halign: 'center',
+                valign: 'middle',
+                minCellHeight: 18,
+            },
+            columnStyles: {
+                0: { halign: 'left', fontStyle: 'bold', cellWidth: 45 },
+            },
+            didDrawCell: (data: any) => {
+                if (data.section === 'body' && data.column.index >= 1) {
+                    const adj = adjudicaciones[data.row.index];
+                    let url = '';
+                    if (data.column.index === 1) url = adj?.fiel_cumplimiento || '';
+                    if (data.column.index === 2) url = adj?.adelanto_materiales || '';
+                    if (data.column.index === 3) url = adj?.adelanto_directo || '';
+                    if (data.column.index === 4) url = adj?.doc_completo || '';
+
+                    if (url) {
+                        drawPDFIcon(doc, data.cell.x, data.cell.y, data.cell.width, data.cell.height, url);
+                    }
+                }
+            },
+        });
+        y = (doc as any).lastAutoTable.finalY + 8;
     }
 
     // ═══════════════════════════════════════════════════

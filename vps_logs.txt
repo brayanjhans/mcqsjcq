@@ -1,0 +1,203 @@
+==> /root/.pm2/logs/api-mcqs-error.log <==
+                AND l.fecha_actualizacion >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
+                AND u.activo = 1
+                AND NOT EXISTS (
+                    SELECT 1 FROM notification_tracking nt
+                    WHERE nt.entity_type = 'licitacion_change'
+                    AND nt.entity_id = l.id_convocatoria
+                    AND nt.notification_type = CONCAT('status_', l.estado)
+                    AND nt.last_notified >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
+                )
+                LIMIT 30
+            ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+Error checking important changes: (pymysql.err.OperationalError) (1054, "Unknown column 'l.estado' in 'field list'")
+[SQL: 
+                SELECT DISTINCT l.id_convocatoria, l.descripcion, l.estado, u.id as user_id
+                FROM licitaciones_cabecera l
+                CROSS JOIN usuarios u
+                WHERE l.estado IN ('CANCELADA', 'DESIERTA', 'SUSPENDIDA')
+                AND l.fecha_actualizacion >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
+                AND u.activo = 1
+                AND NOT EXISTS (
+                    SELECT 1 FROM notification_tracking nt
+                    WHERE nt.entity_type = 'licitacion_change'
+                    AND nt.entity_id = l.id_convocatoria
+                    AND nt.notification_type = CONCAT('status_', l.estado)
+                    AND nt.last_notified >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
+                )
+                LIMIT 30
+            ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+Error checking important changes: (pymysql.err.OperationalError) (1054, "Unknown column 'l.estado' in 'field list'")
+[SQL: 
+                SELECT DISTINCT l.id_convocatoria, l.descripcion, l.estado, u.id as user_id
+                FROM licitaciones_cabecera l
+                CROSS JOIN usuarios u
+                WHERE l.estado IN ('CANCELADA', 'DESIERTA', 'SUSPENDIDA')
+                AND l.fecha_actualizacion >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
+                AND u.activo = 1
+                AND NOT EXISTS (
+                    SELECT 1 FROM notification_tracking nt
+                    WHERE nt.entity_type = 'licitacion_change'
+                    AND nt.entity_id = l.id_convocatoria
+                    AND nt.notification_type = CONCAT('status_', l.estado)
+                    AND nt.last_notified >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
+                )
+                LIMIT 30
+            ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+Error checking important changes: (pymysql.err.OperationalError) (1054, "Unknown column 'l.estado' in 'field list'")
+[SQL: 
+                SELECT DISTINCT l.id_convocatoria, l.descripcion, l.estado, u.id as user_id
+                FROM licitaciones_cabecera l
+                CROSS JOIN usuarios u
+                WHERE l.estado IN ('CANCELADA', 'DESIERTA', 'SUSPENDIDA')
+                AND l.fecha_actualizacion >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
+                AND u.activo = 1
+                AND NOT EXISTS (
+                    SELECT 1 FROM notification_tracking nt
+                    WHERE nt.entity_type = 'licitacion_change'
+                    AND nt.entity_id = l.id_convocatoria
+                    AND nt.notification_type = CONCAT('status_', l.estado)
+                    AND nt.last_notified >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
+                )
+                LIMIT 30
+            ]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+Error checking new adjudicaciones: (pymysql.err.OperationalError) (1364, "Field 'id' doesn't have a default value")
+[SQL: INSERT INTO notifications (user_id, type, priority, title, message, link, is_read, expires_at, extra_data) VALUES (%(user_id)s, %(type)s, %(priority)s, %(title)s, %(message)s, %(link)s, %(is_read)s, %(expires_at)s, %(extra_data)s)]
+[parameters: {'user_id': 27, 'type': <NotificationType.ADJUDICACION: 'ADJUDICACION'>, 'priority': <NotificationPriority.MEDIUM: 'MEDIUM'>, 'title': '🏆 Nueva Adjudicación: CONSORCIO EJECUTOR PUQUIO', 'message': "Licitación 'EJECUCIÓN DE LA OBRA: SALDO 2 DE OBRA del Proyecto de Inversión: ¿MEJORAMIENTO Y AMPLIACIÓN DE PRACT...' adjudicada. Monto: S/ 14,500,047.43. Fecha: 03/04/2026", 'link': '/seace/database?id=1185404', 'is_read': 0, 'expires_at': datetime.datetime(2026, 4, 5, 13, 8, 31, 297852, tzinfo=datetime.timezone.utc), 'extra_data': 'null'}]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+Error checking new adjudicaciones: (pymysql.err.OperationalError) (1364, "Field 'id' doesn't have a default value")
+[SQL: INSERT INTO notifications (user_id, type, priority, title, message, link, is_read, expires_at, extra_data) VALUES (%(user_id)s, %(type)s, %(priority)s, %(title)s, %(message)s, %(link)s, %(is_read)s, %(expires_at)s, %(extra_data)s)]
+[parameters: {'user_id': 27, 'type': <NotificationType.ADJUDICACION: 'ADJUDICACION'>, 'priority': <NotificationPriority.MEDIUM: 'MEDIUM'>, 'title': '🏆 Nueva Adjudicación: CONSORCIO EJECUTOR PUQUIO', 'message': "Licitación 'EJECUCIÓN DE LA OBRA: SALDO 2 DE OBRA del Proyecto de Inversión: ¿MEJORAMIENTO Y AMPLIACIÓN DE PRACT...' adjudicada. Monto: S/ 14,500,047.43. Fecha: 03/04/2026", 'link': '/seace/database?id=1185404', 'is_read': 0, 'expires_at': datetime.datetime(2026, 4, 5, 13, 8, 31, 298927, tzinfo=datetime.timezone.utc), 'extra_data': 'null'}]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+Error checking new adjudicaciones: (pymysql.err.OperationalError) (1364, "Field 'id' doesn't have a default value")
+[SQL: INSERT INTO notifications (user_id, type, priority, title, message, link, is_read, expires_at, extra_data) VALUES (%(user_id)s, %(type)s, %(priority)s, %(title)s, %(message)s, %(link)s, %(is_read)s, %(expires_at)s, %(extra_data)s)]
+[parameters: {'user_id': 27, 'type': <NotificationType.ADJUDICACION: 'ADJUDICACION'>, 'priority': <NotificationPriority.MEDIUM: 'MEDIUM'>, 'title': '🏆 Nueva Adjudicación: CONSORCIO EJECUTOR PUQUIO', 'message': "Licitación 'EJECUCIÓN DE LA OBRA: SALDO 2 DE OBRA del Proyecto de Inversión: ¿MEJORAMIENTO Y AMPLIACIÓN DE PRACT...' adjudicada. Monto: S/ 14,500,047.43. Fecha: 03/04/2026", 'link': '/seace/database?id=1185404', 'is_read': 0, 'expires_at': datetime.datetime(2026, 4, 5, 13, 8, 31, 300966, tzinfo=datetime.timezone.utc), 'extra_data': 'null'}]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+Error checking new adjudicaciones: (pymysql.err.OperationalError) (1364, "Field 'id' doesn't have a default value")
+[SQL: INSERT INTO notifications (user_id, type, priority, title, message, link, is_read, expires_at, extra_data) VALUES (%(user_id)s, %(type)s, %(priority)s, %(title)s, %(message)s, %(link)s, %(is_read)s, %(expires_at)s, %(extra_data)s)]
+[parameters: {'user_id': 27, 'type': <NotificationType.ADJUDICACION: 'ADJUDICACION'>, 'priority': <NotificationPriority.MEDIUM: 'MEDIUM'>, 'title': '🏆 Nueva Adjudicación: CONSORCIO EJECUTOR PUQUIO', 'message': "Licitación 'EJECUCIÓN DE LA OBRA: SALDO 2 DE OBRA del Proyecto de Inversión: ¿MEJORAMIENTO Y AMPLIACIÓN DE PRACT...' adjudicada. Monto: S/ 14,500,047.43. Fecha: 03/04/2026", 'link': '/seace/database?id=1185404', 'is_read': 0, 'expires_at': datetime.datetime(2026, 4, 5, 13, 8, 31, 313214, tzinfo=datetime.timezone.utc), 'extra_data': 'null'}]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+Error checking new adjudicaciones: (pymysql.err.OperationalError) (1364, "Field 'id' doesn't have a default value")
+[SQL: INSERT INTO notifications (user_id, type, priority, title, message, link, is_read, expires_at, extra_data) VALUES (%(user_id)s, %(type)s, %(priority)s, %(title)s, %(message)s, %(link)s, %(is_read)s, %(expires_at)s, %(extra_data)s)]
+[parameters: {'user_id': 27, 'type': <NotificationType.ADJUDICACION: 'ADJUDICACION'>, 'priority': <NotificationPriority.MEDIUM: 'MEDIUM'>, 'title': '🏆 Nueva Adjudicación: CONSORCIO EJECUTOR PUQUIO', 'message': "Licitación 'EJECUCIÓN DE LA OBRA: SALDO 2 DE OBRA del Proyecto de Inversión: ¿MEJORAMIENTO Y AMPLIACIÓN DE PRACT...' adjudicada. Monto: S/ 14,500,047.43. Fecha: 03/04/2026", 'link': '/seace/database?id=1185404', 'is_read': 0, 'expires_at': datetime.datetime(2026, 4, 5, 13, 38, 30, 424476, tzinfo=datetime.timezone.utc), 'extra_data': 'null'}]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+Error checking new adjudicaciones: (pymysql.err.OperationalError) (1364, "Field 'id' doesn't have a default value")
+[SQL: INSERT INTO notifications (user_id, type, priority, title, message, link, is_read, expires_at, extra_data) VALUES (%(user_id)s, %(type)s, %(priority)s, %(title)s, %(message)s, %(link)s, %(is_read)s, %(expires_at)s, %(extra_data)s)]
+[parameters: {'user_id': 27, 'type': <NotificationType.ADJUDICACION: 'ADJUDICACION'>, 'priority': <NotificationPriority.MEDIUM: 'MEDIUM'>, 'title': '🏆 Nueva Adjudicación: CONSORCIO EJECUTOR PUQUIO', 'message': "Licitación 'EJECUCIÓN DE LA OBRA: SALDO 2 DE OBRA del Proyecto de Inversión: ¿MEJORAMIENTO Y AMPLIACIÓN DE PRACT...' adjudicada. Monto: S/ 14,500,047.43. Fecha: 03/04/2026", 'link': '/seace/database?id=1185404', 'is_read': 0, 'expires_at': datetime.datetime(2026, 4, 5, 13, 38, 30, 431288, tzinfo=datetime.timezone.utc), 'extra_data': 'null'}]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+Error checking new adjudicaciones: (pymysql.err.OperationalError) (1364, "Field 'id' doesn't have a default value")
+[SQL: INSERT INTO notifications (user_id, type, priority, title, message, link, is_read, expires_at, extra_data) VALUES (%(user_id)s, %(type)s, %(priority)s, %(title)s, %(message)s, %(link)s, %(is_read)s, %(expires_at)s, %(extra_data)s)]
+[parameters: {'user_id': 27, 'type': <NotificationType.ADJUDICACION: 'ADJUDICACION'>, 'priority': <NotificationPriority.MEDIUM: 'MEDIUM'>, 'title': '🏆 Nueva Adjudicación: CONSORCIO EJECUTOR PUQUIO', 'message': "Licitación 'EJECUCIÓN DE LA OBRA: SALDO 2 DE OBRA del Proyecto de Inversión: ¿MEJORAMIENTO Y AMPLIACIÓN DE PRACT...' adjudicada. Monto: S/ 14,500,047.43. Fecha: 03/04/2026", 'link': '/seace/database?id=1185404', 'is_read': 0, 'expires_at': datetime.datetime(2026, 4, 5, 13, 38, 30, 428754, tzinfo=datetime.timezone.utc), 'extra_data': 'null'}]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+Error checking new adjudicaciones: (pymysql.err.OperationalError) (1364, "Field 'id' doesn't have a default value")
+[SQL: INSERT INTO notifications (user_id, type, priority, title, message, link, is_read, expires_at, extra_data) VALUES (%(user_id)s, %(type)s, %(priority)s, %(title)s, %(message)s, %(link)s, %(is_read)s, %(expires_at)s, %(extra_data)s)]
+[parameters: {'user_id': 27, 'type': <NotificationType.ADJUDICACION: 'ADJUDICACION'>, 'priority': <NotificationPriority.MEDIUM: 'MEDIUM'>, 'title': '🏆 Nueva Adjudicación: CONSORCIO EJECUTOR PUQUIO', 'message': "Licitación 'EJECUCIÓN DE LA OBRA: SALDO 2 DE OBRA del Proyecto de Inversión: ¿MEJORAMIENTO Y AMPLIACIÓN DE PRACT...' adjudicada. Monto: S/ 14,500,047.43. Fecha: 03/04/2026", 'link': '/seace/database?id=1185404', 'is_read': 0, 'expires_at': datetime.datetime(2026, 4, 5, 13, 38, 30, 433525, tzinfo=datetime.timezone.utc), 'extra_data': 'null'}]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+INFO:     190.43.75.151:0 - "WebSocket /api/chatbot/ws" [accepted]
+INFO:     connection open
+
+==> /root/.pm2/logs/api-mcqs-out.log <==
+INFO:     190.43.75.151:0 - "GET /api/integraciones/update-mef/last-updated HTTP/1.1" 200 OK
+INFO:     190.43.75.151:0 - "GET /api/notifications/?unread_only=false&limit=50 HTTP/1.1" 200 OK
+INFO:     190.43.75.151:0 - "GET /api/notifications?unread_only=false&limit=50 HTTP/1.1" 307 Temporary Redirect
+INFO:     190.43.75.151:0 - "GET /api/notifications/?unread_only=false&limit=50 HTTP/1.1" 200 OK
+INFO:     190.43.75.151:0 - "GET /api/notifications/?unread_only=false&limit=50 HTTP/1.1" 200 OK
+INFO:     190.43.75.151:0 - "GET /api/notifications?unread_only=false&limit=50 HTTP/1.1" 307 Temporary Redirect
+INFO:     190.43.75.151:0 - "GET /api/integraciones/update-mef/status HTTP/1.0" 200 OK
+INFO:     190.43.75.151:0 - "GET /api/notifications?unread_only=false&limit=50 HTTP/1.1" 307 Temporary Redirect
+INFO:     190.43.75.151:0 - "GET /api/integraciones/update-mef/last-updated HTTP/1.1" 200 OK
+INFO:     190.43.75.151:0 - "GET /api/notifications/?unread_only=false&limit=50 HTTP/1.1" 200 OK
+INFO:     190.43.75.151:0 - "GET /api/notifications?unread_only=false&limit=50 HTTP/1.1" 307 Temporary Redirect
+INFO:     190.43.75.151:0 - "GET /api/notifications/?unread_only=false&limit=50 HTTP/1.1" 200 OK
+INFO:     190.43.75.151:0 - "GET /api/notifications/?unread_only=false&limit=50 HTTP/1.1" 200 OK
+INFO:     190.43.75.151:0 - "GET /api/notifications?unread_only=false&limit=50 HTTP/1.1" 307 Temporary Redirect
+INFO:     190.43.75.151:0 - "GET /api/integraciones/update-mef/status HTTP/1.0" 200 OK
+INFO:     190.43.75.151:0 - "GET /api/notifications?unread_only=false&limit=50 HTTP/1.1" 307 Temporary Redirect
+INFO:     190.43.75.151:0 - "GET /api/integraciones/update-mef/last-updated HTTP/1.1" 200 OK
+INFO:     190.43.75.151:0 - "GET /api/notifications/?unread_only=false&limit=50 HTTP/1.1" 200 OK
+INFO:     190.43.75.151:0 - "GET /api/notifications?unread_only=false&limit=50 HTTP/1.1" 307 Temporary Redirect
+INFO:     190.43.75.151:0 - "GET /api/notifications/?unread_only=false&limit=50 HTTP/1.1" 200 OK
+INFO:     190.43.75.151:0 - "GET /api/notifications/?unread_only=false&limit=50 HTTP/1.1" 200 OK
+INFO:     190.43.75.151:0 - "GET /api/notifications?unread_only=false&limit=50 HTTP/1.1" 307 Temporary Redirect
+INFO:     190.43.75.151:0 - "GET /api/integraciones/update-mef/status HTTP/1.0" 200 OK
+INFO:     190.43.75.151:0 - "GET /api/notifications?unread_only=false&limit=50 HTTP/1.1" 307 Temporary Redirect
+INFO:     190.43.75.151:0 - "GET /api/integraciones/update-mef/last-updated HTTP/1.1" 200 OK
+INFO:     190.43.75.151:0 - "GET /api/notifications/?unread_only=false&limit=50 HTTP/1.1" 200 OK
+INFO:     190.43.75.151:0 - "GET /api/notifications?unread_only=false&limit=50 HTTP/1.1" 307 Temporary Redirect
+INFO:     190.43.75.151:0 - "GET /api/notifications/?unread_only=false&limit=50 HTTP/1.1" 200 OK
+INFO:     190.43.75.151:0 - "GET /api/notifications/?unread_only=false&limit=50 HTTP/1.1" 200 OK
+INFO:     162.142.125.126:0 - "GET /sitemap.xml HTTP/1.1" 404 Not Found
+INFO:     190.43.75.151:0 - "OPTIONS /api/notifications?unread_only=false&limit=50 HTTP/1.1" 200 OK
+INFO:     190.43.75.151:0 - "OPTIONS /api/notifications?unread_only=false&limit=50 HTTP/1.1" 200 OK
+INFO:     190.43.75.151:0 - "OPTIONS /api/notifications?unread_only=false&limit=50 HTTP/1.1" 200 OK
+INFO:     190.43.75.151:0 - "GET /api/integraciones/update-mef/status HTTP/1.0" 200 OK
+INFO:     190.43.75.151:0 - "GET /api/notifications?unread_only=false&limit=50 HTTP/1.1" 307 Temporary Redirect
+INFO:     190.43.75.151:0 - "OPTIONS /api/integraciones/update-mef/last-updated HTTP/1.1" 200 OK
+INFO:     190.43.75.151:0 - "GET /api/notifications?unread_only=false&limit=50 HTTP/1.1" 307 Temporary Redirect
+INFO:     190.43.75.151:0 - "OPTIONS /api/notifications/?unread_only=false&limit=50 HTTP/1.1" 200 OK
+INFO:     190.43.75.151:0 - "GET /api/integraciones/update-mef/last-updated HTTP/1.1" 200 OK
+INFO:     190.43.75.151:0 - "GET /api/notifications?unread_only=false&limit=50 HTTP/1.1" 307 Temporary Redirect
+INFO:     190.43.75.151:0 - "GET /api/notifications/?unread_only=false&limit=50 HTTP/1.1" 200 OK
+INFO:     190.43.75.151:0 - "GET /api/notifications/?unread_only=false&limit=50 HTTP/1.1" 200 OK
+INFO:     190.43.75.151:0 - "GET /api/notifications/?unread_only=false&limit=50 HTTP/1.1" 200 OK
+INFO:     190.43.75.151:0 - "GET /api/notifications?unread_only=false&limit=50 HTTP/1.1" 307 Temporary Redirect
+INFO:     190.43.75.151:0 - "GET /api/integraciones/update-mef/status HTTP/1.0" 200 OK
+INFO:     190.43.75.151:0 - "GET /api/notifications?unread_only=false&limit=50 HTTP/1.1" 307 Temporary Redirect
+INFO:     190.43.75.151:0 - "GET /api/integraciones/update-mef/last-updated HTTP/1.1" 200 OK
+INFO:     190.43.75.151:0 - "GET /api/notifications/?unread_only=false&limit=50 HTTP/1.1" 200 OK
+INFO:     190.43.75.151:0 - "GET /api/notifications?unread_only=false&limit=50 HTTP/1.1" 307 Temporary Redirect
+INFO:     190.43.75.151:0 - "GET /api/notifications/?unread_only=false&limit=50 HTTP/1.1" 200 OK
+INFO:     190.43.75.151:0 - "GET /api/notifications/?unread_only=false&limit=50 HTTP/1.1" 200 OK
+INFO:     190.43.75.151:0 - "GET /api/notifications?unread_only=false&limit=50 HTTP/1.1" 307 Temporary Redirect
+INFO:     190.43.75.151:0 - "GET /api/integraciones/update-mef/status HTTP/1.0" 200 OK
+INFO:     190.43.75.151:0 - "GET /api/notifications?unread_only=false&limit=50 HTTP/1.1" 307 Temporary Redirect
+INFO:     190.43.75.151:0 - "GET /api/integraciones/update-mef/last-updated HTTP/1.1" 200 OK
+INFO:     190.43.75.151:0 - "GET /api/notifications/?unread_only=false&limit=50 HTTP/1.1" 200 OK
+INFO:     190.43.75.151:0 - "GET /api/notifications?unread_only=false&limit=50 HTTP/1.1" 307 Temporary Redirect
+INFO:     190.43.75.151:0 - "GET /api/notifications/?unread_only=false&limit=50 HTTP/1.1" 200 OK
+INFO:     190.43.75.151:0 - "GET /api/notifications/?unread_only=false&limit=50 HTTP/1.1" 200 OK
+INFO:     190.43.75.151:0 - "GET /api/notifications?unread_only=false&limit=50 HTTP/1.1" 307 Temporary Redirect
+INFO:     190.43.75.151:0 - "GET /api/integraciones/update-mef/status HTTP/1.0" 200 OK
+INFO:     190.43.75.151:0 - "GET /api/notifications?unread_only=false&limit=50 HTTP/1.1" 307 Temporary Redirect
+INFO:     190.43.75.151:0 - "GET /api/integraciones/update-mef/last-updated HTTP/1.1" 200 OK
+INFO:     190.43.75.151:0 - "GET /api/notifications/?unread_only=false&limit=50 HTTP/1.1" 200 OK
+INFO:     190.43.75.151:0 - "GET /api/notifications?unread_only=false&limit=50 HTTP/1.1" 307 Temporary Redirect
+INFO:     190.43.75.151:0 - "GET /api/notifications/?unread_only=false&limit=50 HTTP/1.1" 200 OK
+INFO:     190.43.75.151:0 - "GET /api/notifications/?unread_only=false&limit=50 HTTP/1.1" 200 OK
+INFO:     190.43.75.151:0 - "GET /api/notifications?unread_only=false&limit=50 HTTP/1.1" 307 Temporary Redirect
+INFO:     190.43.75.151:0 - "GET /api/integraciones/update-mef/status HTTP/1.0" 200 OK
+INFO:     190.43.75.151:0 - "GET /api/notifications?unread_only=false&limit=50 HTTP/1.1" 307 Temporary Redirect
+INFO:     190.43.75.151:0 - "GET /api/integraciones/update-mef/last-updated HTTP/1.1" 200 OK
+INFO:     190.43.75.151:0 - "GET /api/notifications/?unread_only=false&limit=50 HTTP/1.1" 200 OK
+INFO:     190.43.75.151:0 - "GET /api/notifications?unread_only=false&limit=50 HTTP/1.1" 307 Temporary Redirect
+INFO:     190.43.75.151:0 - "GET /api/notifications/?unread_only=false&limit=50 HTTP/1.1" 200 OK
+INFO:     190.43.75.151:0 - "GET /api/notifications/?unread_only=false&limit=50 HTTP/1.1" 200 OK
+INFO:     74.7.228.14:0 - "GET /robots.txt HTTP/1.1" 404 Not Found
+INFO:     190.43.75.151:0 - "GET /api/notifications?unread_only=false&limit=50 HTTP/1.1" 307 Temporary Redirect
+INFO:     190.43.75.151:0 - "GET /api/integraciones/update-mef/status HTTP/1.0" 200 OK
+INFO:     190.43.75.151:0 - "GET /api/notifications?unread_only=false&limit=50 HTTP/1.1" 307 Temporary Redirect
+INFO:     190.43.75.151:0 - "GET /api/integraciones/update-mef/last-updated HTTP/1.1" 200 OK
+INFO:     190.43.75.151:0 - "GET /api/notifications/?unread_only=false&limit=50 HTTP/1.1" 200 OK
+INFO:     190.43.75.151:0 - "GET /api/notifications?unread_only=false&limit=50 HTTP/1.1" 307 Temporary Redirect
+INFO:     190.43.75.151:0 - "GET /api/notifications/?unread_only=false&limit=50 HTTP/1.1" 200 OK
+INFO:     190.43.75.151:0 - "GET /api/notifications/?unread_only=false&limit=50 HTTP/1.1" 200 OK
+INFO:     190.43.75.151:0 - "GET /api/notifications?unread_only=false&limit=50 HTTP/1.1" 307 Temporary Redirect
+INFO:     190.43.75.151:0 - "GET /api/integraciones/update-mef/status HTTP/1.0" 200 OK
+INFO:     190.43.75.151:0 - "GET /api/notifications?unread_only=false&limit=50 HTTP/1.1" 307 Temporary Redirect
+INFO:     190.43.75.151:0 - "GET /api/integraciones/update-mef/last-updated HTTP/1.1" 200 OK
+INFO:     190.43.75.151:0 - "GET /api/notifications/?unread_only=false&limit=50 HTTP/1.1" 200 OK
+INFO:     190.43.75.151:0 - "GET /api/notifications?unread_only=false&limit=50 HTTP/1.1" 307 Temporary Redirect
+INFO:     190.43.75.151:0 - "GET /api/notifications/?unread_only=false&limit=50 HTTP/1.1" 200 OK
+INFO:     190.43.75.151:0 - "GET /api/notifications/?unread_only=false&limit=50 HTTP/1.1" 200 OK
+INFO:     190.43.75.151:0 - "GET /api/notifications?unread_only=false&limit=50 HTTP/1.1" 307 Temporary Redirect
+INFO:     190.43.75.151:0 - "GET /api/integraciones/update-mef/status HTTP/1.0" 200 OK
+INFO:     190.43.75.151:0 - "GET /api/notifications?unread_only=false&limit=50 HTTP/1.1" 307 Temporary Redirect
+INFO:     190.43.75.151:0 - "GET /api/integraciones/update-mef/last-updated HTTP/1.1" 200 OK
+INFO:     190.43.75.151:0 - "GET /api/notifications/?unread_only=false&limit=50 HTTP/1.1" 200 OK
+INFO:     190.43.75.151:0 - "GET /api/notifications?unread_only=false&limit=50 HTTP/1.1" 307 Temporary Redirect
+INFO:     190.43.75.151:0 - "GET /api/notifications/?unread_only=false&limit=50 HTTP/1.1" 200 OK
+INFO:     190.43.75.151:0 - "GET /api/notifications/?unread_only=false&limit=50 HTTP/1.1" 200 OK
