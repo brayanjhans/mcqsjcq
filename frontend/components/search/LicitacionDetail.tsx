@@ -532,6 +532,12 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                                 </div>
                             </div>
 
+                            {licitacion.descripcion && (
+                                <p className="text-sm font-bold text-slate-800 dark:text-slate-200 mt-4 mb-4 leading-relaxed pr-4 uppercase">
+                                    {licitacion.descripcion}
+                                </p>
+                            )}
+
                             <div className="mt-4 flex flex-wrap gap-2 mb-4">
                                 <span className={`px-2.5 py-1 rounded-md text-xs font-bold uppercase border ${licitacion.estado_proceso === "CONVOCA" ? "bg-yellow-100 text-yellow-700 border-yellow-200" :
                                     licitacion.estado_proceso?.includes("CONTRATADO") || licitacion.estado_proceso?.includes("ADJUDICADO") ? "bg-slate-100 text-slate-700 border-slate-200" :
