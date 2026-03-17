@@ -13,6 +13,7 @@ class LicitacionesCabecera(Base):
     
     id_convocatoria = Column(String(100), primary_key=True, index=True)
     ocid = Column(String(100), index=True)
+    cui = Column(String(50), index=True)
     nomenclatura = Column(String(4000), index=True)
     descripcion = Column(Text)
     comprador = Column(String(500), index=True)  # Entidad compradora

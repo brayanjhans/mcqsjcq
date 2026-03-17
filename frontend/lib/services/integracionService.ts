@@ -38,6 +38,13 @@ export const integracionService = {
         const response = await api.get('/api/integraciones/update-mef/last-updated');
         return response.data;
     },
+    /**
+     * Fetch cached Infobras data for a given CUI.
+     */
+    getInfobras: async (cui: string): Promise<{ status: string, data: any }> => {
+        const response = await api.get(`/api/integraciones/infobras/${cui}`);
+        return response.data;
+    },
 };
 
 export default integracionService;

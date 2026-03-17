@@ -943,7 +943,7 @@ def get_licitacion_detail(
                 monto_estimado, moneda, fecha_publicacion,
                 estado_proceso, ubicacion_completa,
                 departamento, provincia, distrito,
-                entidad_ruc
+                entidad_ruc, cui
             FROM licitaciones_cabecera
             WHERE id_convocatoria = :id
         """)
@@ -960,7 +960,7 @@ def get_licitacion_detail(
                     monto_estimado, moneda, fecha_publicacion,
                     estado_proceso, ubicacion_completa,
                     departamento, provincia, distrito,
-                    entidad_ruc
+                    entidad_ruc, cui
                 FROM licitaciones_cabecera
                 WHERE id_convocatoria LIKE :id_pattern
                 LIMIT 1
@@ -986,7 +986,9 @@ def get_licitacion_detail(
             "departamento": row[12],
             "provincia": row[13],
             "distrito": row[14],
-            "entidad_ruc": row[15]
+            "entidad_ruc": row[15],
+            "cui": row[16],
+            "debug_flag_raw_endpoint": True
         }
         
         # Get adjudicaciones

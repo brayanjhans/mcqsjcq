@@ -366,7 +366,7 @@ def guardar_bd(todo_cabeceras, todo_adjudicaciones):
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             ON DUPLICATE KEY UPDATE 
                 id_contrato = VALUES(id_contrato),
-                ganador_nombre = VALUES(ganador_nombre),
+                ganador_nombre = COALESCE(NULLIF(ganador_nombre, ''), VALUES(ganador_nombre)),
                 estado_item = VALUES(estado_item),
                 monto_final = VALUES(monto_final),
                 url_pdf_contrato = COALESCE(VALUES(url_pdf_contrato), url_pdf_contrato),

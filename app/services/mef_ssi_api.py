@@ -108,6 +108,8 @@ def get_ejecucion_by_cui_ssi(cui: str) -> Optional[dict]:
     # Fetch monthly execution history for the CUI
     data_mes = _post("traeDevengSSI", {"id": cui, "tipo": "MES"})
     monthly_by_year = {}
+    girado_anual_db = {}
+    
     if data_mes and isinstance(data_mes, list):
         for m in data_mes:
             year = int(m.get("NUM_ANIO", 0))
@@ -124,7 +126,6 @@ def get_ejecucion_by_cui_ssi(cui: str) -> Optional[dict]:
             })
         
         # Consultamos el girado anual real de la BD local (filtrando la última importación para no duplicar sumas)
-        girado_anual_db = {}
         try:
             db = SessionLocal()
             query = text("""
@@ -185,7 +186,10 @@ def get_ejecucion_by_cui_ssi(cui: str) -> Optional[dict]:
         y_val = int(r.get("NUM_ANIO", 0))
         pim_h = float(r.get("MTO_PIM", 0) or 0)
         dev_h = float(r.get("MTO_DEVEN", 0) or 0)
-        gir_h = girado_anual_db.get(y_val, float(r.get("MTO_GIRADO", 0) or dev_h)) # Fallback to devengado if girado not present
+        # Priority: local DB (if > 0) → SSI MTO_GIRADO → devengado as last resort
+        gir_db_h = girado_anual_db.get(y_val)
+        gir_ssi_h = float(r.get("MTO_GIRADO", 0) or 0)
+        gir_h = gir_db_h if (gir_db_h is not None and gir_db_h > 0) else (gir_ssi_h if gir_ssi_h > 0 else dev_h)
         historial.append({
             "year": y_val,
             "pia": float(r.get("MTO_PIA", 0) or 0),
@@ -203,8 +207,11 @@ def get_ejecucion_by_cui_ssi(cui: str) -> Optional[dict]:
         if pim > 0:
             year = int(row.get("NUM_ANIO", current_year))
             dev = float(row.get("MTO_DEVEN", 0) or 0)
-            gir = girado_anual_db.get(year, float(row.get("MTO_GIRADO", 0) or dev))
-            print(f"[MEF-SSI] CUI {cui} found via DEV2, year={year}, PIM={pim}")
+            # Priority: local DB (if > 0) → SSI MTO_GIRADO → devengado as last resort
+            gir_db = girado_anual_db.get(year)
+            gir_ssi = float(row.get("MTO_GIRADO", 0) or 0)
+            gir = gir_db if (gir_db is not None and gir_db > 0) else (gir_ssi if gir_ssi > 0 else dev)
+            print(f"[MEF-SSI] CUI {cui} found via DEV2, year={year}, PIM={pim}, gir_db={gir_db}, gir_ssi={gir_ssi}, gir={gir}")
             return {
                 "pia": float(row.get("MTO_PIA", 0) or 0),
                 "pim": pim,

@@ -3,6 +3,7 @@
 export interface Licitacion {
     id_convocatoria: number
     ocid: string | null
+    cui: string | null
     nomenclatura: string | null
     descripcion: string | null
     comprador: string | null

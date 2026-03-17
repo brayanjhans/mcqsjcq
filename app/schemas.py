@@ -51,6 +51,7 @@ class LicitacionCabeceraSchema(BaseModel):
     """Tender header information."""
     id_convocatoria: str
     ocid: Optional[str] = None
+    cui: Optional[str] = None
     nomenclatura: Optional[str] = None
     descripcion: Optional[str] = None
     comprador: Optional[str] = None  # entidad_publica
@@ -160,6 +161,7 @@ class LicitacionDetalleSchema(BaseModel):
     """Complete tender details with adjudication and consortium."""
     id_convocatoria: str
     ocid: Optional[str] = None
+    cui: Optional[str] = None
     nomenclatura: Optional[str] = None
     descripcion: Optional[str] = None
     comprador: Optional[str] = None

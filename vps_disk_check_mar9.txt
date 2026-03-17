@@ -1,0 +1,34 @@
+--- ESPACIO GLOBAL ---
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/sda1       193G  125G   69G  65% /
+
+--- CARPETAS MÁS PESADAS (Más de 1GB) EN / ---
+
+--- ESPACIO EN MYSQL ---
+No /var/lib/mysql
+79G	/home/mysql
+
+--- ESPACIO EN CARPETAS DEL APLICATIVO ---
+1.4G	/home/admin/public_html/api/scripts
+1.2G	/home/admin/public_html/api/frontend
+591M	/home/admin/public_html/api/ofertas_pdfs
+509M	/home/admin/public_html/api/venv
+132M	/home/admin/public_html/api/evidencia_consorcios
+99M	/home/admin/public_html/api/mcqs-jcq_deploy.sql
+2.0M	/home/admin/public_html/api/uvicorn.log
+1.8M	/home/admin/public_html/api/backend.log
+1.8M	/home/admin/public_html/api/app
+560K	/home/admin/public_html/api/cmdline_dump.txt
+
+--- PROCESOS PM2 Y LOGS ---
+381M	/root/.pm2/logs
+┌────┬───────────────────┬─────────────┬─────────┬─────────┬──────────┬────────┬──────┬───────────┬──────────┬──────────┬──────────┬──────────┐
+│ id │ name              │ namespace   │ version │ mode    │ pid      │ uptime │ ↺    │ status    │ cpu      │ mem      │ user     │ watching │
+├────┼───────────────────┼─────────────┼─────────┼─────────┼──────────┼────────┼──────┼───────────┼──────────┼──────────┼──────────┼──────────┤
+│ 1  │ api-mcqs          │ default     │ N/A     │ fork    │ 22464    │ 2D     │ 3    │ online    │ 0%       │ 24.8mb   │ root     │ disabled │
+│ 0  │ frontend-prod     │ default     │ N/A     │ fork    │ 1590     │ 3D     │ 0    │ online    │ 0%       │ 60.8mb   │ root     │ disabled │
+│ 2  │ seace-frontend    │ default     │ N/A     │ fork    │ 22473    │ 2D     │ 3    │ online    │ 0%       │ 61.7mb   │ root     │ disabled │
+└────┴───────────────────┴─────────────┴─────────┴─────────┴──────────┴────────┴──────┴───────────┴──────────┴──────────┴──────────┴──────────┘
+
+ERRORES:
+ls: cannot access '/home/mysql/mcqs-jcq': No such file or directory

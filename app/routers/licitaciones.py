@@ -376,7 +376,7 @@ def get_licitacion_detalle(
         print("DEBUG: Accessing adjuciaciones relationship...")
         if licitacion.adjudicaciones:
             print(f"DEBUG: Found {len(licitacion.adjudicaciones)} adjudicaciones.")
-            from app.models import DetalleConsorcios
+            from app.models.seace import DetalleConsorcios
             from app.schemas import AdjudicacionSchema, DetalleConsorcioSchema
             
             for adj in licitacion.adjudicaciones:
@@ -431,6 +431,7 @@ def get_licitacion_detalle(
     
     return LicitacionDetalleSchema(
         id_convocatoria=licitacion.id_convocatoria,
+        cui=licitacion.cui,
         ocid=licitacion.ocid,
         nomenclatura=licitacion.nomenclatura,
         descripcion=licitacion.descripcion,

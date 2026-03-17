@@ -8,6 +8,7 @@ from sqlalchemy import text
 from app.database import get_db
 from app.services.mef_service import get_ejecucion_financiera
 from app.services.ocds_service import get_garantias
+from app.services.infobras_service import InfobrasService
 
 
 import subprocess
@@ -287,7 +288,8 @@ def get_ejecucion(id_convocatoria: str, db: Session = Depends(get_db)):
                 c.fecha_publicacion,
                 c.ocid,
                 c.descripcion,
-                c.departamento
+                c.departamento,
+                c.cui
             FROM licitaciones_adjudicaciones a
             JOIN licitaciones_cabecera c ON a.id_convocatoria = c.id_convocatoria
             WHERE a.id_convocatoria = :id
@@ -312,6 +314,7 @@ def get_ejecucion(id_convocatoria: str, db: Session = Depends(get_db)):
         fecha_publicacion = row[3]
         descripcion = str(row[5]) if row[5] else None
         departamento = str(row[6]).strip().upper() if row[6] else None
+        cui_directo = str(row[7]).strip() if row[7] else None
         
         # Determine the year from fecha_publicacion
         year = 2026  # Default
@@ -338,6 +341,7 @@ def get_ejecucion(id_convocatoria: str, db: Session = Depends(get_db)):
             year=year,
             description=descripcion,
             departamento=departamento,
+            cui_directo=cui_directo
         )
 
         # Calculate percentage
@@ -392,7 +396,7 @@ def get_ejecucion_debug(id_convocatoria: str, db: Session = Depends(get_db)):
         sql = text("""
             SELECT 
                 c.descripcion, c.fecha_publicacion, c.departamento,
-                a.ganador_ruc, a.monto_adjudicado
+                a.ganador_ruc, a.monto_adjudicado, c.cui
             FROM licitaciones_cabecera c
             LEFT JOIN licitaciones_adjudicaciones a ON c.id_convocatoria = a.id_convocatoria
             WHERE c.id_convocatoria = :id
@@ -411,9 +415,11 @@ def get_ejecucion_debug(id_convocatoria: str, db: Session = Depends(get_db)):
         route = extract_route_code(descripcion) if descripcion else None
         project_type = extract_project_type(descripcion) if descripcion else None
 
+        cui_directo = str(row[5]).strip() if row[5] else None
+
         # Run the full lookup and capture result
         mef_data = get_ejecucion_financiera(
-            db=db, ruc=row[3], year=year, description=descripcion, departamento=departamento
+            db=db, ruc=row[3], year=year, description=descripcion, departamento=departamento, cui_directo=cui_directo
         )
 
         return {
@@ -562,3 +568,18 @@ def _build_asbanc_link(entidad_financiera: str | None) -> str | None:
 
     # Default ASBANC link without specific bank
     return "http://cfianza.asbanc.com.pe/"
+
+@router.get("/infobras/{cui}")
+def get_infobras(cui: str, db: Session = Depends(get_db)):
+    """
+    Recupera los datos de Infobras cacheados en la base de datos para el CUI dado.
+    Si no existen o están corruptos, devuelve None o error 404.
+    """
+    if not cui or cui == "None" or cui == "null":
+        raise HTTPException(status_code=400, detail="CUI requerido")
+        
+    data = InfobrasService.get_cached_infobras(cui, db)
+    if not data:
+        raise HTTPException(status_code=404, detail="No se encontró información de Infobras en caché para este CUI. Puede que el sincronizador aún no lo procese.")
+        
+    return {"status": "success", "cui": cui, "data": data}

@@ -29,6 +29,7 @@ import type { Licitacion, Adjudicacion, EjecucionFinanciera, GarantiasResponse, 
 import { licitacionService } from "@/lib/services/licitacionService";
 import { integracionService } from "@/lib/services/integracionService";
 import { generateLicitacionPDF } from "@/lib/utils/generateLicitacionPDF";
+import { EstadoInfobras } from "./EstadoInfobras";
 
 const PdfIcon = ({ className }: { className?: string }) => (
     <img
@@ -337,9 +338,27 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
         if (!licitacion || exporting) return;
         setExporting(true);
         try {
-            generateLicitacionPDF(licitacion, ejecucion, garantiasData);
+            let infobrasData = null;
+            
+            // The CUI could be in licitacion.cui or in the already fetched ejecucion.cui
+            const effectiveCui = licitacion.cui || ejecucion?.cui;
+            
+            if (effectiveCui) {
+                try {
+                    const infoRes = await integracionService.getInfobras(effectiveCui);
+                    if (infoRes && infoRes.status === 'success') {
+                        infobrasData = infoRes.data;
+                    }
+                } catch (err) {
+                    console.error("Error fetching Infobras for PDF:", err);
+                }
+            }
+
+            generateLicitacionPDF(licitacion, ejecucion, garantiasData, infobrasData);
         } catch (err) {
             console.error('Error exporting PDF:', err);
+            // Fallback: generate with what we have
+            generateLicitacionPDF(licitacion, ejecucion, garantiasData, null);
         } finally {
             setExporting(false);
         }
@@ -1397,6 +1416,9 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                         </div>
                     )}
                 </div>
+
+                {/* NUEVO: ESTADO INFOBRAS (AVANCE FISICO) */}
+                <EstadoInfobras cui={licitacion.cui} />
 
                 {/* Fianza Upload Modal */}
                 {editingFianzaId && editingFianzaField && isMounted && createPortal(

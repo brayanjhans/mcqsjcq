@@ -501,9 +501,10 @@ def _fts_search(db: Session, search_term: str, original_description: str, years:
 
 
 def get_ejecucion_financiera(db: Session, ruc: str, year: int, description: str = None,
-                             departamento: str = None) -> dict:
+                             departamento: str = None, cui_directo: str = None) -> dict:
     """
     Main entry point. Lookup order:
+    0. Exact CUI from SEACE JSON database (100% accurate)
     1. CUI extracted from description (7+ digits) → SSI API real-time
     2. Text search via SSI API → fuzzy CUI resolution → SSI real-time
     3. Route code (e.g. HU-118) → local DB LIKE search (fallback)
@@ -511,7 +512,24 @@ def get_ejecucion_financiera(db: Session, ruc: str, year: int, description: str 
     """
     years = _build_year_list(year)
     desc_preview = description[:80] if description else 'None'
-    print(f"[MEF] Searching with years={years}, dept={departamento}, desc={desc_preview}")
+    print(f"[MEF] Searching with years={years}, dept={departamento}, desc={desc_preview}, cui_directo={cui_directo}")
+
+    # ── Step 0: Using exact CUI parsed from SEACE JSON ──
+    if cui_directo and str(cui_directo).strip():
+        cui_clean = str(cui_directo).strip()
+        print(f"[MEF-SSI] CUI_DIRECTO provided from DB: {cui_clean}. Trying SSI real-time...")
+        result = get_ejecucion_by_cui_ssi(cui_clean)
+        if result and result.get("encontrado") and result.get("pim", 0) > 0:
+            print(f"[MEF-SSI] Found CUI_DIRECTO {cui_clean} via SSI API.")
+            return result
+        
+        print(f"[MEF-SSI] CUI_DIRECTO {cui_clean} via SSI API returned no data. Trying local DB...")
+        local = get_ejecucion_by_cui(db, cui_clean, years)
+        if local["encontrado"] and local.get("pim", 0) > 0:
+            print(f"[MEF-LOCAL] Found CUI_DIRECTO {cui_clean} locally with PIM > 0.")
+            return local
+            
+        print(f"[MEF-LOCAL] CUI_DIRECTO {cui_clean} has no valid data. Falling back to other methods just in case.")
 
     # ── Step 1: CUI extracted from description → SSI real-time ──
     cui = None

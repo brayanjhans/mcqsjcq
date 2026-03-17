@@ -1,6 +1,7 @@
 export interface Licitacion {
     id_convocatoria: string;
     ocid?: string;
+    cui?: string | null;
     nomenclatura?: string;
     descripcion: string;
     comprador: string;
@@ -149,6 +150,43 @@ export interface GarantiaItem {
     dias_restantes?: number | null;
     descripcion?: string;
     contrato_id?: string;
+}
+
+export interface InfobrasValorizacion {
+    periodo: string;
+    avance_fisico_prog: string;
+    avance_fisico_real: string;
+    avance_val_prog: string;
+    avance_val_real: string;
+    pct_ejecucion_fin: string;
+    monto_ejecucion_fin: string;
+    estado: string;
+    causal_paralizacion: string;
+    url_imagen: string;
+}
+
+export interface InfobrasData {
+    obra_id_infobras: string;
+    entidad: string;
+    estado_ejecucion: string;
+    contratista: string;
+    modalidad: string;
+    contrato_desc: string;
+    fecha_contrato: string;
+    fecha_inicio: string;
+    fecha_fin: string;
+    costo_viable: string;
+    costo_actualizado: string;
+    alerta_situacional: string;
+    pdf_resolucion: string;
+    last_updated: string;
+    pdf_acta_terreno?: string;
+    pdf_designacion_supervisor?: string;
+    pdf_cronograma?: string;
+    pdf_suspension_plazo?: string;
+    pdf_resolucion_contrato?: string;
+    pdf_informe_control?: string;
+    valorizaciones: InfobrasValorizacion[];
 }
 
 export interface GarantiasResponse {

@@ -1,39 +1,38 @@
-import pymysql
+import paramiko
 
-conn = pymysql.connect(host='localhost', user='root', password='123456789', db='mcqs-jcq')
-cur = conn.cursor(pymysql.cursors.DictCursor)
+ssh = paramiko.SSHClient()
+ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+ssh.connect("72.61.219.79", username="root", password="Contra159753#", timeout=15)
 
-# 1. Cabeceras 2026
-cur.execute("SELECT id_convocatoria, nomenclatura, fecha_publicacion, estado_proceso FROM licitaciones_cabecera WHERE id_convocatoria = '1184920'")
-res = cur.fetchall()
-print("=== Convocatoria 1184920 (Cabecera) ===")
-for r in res:
-    print(f"  ID: {r['id_convocatoria']} | FechaPub: {r['fecha_publicacion']} | Estado: {r['estado_proceso']}")
-print(f"  Total copias: {len(res)}")
+print("=== Filas por año ===")
+_, o, _ = ssh.exec_command(
+    'mysql -umcqs-jcq -pmcqs-jcq mcqs-jcq -e '
+    '"SELECT ano_eje, COUNT(*) as filas FROM mef_ejecucion GROUP BY ano_eje ORDER BY ano_eje;"'
+)
+print(o.read().decode())
 
-# 2. Adjudicaciones 1184920
-cur.execute("SELECT id_adjudicacion, monto_adjudicado, url_pdf_contrato, url_pdf_cartafianza, url_pdf_consorcio, entidad_financiera FROM licitaciones_adjudicaciones WHERE id_convocatoria = '1184920'")
-res_adj = cur.fetchall()
-print("\n=== Convocatoria 1184920 (Adjudicaciones) ===")
-for r in res_adj:
-    print(f"  AdjID: {r['id_adjudicacion']} | Monto: {r['monto_adjudicado']}")
-    print(f"    URL Contrato: {r['url_pdf_contrato']}")
-    print(f"    URL Fianza: {r['url_pdf_cartafianza']}")
-    print(f"    URL Consorcio: {r['url_pdf_consorcio']}")
-    print(f"    Entidad Fin: {r['entidad_financiera']}")
-print(f"  Total adjudicaciones: {len(res_adj)}")
+print("=== Total filas ===")
+_, o2, _ = ssh.exec_command(
+    'mysql -umcqs-jcq -pmcqs-jcq mcqs-jcq -e "SELECT COUNT(*) as total FROM mef_ejecucion;"'
+)
+print(o2.read().decode())
 
-# 3. Conteos generales de URLs y Fechas
-cur.execute("SELECT COUNT(*) as total FROM licitaciones_cabecera WHERE fecha_publicacion IS NOT NULL AND YEAR(fecha_publicacion) = 2026")
-print(f"\nCabeceras 2026 con fecha: {cur.fetchone()['total']}")
+print("=== Disco final ===")
+_, o3, _ = ssh.exec_command("df -h /")
+print(o3.read().decode())
 
-cur.execute("SELECT COUNT(*) as total FROM licitaciones_adjudicaciones WHERE url_pdf_contrato IS NOT NULL")
-print(f"Adjudicaciones con URL Contrato: {cur.fetchone()['total']}")
+print("=== Índice uk_mef_row ===")
+_, o4, _ = ssh.exec_command(
+    'mysql -umcqs-jcq -pmcqs-jcq mcqs-jcq -e '
+    '"SELECT INDEX_NAME FROM information_schema.STATISTICS '
+    "WHERE TABLE_SCHEMA='mcqs-jcq' AND TABLE_NAME='mef_ejecucion' "
+    "AND INDEX_NAME='uk_mef_row' LIMIT 1;\""
+)
+print(o4.read().decode())
 
-cur.execute("SELECT COUNT(*) as total FROM licitaciones_adjudicaciones WHERE url_pdf_consorcio IS NOT NULL")
-print(f"Adjudicaciones con URL Consorcio: {cur.fetchone()['total']}")
+print("=== CSVs huerfanos en VPS ===")
+_, o5, _ = ssh.exec_command("find /home/admin/public_html/api -name '*.csv' 2>/dev/null")
+out = o5.read().decode().strip()
+print(out if out else "(ninguno - limpio)")
 
-cur.execute("SELECT COUNT(*) as total FROM licitaciones_adjudicaciones WHERE entidad_financiera IS NOT NULL")
-print(f"Adjudicaciones con Entidad Financiera: {cur.fetchone()['total']}")
-
-conn.close()
+ssh.close()

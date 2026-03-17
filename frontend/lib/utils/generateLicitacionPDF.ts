@@ -4,7 +4,7 @@
  */
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import type { Licitacion, EjecucionFinanciera, GarantiasResponse } from '@/types/licitacion';
+import type { Licitacion, EjecucionFinanciera, GarantiasResponse, InfobrasData } from '@/types/licitacion';
 import { LOGO_MQS_B64, LOGO_JCQ_B64, PDF_ICON_B64 } from './pdfAssets';
 
 // ── Color palette ──
@@ -16,6 +16,7 @@ const COLORS = {
     white: [255, 255, 255] as [number, number, number],
     accent: [16, 185, 129] as [number, number, number],  // emerald-500
     warning: [245, 158, 11] as [number, number, number],  // amber-500
+    infoobras: [2, 132, 199] as [number, number, number], // light-blue-600
     headerBg: [30, 41, 59] as [number, number, number],    // slate-800
     stripeBg: [248, 250, 252] as [number, number, number], // slate-50
 };
@@ -37,6 +38,7 @@ export function generateLicitacionPDF(
     licitacion: Licitacion,
     ejecucion: EjecucionFinanciera | null,
     garantias: GarantiasResponse | null,
+    infobras: InfobrasData | null = null,
 ) {
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
     const pageW = doc.internal.pageSize.getWidth();
@@ -104,6 +106,25 @@ export function generateLicitacionPDF(
         const lines = doc.splitTextToSize(value, width * 0.58);
         doc.text(lines, valX, y);
         y += Math.max(lines.length * 4, 5);
+    };
+
+    const drawPDFIcon = (doc: any, cellX: number, cellY: number, cellW: number, cellH: number, url: string) => {
+        const w = 9;
+        const h = 12;
+        const cx = cellX + cellW / 2 - w / 2;
+        const cy = cellY + cellH / 2 - h / 2;
+
+        try {
+            doc.addImage(PDF_ICON_B64, 'PNG', cx, cy, w, h);
+        } catch (error) {
+            doc.setFillColor(220, 38, 38);
+            doc.roundedRect(cx, cy, w, h, 1, 1, 'F');
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(4.5);
+            doc.setTextColor(255, 255, 255);
+            doc.text('PDF', cx + w / 2, cy + h - 2, { align: 'center' });
+        }
+        doc.link(cellX, cellY, cellW, cellH, { url: url });
     };
 
     // ═══════════════════════════════════════════════
@@ -292,6 +313,7 @@ export function generateLicitacionPDF(
         y += 8;
     }
 
+
     // ═══════════════════════════════════════════════════
     //  6. ADJUDICACIONES Y GARANTÍAS
     // ═══════════════════════════════════════════════════
@@ -382,27 +404,6 @@ export function generateLicitacionPDF(
             y = (doc as any).lastAutoTable.finalY + 6;
         }
 
-        const drawPDFIcon = (doc: any, cellX: number, cellY: number, cellW: number, cellH: number, url: string) => {
-            const w = 9; // Made smaller per user request
-            const h = 12;
-            const cx = cellX + cellW / 2 - w / 2;
-            const cy = cellY + cellH / 2 - h / 2;
-
-            try {
-                doc.addImage(PDF_ICON_B64, 'PNG', cx, cy, w, h);
-            } catch (error) {
-                // Fallback if image fails to load
-                doc.setFillColor(220, 38, 38);
-                doc.roundedRect(cx, cy, w, h, 1, 1, 'F');
-                doc.setFont('helvetica', 'bold');
-                doc.setFontSize(4.5);
-                doc.setTextColor(255, 255, 255);
-                doc.text('PDF', cx + w / 2, cy + h - 2, { align: 'center' });
-            }
-
-            // Clickable link overlay
-            doc.link(cellX, cellY, cellW, cellH, { url: url });
-        };
 
         // ── Documentación Contractual (links) ──
         checkPageBreak(25);
@@ -462,6 +463,7 @@ export function generateLicitacionPDF(
         // ── Fianzas y Pagaré (links) ──
         checkPageBreak(25);
         sectionTitle('Fianzas y Pagaré', [16, 185, 129]);
+
 
         const fianzaBody: string[][] = [];
         adjudicaciones.forEach((adj: any) => {
@@ -554,7 +556,171 @@ export function generateLicitacionPDF(
     }
 
     // ═══════════════════════════════════════════════════
-    //  8. RESUMEN EJECUTIVO (bottom box)
+    //  8. AVANCE FÍSICO (INFOBRAS) - MOVED TO END
+    // ═══════════════════════════════════════════════════
+    if (infobras) {
+        sectionTitle('Avance Físico y Contraloría (INFOBRAS)', COLORS.infoobras);
+
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...COLORS.medium);
+        doc.text(`CUI: ${licitacion.cui || '—'}  |  Obra Id: ${infobras.obra_id_infobras}`, margin + 6, y);
+        y += 6;
+
+        // Metadata grid for Infobras
+        const infoGrid = [
+            ['Contratista:', infobras.contratista || '—', 'Modalidad:', infobras.modalidad || '—'],
+            ['Estado:', infobras.estado_ejecucion || '—', 'Contrato:', infobras.contrato_desc || '—'],
+            ['Inicio:', infobras.fecha_inicio || '—', 'Fin (Estimado):', infobras.fecha_fin || '—'],
+            ['Costo Viable:', infobras.costo_viable || '—', 'Costo Actualizado:', infobras.costo_actualizado || '—'],
+            ['Resolución:', infobras.pdf_resolucion ? 'Ver Documento' : 'No registrada', '', '']
+        ];
+
+        autoTable(doc, {
+            startY: y,
+            margin: { left: margin, right: margin },
+            body: infoGrid,
+            theme: 'plain',
+            styles: { fontSize: 7, cellPadding: 1.5 },
+            columnStyles: {
+                0: { fontStyle: 'bold', textColor: COLORS.medium, cellWidth: 25 },
+                1: { textColor: COLORS.dark, cellWidth: 60, minCellHeight: 12 },
+                2: { fontStyle: 'bold', textColor: COLORS.medium, cellWidth: 25 },
+                3: { textColor: COLORS.dark },
+            },
+            didDrawCell: (data: any) => {
+                if (data.section === 'body' && data.row.index === 4 && data.column.index === 1 && infobras.pdf_resolucion && infobras.pdf_resolucion !== "-") {
+                    const finalUrl = infobras.pdf_resolucion.startsWith('http') ? infobras.pdf_resolucion : `https://infobras.contraloria.gob.pe${infobras.pdf_resolucion}`;
+                    drawPDFIcon(doc, data.cell.x, data.cell.y, data.cell.width, data.cell.height, finalUrl);
+                }
+            },
+        });
+
+        y = (doc as any).lastAutoTable.finalY + 6;
+
+        // ── Nueva Sección: Documentación Técnica y Legal ──
+        const extraDocs = [
+            { label: 'Acta Terreno', url: infobras.pdf_acta_terreno },
+            { label: 'Crono. Obra', url: infobras.pdf_cronograma },
+            { label: 'Resol. Contrato', url: infobras.pdf_resolucion_contrato },
+            { label: 'Design. Superv.', url: infobras.pdf_designacion_supervisor },
+            { label: 'Susp. de Plazo', url: infobras.pdf_suspension_plazo },
+            { label: 'Inf. de Control', url: infobras.pdf_informe_control }
+        ].filter(d => d.url && d.url !== "-");
+
+        if (extraDocs.length > 0) {
+            checkPageBreak(30);
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(...COLORS.dark);
+            doc.text('DOCUMENTACIÓN TÉCNICA Y LEGAL (INFOBRAS)', margin + 6, y);
+            y += 5;
+
+            const docRows: string[][] = [];
+            // Group by 3 columns
+            for (let i = 0; i < extraDocs.length; i += 3) {
+                const row = extraDocs.slice(i, i + 3);
+                docRows.push(row.map(d => d.label));
+            }
+
+            autoTable(doc, {
+                startY: y,
+                margin: { left: margin, right: margin },
+                body: docRows,
+                theme: 'grid',
+                styles: { 
+                    fontSize: 7, 
+                    halign: 'center', 
+                    valign: 'middle', 
+                    minCellHeight: 15,
+                    textColor: COLORS.medium 
+                },
+                columnStyles: {
+                    0: { cellWidth: contentW / 3 },
+                    1: { cellWidth: contentW / 3 },
+                    2: { cellWidth: contentW / 3 },
+                },
+                didDrawCell: (data: any) => {
+                    if (data.section === 'body') {
+                        const idx = data.row.index * 3 + data.column.index;
+                        if (idx < extraDocs.length) {
+                            const d = extraDocs[idx];
+                            // Draw icon above text or shift text down
+                            // We use the cell center for the icon
+                            drawPDFIcon(doc, data.cell.x, data.cell.y - 2, data.cell.width, data.cell.height, d.url!);
+                        }
+                    }
+                }
+            });
+            y = (doc as any).lastAutoTable.finalY + 8;
+        }
+
+        // Monthly Valorizations Table
+        if (infobras.valorizaciones && infobras.valorizaciones.length > 0) {
+            checkPageBreak(25);
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(...COLORS.dark);
+            doc.text('HISTORIAL DE VALORIZACIONES MENSUALES', margin + 6, y);
+            y += 5;
+
+            // Sort valorizaciones: "MES AÑO" to date descending
+            const monthMap: { [key: string]: number } = {
+                'ENERO': 1, 'FEBRERO': 2, 'MARZO': 3, 'ABRIL': 4, 'MAYO': 5, 'JUNIO': 6,
+                'JULIO': 7, 'AGOSTO': 8, 'SETIEMBRE': 9, 'SEPTIEMBRE': 9, 'OCTUBRE': 10, 'NOVIEMBRE': 11, 'DICIEMBRE': 12
+            };
+
+            const sortedVals = [...infobras.valorizaciones].sort((a, b) => {
+                const partsA = a.periodo.split(' ');
+                const partsB = b.periodo.split(' ');
+                const yearA = parseInt(partsA[1]) || 0;
+                const yearB = parseInt(partsB[1]) || 0;
+                const monthA = monthMap[partsA[0].toUpperCase()] || 0;
+                const monthB = monthMap[partsB[0].toUpperCase()] || 0;
+
+                return (yearB * 100 + monthB) - (yearA * 100 + monthA);
+            });
+
+            const valBody = sortedVals.map(v => [
+                v.periodo,
+                v.avance_fisico_prog,
+                v.avance_fisico_real,
+                v.avance_val_prog,
+                v.avance_val_real,
+                v.monto_ejecucion_fin,
+                v.estado
+            ]);
+
+            autoTable(doc, {
+                startY: y,
+                margin: { left: margin, right: margin },
+                head: [['Periodo', 'Fis. Prog', 'Fis. Real', 'Val. Prog', 'Val. Real', 'Monto Ej. Fin', 'Estado']],
+                body: valBody,
+                theme: 'striped',
+                headStyles: {
+                    fillColor: COLORS.infoobras,
+                    textColor: COLORS.white,
+                    fontSize: 7,
+                    fontStyle: 'bold',
+                    halign: 'center',
+                },
+                bodyStyles: {
+                    fontSize: 6.5,
+                    textColor: COLORS.dark,
+                    halign: 'center',
+                },
+                columnStyles: {
+                    0: { fontStyle: 'bold', halign: 'left' },
+                    5: { textColor: COLORS.primary, fontStyle: 'bold' },
+                    6: { fontSize: 6 }
+                },
+            });
+            y = (doc as any).lastAutoTable.finalY + 8;
+        }
+    }
+
+    // ═══════════════════════════════════════════════════
+    //  9. RESUMEN EJECUTIVO (bottom box)
     // ═══════════════════════════════════════════════════
     checkPageBreak(25);
     y += 2;
