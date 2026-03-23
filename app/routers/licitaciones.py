@@ -64,13 +64,12 @@ def get_licitaciones_suggestions(
     # Only if we don't have many results yet
     if len(results) < 5:
         descripciones = db.query(LicitacionesCabecera.descripcion).filter(
-            LicitacionesCabecera.descripcion.ilike(query_str)
+            LicitacionesCabecera.search_text.ilike(query_str)
         ).distinct().limit(limit).all()
         for d in descripciones:
             if d.descripcion:
-                # Truncate long descriptions for suggestion
-                val = (d.descripcion[:75] + '..') if len(d.descripcion) > 75 else d.descripcion
-                results.append({"value": val, "type": "Descripción"})
+                # Retornar el valor sin trucar con '..' para evitar que la busqueda se rompa (el Frontend ya tiene truncate de CSS)
+                results.append({"value": d.descripcion, "type": "Descripción"})
 
     return results
 
@@ -124,42 +123,45 @@ def get_licitaciones(
     if search:
         try:
             print(f"DEBUG SEARCH: '{search}'")
+            term_raw = search.strip()
             # Split search into words for AND logic (keyword search)
-            keywords = search.strip().split()
-            print(f"DEBUG KEYWORDS: {keywords}")
+            keywords = term_raw.split()
             if not keywords: # If search was just spaces, use the original search string
                 keywords = [search]
 
-            # Ensure join happens if we need it (checking all fields usually implies joining)
-            query = query.outerjoin(LicitacionesCabecera.adjudicaciones)
-            
-            for keyword in keywords:
-                term = f"%{keyword}%"
+            # SMART ROUTING: If exactly 11 digits, assume it's a RUC search
+            if term_raw.isdigit() and len(term_raw) == 11:
+                # Ensure join happens if we need it
+                query = query.outerjoin(LicitacionesCabecera.adjudicaciones)
+                
+                from app.models.seace import DetalleConsorcios
+                
+                # Check WINNER or CONSORCIO
                 query = query.filter(
-                    or_(
-                        # === TABLA CABECERA ===
-                        LicitacionesCabecera.id_convocatoria.ilike(term),
-                        LicitacionesCabecera.ocid.ilike(term),
-                        LicitacionesCabecera.nomenclatura.ilike(term),
-                        LicitacionesCabecera.descripcion.ilike(term),
-                        LicitacionesCabecera.comprador.ilike(term),
-                        LicitacionesCabecera.categoria.ilike(term),
-                        LicitacionesCabecera.tipo_procedimiento.ilike(term),
-                        LicitacionesCabecera.estado_proceso.ilike(term),
-                        LicitacionesCabecera.ubicacion_completa.ilike(term),
-                        
-                        # === TABLA ADJUDICACIONES ===
-                        LicitacionesCabecera.adjudicaciones.any(
-                            or_(
-                                LicitacionesAdjudicaciones.ganador_nombre.ilike(term),
-                                LicitacionesAdjudicaciones.ganador_ruc.ilike(term),
-                                LicitacionesAdjudicaciones.entidad_financiera.ilike(term),
-                                LicitacionesAdjudicaciones.tipo_garantia.ilike(term),
-                                LicitacionesAdjudicaciones.estado_item.ilike(term),
+                    LicitacionesCabecera.adjudicaciones.any(
+                        or_(
+                            LicitacionesAdjudicaciones.ganador_ruc == term_raw,
+                            LicitacionesAdjudicaciones.id_contrato.in_(
+                                db.query(DetalleConsorcios.id_contrato).filter(
+                                    DetalleConsorcios.ruc_miembro == term_raw
+                                )
+                            ),
+                            # Fallback if id_adjudicacion is used as the link
+                            LicitacionesAdjudicaciones.id_adjudicacion.in_(
+                                db.query(DetalleConsorcios.id_contrato).filter(
+                                    DetalleConsorcios.ruc_miembro == term_raw
+                                )
                             )
                         )
                     )
                 )
+            else:
+                # OPTIMIZED TEXT SEARCH using the search_text vector column
+                # No JOIN required for basic text search!
+                for keyword in keywords:
+                    term = f"%{keyword}%"
+                    query = query.filter(LicitacionesCabecera.search_text.ilike(term))
+                    
         except Exception as e:
             with open("backend_debug_log.txt", "a") as f:
                 f.write(f"Error in search filter: {str(e)}\n")
@@ -530,6 +532,20 @@ def create_licitacion(
                     db.add(new_consorcio)
                 
                 db.commit()
+                
+    # Populate search_text vector for optimized queries
+    try:
+        from app.utils.search import generate_search_text
+        from sqlalchemy.orm import joinedload
+        full_lic = db.query(LicitacionesCabecera).options(
+            joinedload(LicitacionesCabecera.adjudicaciones)
+        ).filter(LicitacionesCabecera.id_convocatoria == new_licitacion.id_convocatoria).first()
+        
+        if full_lic:
+            full_lic.search_text = generate_search_text(full_lic, db)
+            db.commit()
+    except Exception as e_search:
+        print(f"Error generating search_text on create: {e_search}")
     
     # Notification: new licitacion created (broadcast to all active users)
     try:
@@ -684,6 +700,20 @@ def update_licitacion(
     
     db.commit()
     db.refresh(existing_licitacion)
+    
+    # Update search_text vector for optimized queries
+    try:
+        from app.utils.search import generate_search_text
+        from sqlalchemy.orm import joinedload
+        full_lic = db.query(LicitacionesCabecera).options(
+            joinedload(LicitacionesCabecera.adjudicaciones)
+        ).filter(LicitacionesCabecera.id_convocatoria == id_convocatoria).first()
+        
+        if full_lic:
+            full_lic.search_text = generate_search_text(full_lic, db)
+            db.commit()
+    except Exception as e_search:
+        print(f"Error generating search_text on update: {e_search}")
     
     # Notification: state change or general edit (broadcast to all active users)
     try:

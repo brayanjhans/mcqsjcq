@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, Suspense } from "react";
 import { LicitacionCard } from "@/components/search/LicitacionCard";
+import { LicitacionTable } from "@/components/search/LicitacionTable";
 import { AutocompleteSearch } from "@/components/search/AutocompleteSearch";
 import { SunatRucPanel } from "@/components/search/SunatRucPanel";
 import type { Licitacion } from "@/types/licitacion";
@@ -15,6 +16,8 @@ import {
     RotateCcw,
     Building2,
     Loader2,
+    LayoutGrid,
+    List
 } from "lucide-react";
 
 const DEFAULT_TIPOS_PROCEDIMIENTO = [
@@ -48,22 +51,25 @@ const DEFAULT_TIPOS_PROCEDIMIENTO = [
 ];
 
 function BusquedaContent() {
+    const searchParams = useSearchParams();
+
     // Filter State (Matching Gestion Manual & Reportes)
-    const [showFilters, setShowFilters] = useState(true);
-    const [searchTerm, setSearchTerm] = useState("");
+    const [showFilters, setShowFilters] = useState(false);
+    const [searchTerm, setSearchTerm] = useState(searchParams.get('q') || searchParams.get('search') || "");
+    const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
 
     // Select States - Values
-    const [departamento, setDepartamento] = useState("");
-    const [estado, setEstado] = useState("");
-    const [categoria, setCategoria] = useState("");
-    const [anio, setAnio] = useState("");
-    const [mes, setMes] = useState("");
-    const [provincia, setProvincia] = useState("");
-    const [distrito, setDistrito] = useState("");
-    const [tipoGarantia, setTipoGarantia] = useState("");
-    const [aseguradora, setAseguradora] = useState("");
-    const [entidad, setEntidad] = useState("");
-    const [tipoProcedimiento, setTipoProcedimiento] = useState("");
+    const [departamento, setDepartamento] = useState(searchParams.get('departamento') || "");
+    const [estado, setEstado] = useState(searchParams.get('estado') || "");
+    const [categoria, setCategoria] = useState(searchParams.get('categoria') || "");
+    const [anio, setAnio] = useState(searchParams.get('anio') || "");
+    const [mes, setMes] = useState(searchParams.get('mes') || "");
+    const [provincia, setProvincia] = useState(searchParams.get('provincia') || "");
+    const [distrito, setDistrito] = useState(searchParams.get('distrito') || "");
+    const [tipoGarantia, setTipoGarantia] = useState(searchParams.get('tipo_garantia') || "");
+    const [aseguradora, setAseguradora] = useState(searchParams.get('aseguradora') || "");
+    const [entidad, setEntidad] = useState(searchParams.get('entidad') || "");
+    const [tipoProcedimiento, setTipoProcedimiento] = useState(searchParams.get('tipo_procedimiento') || "");
 
     // Select States - Options (Dynamic)
     const [departamentoOptions, setDepartamentoOptions] = useState<string[]>([]);
@@ -82,7 +88,7 @@ function BusquedaContent() {
     // Pagination & Data State
     const [licitaciones, setLicitaciones] = useState<Licitacion[]>([]);
     const [loading, setLoading] = useState(false);
-    const [currentPage, setCurrentPage] = useState(1);
+    const [currentPage, setCurrentPage] = useState(Number(searchParams.get('page')) || 1);
     const [itemsPerPage, setItemsPerPage] = useState(12);
     const [totalPages, setTotalPages] = useState(0);
     const [totalItems, setTotalItems] = useState(0);
@@ -133,12 +139,7 @@ function BusquedaContent() {
         aseguradora, entidad, tipoProcedimiento,
         pathname, router
     ]);
-
-    // Initial Load: Fetch Global Filters & URL Params
-    const searchParams = useSearchParams();
-
     useEffect(() => {
-        // ... (existing filter loading logic) ...
         const loadFilters = async () => {
             try {
                 const filters = await licitacionService.getFilters();
@@ -150,7 +151,6 @@ function BusquedaContent() {
                     setAseguradoraOptions(filters.aseguradoras || []);
                     setEntidadOptions(filters.entidades || []);
                     setAnioOptions(filters.anios || []);
-                    // 'tipos_entidad' from backend actually returns procedure types
                     setTipoProcedimientoOptions(filters.tipos_entidad || []);
                 }
             } catch (error) {
@@ -158,57 +158,7 @@ function BusquedaContent() {
             }
         };
         loadFilters();
-
-        // Restore State from URL
-        const q = searchParams.get('q') || searchParams.get('search');
-        if (q) setSearchTerm(q);
-
-        const pPage = searchParams.get('page');
-        if (pPage) setCurrentPage(Number(pPage));
-
-        const pDept = searchParams.get('departamento');
-        if (pDept) setDepartamento(pDept);
-
-        const pEstado = searchParams.get('estado');
-        if (pEstado) setEstado(pEstado);
-
-        const pCat = searchParams.get('categoria');
-        if (pCat) setCategoria(pCat);
-
-        const pAnio = searchParams.get('anio');
-        if (pAnio) setAnio(pAnio);
-
-        const pMes = searchParams.get('mes');
-        if (pMes) setMes(pMes);
-
-        const pProv = searchParams.get('provincia');
-        if (pProv) setProvincia(pProv);
-
-        const pDist = searchParams.get('distrito');
-        if (pDist) setDistrito(pDist);
-
-        const pGarantia = searchParams.get('tipo_garantia');
-        if (pGarantia) setTipoGarantia(pGarantia);
-
-        const pSeguro = searchParams.get('aseguradora');
-        if (pSeguro) setAseguradora(pSeguro);
-
-        const pEntidad = searchParams.get('entidad');
-        if (pEntidad) setEntidad(pEntidad);
-
-        const pProc = searchParams.get('tipo_procedimiento');
-        if (pProc) setTipoProcedimiento(pProc);
-
-    }, [searchParams]); // Depend only on searchParams for initial load logic (safe enough in Next)
-
-    // ... (rest of effects) ...
-    // Note: I will comment out the old searchParams check to avoid duplications
-    /* 
-    const q = searchParams.get('q') || searchParams.get('search');
-    if (q) {
-        setSearchTerm(q);
-    }
-    */
+    }, []); // Run only once on mount
 
     // Cascading: Load Provincias when Departamento changes
 
@@ -425,9 +375,8 @@ function BusquedaContent() {
                         </div>
 
                         {/* Filters Grid */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-in slide-in-from-top-4 duration-300">
-
-                            {/* Row 1 - Always Visible */}
+                        {showFilters && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-in slide-in-from-top-4 duration-300">
                             <div className="space-y-1.5">
                                 <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide ml-1">Departamento</label>
                                 <CompactSelect
@@ -473,9 +422,6 @@ function BusquedaContent() {
                                 </div>
                             </div>
 
-                            {/* Row 2 - Collapsible */}
-                            {showFilters && (
-                                <>
                                     <div className="space-y-1.5 animate-in fade-in slide-in-from-top-2 duration-200">
                                         <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide ml-1">Ubicación Detallada</label>
                                         <div className="grid grid-cols-2 gap-3">
@@ -537,9 +483,8 @@ function BusquedaContent() {
                                         />
                                     </div>
 
-                                </>
-                            )}
-                        </div>
+                            </div>
+                        )}
 
                     </div>
                 </div>
@@ -579,9 +524,38 @@ function BusquedaContent() {
 
                 {/* Results Header */}
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-                        {loading ? 'Cargando...' : `${totalItems} Resultados encontrados`}
+                    <h2 className="text-lg font-semibold text-slate-900 dark:text-white shrink-0">
+                        {loading ? 'Cargando...' : `${totalItems} resultados`}
                     </h2>
+                        
+                    {!loading && totalItems > 0 && (
+                        <div className="flex flex-1 justify-center sm:justify-center w-full sm:w-auto mt-2 sm:mt-0">
+                            <div className="flex items-center gap-1.5 bg-slate-100/80 p-1.5 rounded-xl dark:bg-slate-800/80 shadow-inner border border-slate-200/50 dark:border-slate-700/50">
+                                <button
+                                    onClick={() => setViewMode('table')}
+                                    className={`flex items-center gap-2.5 px-8 py-2.5 rounded-lg text-xs font-extrabold transition-all duration-200 ${
+                                        viewMode === 'table' 
+                                            ? 'bg-white text-blue-600 shadow-sm ring-1 ring-slate-900/5 dark:bg-slate-700 dark:text-blue-400 dark:ring-white/10' 
+                                            : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-700/50'
+                                    }`}
+                                >
+                                    <List className="w-4 h-4" />
+                                    Vista tabla
+                                </button>
+                                <button
+                                    onClick={() => setViewMode('card')}
+                                    className={`flex items-center gap-2.5 px-8 py-2.5 rounded-lg text-xs font-extrabold transition-all duration-200 ${
+                                        viewMode === 'card' 
+                                            ? 'bg-white text-blue-600 shadow-sm ring-1 ring-slate-900/5 dark:bg-slate-700 dark:text-blue-400 dark:ring-white/10' 
+                                            : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-700/50'
+                                    }`}
+                                >
+                                    <LayoutGrid className="w-4 h-4" />
+                                    Vista card
+                                </button>
+                            </div>
+                        </div>
+                    )}
 
                     <div className="flex items-center gap-2 text-sm font-medium text-slate-600 dark:text-slate-400 whitespace-nowrap">
                         Página <span className="text-slate-900 dark:text-white font-bold">{currentPage}</span> de <span className="text-slate-900 dark:text-white font-bold">{totalPages || 1}</span>
@@ -596,11 +570,15 @@ function BusquedaContent() {
                         ))}
                     </div>
                 ) : licitaciones.length > 0 ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
-                        {licitaciones.map((lic) => (
-                            <LicitacionCard key={lic.id_convocatoria} licitacion={lic} searchTerm={searchTerm} />
-                        ))}
-                    </div>
+                    viewMode === 'card' ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
+                            {licitaciones.map((lic) => (
+                                <LicitacionCard key={lic.id_convocatoria} licitacion={lic} searchTerm={searchTerm} />
+                            ))}
+                        </div>
+                    ) : (
+                        <LicitacionTable licitaciones={licitaciones} searchTerm={searchTerm} />
+                    )
                 ) : (
                     <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-300 bg-white/50 p-12 text-center dark:border-slate-700 dark:bg-[#111c44]/50">
                         <svg className="h-16 w-16 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">

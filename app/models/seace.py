@@ -30,6 +30,7 @@ class LicitacionesCabecera(Base):
     provincia = Column(String(100))
     distrito = Column(String(100))
     archivo_origen = Column(String(100))
+    search_text = Column(Text)  # Optimized Search Vector
     # fecha_carga column does not exist in DB, removed to fix ORM error
     last_update = Column(DateTime)
     
