@@ -33,31 +33,25 @@ def get_licitaciones_suggestions(
     limit: int = Query(10, le=50, description="Max results per type"),
     db: Session = Depends(get_db)
 ):
-    """
-    Get autocomplete suggestions for Search Bar.
-    """
-    query_str = f"%{query}%"
+    from app.services.sunat_service import buscar_rucs_por_nombre
+    
+    # 1. Use smart search for Entities, Providers and Consorcios
+    smart_matches = buscar_rucs_por_nombre(query, db, limit=limit)
+    
     results = []
-    
-    # 1. Search in Compradores (Entidades)
-    compradores = db.query(LicitacionesCabecera.comprador).filter(
-        LicitacionesCabecera.comprador.ilike(query_str)
-    ).distinct().limit(limit).all()
-    
-    for c in compradores:
-        if c.comprador:
-            results.append({"value": c.comprador, "type": "Entidad"})
+    for m in smart_matches:
+        # Map source to display type
+        dtype = "Entidad" if m["fuente"] == "entidad" else "Proveedor"
+        if m["fuente"] == "consorcio": dtype = "Consorcio"
+        
+        results.append({
+            "value": m["nombre"],
+            "type": dtype,
+            "id": m["ruc"]
+        })
 
-    # 2. Search in Proveedores (Ganadores)
-    ganadores = db.query(LicitacionesAdjudicaciones.ganador_nombre).filter(
-        LicitacionesAdjudicaciones.ganador_nombre.ilike(query_str)
-    ).distinct().limit(limit).all()
-    
-    for g in ganadores:
-        if g.ganador_nombre:
-            results.append({"value": g.ganador_nombre, "type": "Proveedor"})
-            
-    # 3. Search in Procesos (Nomenclatura)
+    # 2. Search in Procesos (Nomenclatura) - Still useful for non-company terms
+    query_str = f"%{query}%"
     procesos = db.query(LicitacionesCabecera.nomenclatura).filter(
         LicitacionesCabecera.nomenclatura.ilike(query_str)
     ).distinct().limit(limit).all()

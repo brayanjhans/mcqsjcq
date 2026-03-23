@@ -119,47 +119,112 @@ def get_ruc_info(ruc: str, db: Session, force_refresh: bool = False) -> dict:
     return result
 
 
-def buscar_rucs_por_nombre(nombre: str, db: Session, limit: int = 10) -> list[dict]:
+def buscar_rucs_por_nombre(nombre: str, db: Session, limit: int = 20) -> list[dict]:
     """
-    Search for RUCs in local DB by company/consortium name.
-    Looks in ganador_nombre and nombre_miembro tables.
-    Returns list of {ruc, nombre, fuente} dicts.
+    Search for RUCs in local DB by company/entity/consortium name.
+    Prioritizes Entidades (Cabecera), then Ganadores (Adjudicaciones), then Miembros (Consorcios).
+    Uses keyword matching and scoring.
     """
-    nombre = nombre.strip()
+    import re
+    nombre = nombre.strip().upper()
     if len(nombre) < 3:
         return []
 
-    term = f"%{nombre}%"
-    results = []
-    seen_rucs = set()
+    # 1. Clean and tokenize
+    clean_name = re.sub(r'[^a-zA-Z0-9\s]', ' ', nombre)
+    words = clean_name.split()
+    
+    # Synonyms mapping
+    synonyms = {
+        "GORE": ["GOBIERNO", "REGIONAL"],
+        "GR": ["GOBIERNO", "REGIONAL"],
+        "GOB": ["GOBIERNO"],
+        "REG": ["REGIONAL"],
+        "MUNI": ["MUNICIPALIDAD"],
+        "MD": ["MUNICIPALIDAD", "DISTRITAL"],
+        "MP": ["MUNICIPALIDAD", "PROVINCIAL"],
+        "UGEL": ["UNIDAD", "DE", "GESTION", "EDUCATIVA", "LOCAL"]
+    }
+    
+    expanded_words = []
+    for w in words:
+        if w in synonyms:
+            expanded_words.extend(synonyms[w])
+        else:
+            expanded_words.append(w)
+            
+    stop_words = {"DE", "DEL", "LA", "LAS", "EL", "LOS", "Y", "E", "EN", "PARA", "POR", "CON", "AL", "SA", "SAC", "SRL", "EIRL", "S", "A", "C", "R", "L", "I"}
+    keywords = [w for w in expanded_words if w not in stop_words and len(w) > 2]
+    
+    if not keywords:
+        # Fallback to pure substring if no long keywords
+        keywords = [w for w in words if len(w) >= 2]
+        if not keywords: return []
 
-    # Search in licitaciones_adjudicaciones (ganador)
-    sql_adj = text("""
-        SELECT DISTINCT ganador_ruc, ganador_nombre
-        FROM licitaciones_adjudicaciones
-        WHERE ganador_nombre LIKE :term AND ganador_ruc IS NOT NULL AND ganador_ruc != ''
-        LIMIT :lim
-    """)
-    rows = db.execute(sql_adj, {"term": term, "lim": limit}).fetchall()
-    for r in rows:
-        if r[0] and r[0] not in seen_rucs:
-            seen_rucs.add(r[0])
-            results.append({"ruc": r[0], "nombre": r[1], "fuente": "ganador"})
+    results_map = {} # ruc -> {ruc, nombre, score, fuente}
 
-    # Search in detalle_consorcios (miembro)
-    sql_cons = text("""
-        SELECT DISTINCT ruc_miembro, nombre_miembro
-        FROM detalle_consorcios
-        WHERE nombre_miembro LIKE :term AND ruc_miembro IS NOT NULL AND ruc_miembro != ''
-        LIMIT :lim
-    """)
-    rows = db.execute(sql_cons, {"term": term, "lim": limit}).fetchall()
-    for r in rows:
-        if r[0] and r[0] not in seen_rucs:
-            seen_rucs.add(r[0])
-            results.append({"ruc": r[0], "nombre": r[1], "fuente": "consorcio"})
+    # 2. Search in three tables
+    # Table configurations: (table, ruc_col, name_col, source_name, priority_weight)
+    search_configs = [
+        ("licitaciones_cabecera", "entidad_ruc", "comprador", "entidad", 100),
+        ("licitaciones_adjudicaciones", "ganador_ruc", "ganador_nombre", "ganador", 50),
+        ("detalle_consorcios", "ruc_miembro", "nombre_miembro", "consorcio", 30)
+    ]
 
-    return results[:limit]
+    for table, ruc_col, name_col, source, weight in search_configs:
+        # Build AND conditions for all keywords
+        # To avoid being too restrictive with many keywords, we use first 3 keywords for the main query
+        query_keywords = keywords[:3]
+        conditions = " AND ".join([f"{name_col} LIKE :w{i}" for i in range(len(query_keywords))])
+        params = {f"w{i}": f"%{w}%" for i, w in enumerate(query_keywords)}
+        params["lim"] = limit * 2
+
+        sql = text(f"""
+            SELECT {ruc_col}, {name_col}, COUNT(*) as popularity
+            FROM {table}
+            WHERE {conditions}
+            AND {ruc_col} IS NOT NULL AND {ruc_col} != ''
+            GROUP BY {ruc_col}, {name_col}
+            ORDER BY popularity DESC
+            LIMIT :lim
+        """)
+        
+        try:
+            rows = db.execute(sql, params).fetchall()
+            for ruc, db_nombre, popularity in rows:
+                if not ruc: continue
+                
+                # Scoring
+                score = weight + (int(popularity) * 2) # Popularity bonus
+                db_nombre_upper = db_nombre.upper()
+                
+                # Bonus if exact phrase matches
+                if nombre in db_nombre_upper:
+                    score += 500
+                
+                # Bonus if starts with first keyword
+                if db_nombre_upper.startswith(keywords[0]):
+                    score += 200
+                
+                # Bonus for each keyword matched (in case we didn't use all in SQL)
+                for kw in keywords:
+                    if kw in db_nombre_upper:
+                        score += 50
+                
+                # Store best match per RUC
+                if ruc not in results_map or score > results_map[ruc]["score"]:
+                    results_map[ruc] = {
+                        "ruc": ruc,
+                        "nombre": db_nombre,
+                        "score": score,
+                        "fuente": source
+                    }
+        except Exception as e:
+            print(f"Error searching in {table}: {e}")
+
+    # 3. Sort and limit
+    sorted_results = sorted(results_map.values(), key=lambda x: x["score"], reverse=True)
+    return sorted_results[:limit]
 
 
 def _get_from_cache(ruc: str, db: Session) -> dict | None:

@@ -116,6 +116,15 @@ function CondicionBadge({ condicion }: { condicion: string }) {
     );
 }
 
+function SourceBadge({ source }: { source?: string }) {
+    if (!source) return null;
+    const s = source.toLowerCase();
+    if (s === "entidad") return <span className="px-1.5 py-0.5 rounded-md text-[9px] font-black bg-orange-100 text-orange-600 border border-orange-200 uppercase">Entidad</span>;
+    if (s === "ganador" || s === "proveedor") return <span className="px-1.5 py-0.5 rounded-md text-[9px] font-black bg-emerald-100 text-emerald-600 border border-emerald-200 uppercase">Proveedor</span>;
+    if (s === "consorcio") return <span className="px-1.5 py-0.5 rounded-md text-[9px] font-black bg-purple-100 text-purple-600 border border-purple-200 uppercase">Consorcio</span>;
+    return null;
+}
+
 function InfoRow({ label, value }: { label: string; value: string | React.ReactNode }) {
     if (!value) return null;
     return (
@@ -441,13 +450,19 @@ export const SunatRucPanel: React.FC<Props> = ({ data, onClose, onRefresh, isRef
                             <button
                                 key={idx}
                                 onClick={() => { setSelectedIndex(idx); setActiveTab("datos"); }}
-                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
                                     idx === selectedIndex
                                         ? "bg-indigo-600 text-white shadow-sm"
                                         : "bg-white text-slate-600 border border-slate-200 hover:border-indigo-300 dark:bg-white/5 dark:text-slate-300 dark:border-white/10"
                                 }`}
                             >
-                                {item.razon_social ? item.razon_social.substring(0, 30) + (item.razon_social.length > 30 ? "..." : "") : item.ruc}
+                                <div className="flex flex-col items-start gap-0.5">
+                                    <div className="flex items-center gap-2">
+                                        <SourceBadge source={item.fuente_busqueda} />
+                                        <span>{item.razon_social ? item.razon_social.substring(0, 35) + (item.razon_social.length > 35 ? "..." : "") : item.ruc}</span>
+                                    </div>
+                                    <span className={`text-[9px] opacity-70 ${idx === selectedIndex ? "text-indigo-100" : "text-slate-400"}`}>{item.ruc}</span>
+                                </div>
                             </button>
                         ))}
                     </div>

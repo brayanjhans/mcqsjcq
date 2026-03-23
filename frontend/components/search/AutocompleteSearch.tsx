@@ -95,9 +95,24 @@ export const AutocompleteSearch: React.FC<AutocompleteSearchProps> = ({
         switch (type) {
             case 'Entidad': return <Building2 className="w-4 h-4 text-orange-500" />;
             case 'Proveedor': return <User className="w-4 h-4 text-green-500" />;
+            case 'Consorcio': return <CreditCard className="w-4 h-4 text-purple-500" />;
             case 'Proceso': return <FileText className="w-4 h-4 text-blue-500" />;
             default: return <Search className="w-4 h-4 text-slate-400" />;
         }
+    };
+
+    const highlightMatch = (text: string, term: string) => {
+        if (!term) return text;
+        const parts = text.split(new RegExp(`(${term})`, 'gi'));
+        return (
+            <>
+                {parts.map((part, i) => 
+                    part.toLowerCase() === term.toLowerCase() ? 
+                    <span key={i} className="text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-0.5 rounded">{part}</span> : 
+                    part
+                )}
+            </>
+        );
     };
 
     return (
@@ -135,11 +150,11 @@ export const AutocompleteSearch: React.FC<AutocompleteSearchProps> = ({
                                 </div>
                                 <div className="flex flex-col min-w-0">
                                     <span className="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate">
-                                        {item.value}
+                                        {highlightMatch(item.value, query)}
                                     </span>
                                     <span className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
                                         {item.type}
-                                        {item.id && <span className="opacity-70">• {item.id}</span>}
+                                        {item.id && <span className="opacity-70 font-mono">• {item.id}</span>}
                                     </span>
                                 </div>
                             </li>
