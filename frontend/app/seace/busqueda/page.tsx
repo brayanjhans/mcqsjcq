@@ -3,6 +3,7 @@
 import React, { useState, useEffect, Suspense } from "react";
 import { LicitacionCard } from "@/components/search/LicitacionCard";
 import { AutocompleteSearch } from "@/components/search/AutocompleteSearch";
+import { SunatRucPanel } from "@/components/search/SunatRucPanel";
 import type { Licitacion } from "@/types/licitacion";
 import { licitacionService } from "@/lib/services/licitacionService";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
@@ -11,7 +12,9 @@ import {
     Search,
     ChevronUp,
     ChevronDown,
-    RotateCcw
+    RotateCcw,
+    Building2,
+    Loader2,
 } from "lucide-react";
 
 const DEFAULT_TIPOS_PROCEDIMIENTO = [
@@ -83,6 +86,11 @@ function BusquedaContent() {
     const [itemsPerPage, setItemsPerPage] = useState(12);
     const [totalPages, setTotalPages] = useState(0);
     const [totalItems, setTotalItems] = useState(0);
+
+    // SUNAT RUC Integration State
+    const [sunatData, setSunatData] = useState<any>(null);
+    const [sunatLoading, setSunatLoading] = useState(false);
+    const [sunatVisible, setSunatVisible] = useState(false);
 
     // URL Persistence Logic
     const router = useRouter();
@@ -289,6 +297,55 @@ function BusquedaContent() {
         fetchLicitaciones();
     }, [currentPage, itemsPerPage, searchTerm, departamento, estado, categoria, anio, mes, provincia, distrito, tipoGarantia, aseguradora, entidad, tipoProcedimiento]);
 
+    // SUNAT: Auto-detect RUC (11 digits) and trigger lookup
+    useEffect(() => {
+        const term = searchTerm.trim();
+        const isRuc = /^\d{11}$/.test(term);
+        if (isRuc) {
+            handleSunatRucLookup(term);
+        } else {
+            // Clear SUNAT panel if searchTerm is no longer a RUC
+            if (sunatData && !Array.isArray(sunatData)) {
+                setSunatData(null);
+                setSunatVisible(false);
+            }
+        }
+    }, [searchTerm]);
+
+    const handleSunatRucLookup = async (ruc: string, refresh = false) => {
+        setSunatLoading(true);
+        setSunatVisible(true);
+        try {
+            const data = await licitacionService.consultarSunatRuc(ruc, refresh);
+            setSunatData(data);
+        } catch (error) {
+            console.error("Error consultando SUNAT:", error);
+            setSunatData({ encontrado: false, error: "Error al consultar SUNAT", ruc });
+        } finally {
+            setSunatLoading(false);
+        }
+    };
+
+    const handleSunatNameSearch = async () => {
+        const term = searchTerm.trim();
+        if (term.length < 3) return;
+        setSunatLoading(true);
+        setSunatVisible(true);
+        try {
+            const data = await licitacionService.buscarSunatNombre(term);
+            if (data.resultados && data.resultados.length > 0) {
+                setSunatData(data.resultados);
+            } else {
+                setSunatData({ encontrado: false, error: data.mensaje || "No se encontraron RUCs para ese nombre", ruc: "" });
+            }
+        } catch (error) {
+            console.error("Error buscando SUNAT por nombre:", error);
+            setSunatData({ encontrado: false, error: "Error al buscar en SUNAT", ruc: "" });
+        } finally {
+            setSunatLoading(false);
+        }
+    };
+
     const handleClear = () => {
         setSearchTerm("");
         setDepartamento("");
@@ -486,6 +543,39 @@ function BusquedaContent() {
 
                     </div>
                 </div>
+
+                {/* SUNAT Panel (between filters and results) */}
+                {sunatLoading && (
+                    <div className="flex items-center gap-3 p-4 rounded-2xl bg-indigo-50 border border-indigo-100 dark:bg-indigo-900/10 dark:border-indigo-800/20 animate-pulse">
+                        <Loader2 className="w-5 h-5 text-indigo-600 animate-spin" />
+                        <span className="text-sm font-bold text-indigo-700 dark:text-indigo-300">
+                            Consultando SUNAT...
+                        </span>
+                    </div>
+                )}
+
+                {sunatVisible && sunatData && !sunatLoading && (
+                    <SunatRucPanel
+                        data={sunatData}
+                        onClose={() => { setSunatVisible(false); setSunatData(null); }}
+                        onRefresh={(ruc) => handleSunatRucLookup(ruc, true)}
+                        isRefreshing={sunatLoading}
+                    />
+                )}
+
+                {/* SUNAT Search Button (for text searches, not RUC) */}
+                {searchTerm.trim().length >= 3 && !/^\d{11}$/.test(searchTerm.trim()) && !sunatVisible && (
+                    <div className="flex justify-center">
+                        <button
+                            onClick={handleSunatNameSearch}
+                            disabled={sunatLoading}
+                            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 text-white text-sm font-bold hover:from-indigo-700 hover:to-blue-700 shadow-lg shadow-indigo-500/20 transition-all disabled:opacity-50"
+                        >
+                            <Building2 className="w-4 h-4" />
+                            Consultar SUNAT
+                        </button>
+                    </div>
+                )}
 
                 {/* Results Header */}
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">

@@ -583,3 +583,65 @@ def get_infobras(cui: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="No se encontró información de Infobras en caché para este CUI. Puede que el sincronizador aún no lo procese.")
         
     return {"status": "success", "cui": cui, "data": data}
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SUNAT RUC CONSULTATION ENDPOINTS
+# ─────────────────────────────────────────────────────────────────────────────
+
+@router.get("/sunat/ruc/{ruc}")
+def get_sunat_ruc(ruc: str, refresh: bool = False, db: Session = Depends(get_db)):
+    """
+    Consultar datos SUNAT por RUC (11 dígitos).
+    Retorna: datos generales + deuda coactiva + representantes legales.
+    Usa caché de 7 días. Pasar ?refresh=true para forzar actualización.
+    """
+    from app.services.sunat_service import get_ruc_info
+    
+    ruc = ruc.strip()
+    if len(ruc) != 11 or not ruc.isdigit():
+        raise HTTPException(status_code=400, detail="El RUC debe tener exactamente 11 dígitos numéricos")
+    
+    try:
+        result = get_ruc_info(ruc, db, force_refresh=refresh)
+        return result
+    except Exception as e:
+        print(f"[SUNAT] Error en consulta RUC {ruc}: {e}")
+        return {"error": str(e), "encontrado": False, "ruc": ruc}
+
+
+@router.get("/sunat/buscar")
+def buscar_sunat_por_nombre(
+    nombre: str = "",
+    db: Session = Depends(get_db)
+):
+    """
+    Buscar RUCs en la BD local por nombre de empresa/consorcio.
+    Luego consulta SUNAT para cada RUC encontrado.
+    """
+    from app.services.sunat_service import buscar_rucs_por_nombre, get_ruc_info
+    
+    nombre = nombre.strip()
+    if len(nombre) < 3:
+        raise HTTPException(status_code=400, detail="El nombre debe tener al menos 3 caracteres")
+    
+    try:
+        # 1. Find matching RUCs in local DB
+        matches = buscar_rucs_por_nombre(nombre, db, limit=5)
+        
+        if not matches:
+            return {"resultados": [], "total": 0, "mensaje": "No se encontraron RUCs para ese nombre en la BD local"}
+        
+        # 2. Fetch SUNAT data for each RUC
+        resultados = []
+        for match in matches:
+            ruc_data = get_ruc_info(match["ruc"], db)
+            ruc_data["nombre_en_bd"] = match["nombre"]
+            ruc_data["fuente_busqueda"] = match["fuente"]
+            resultados.append(ruc_data)
+        
+        return {"resultados": resultados, "total": len(resultados)}
+    except Exception as e:
+        print(f"[SUNAT] Error en búsqueda por nombre '{nombre}': {e}")
+        return {"error": str(e), "resultados": [], "total": 0}
+

@@ -145,20 +145,14 @@ def _get_historial(db: Session, cui: str) -> list[dict]:
         rows = db.execute(text("""
             SELECT 
                 ano_eje,
-                COALESCE(SUM(monto_pia), 0) as pia,
-                COALESCE(SUM(monto_pim), 0) as pim,
-                COALESCE(SUM(monto_certificado), 0) as certificado,
-                COALESCE(SUM(monto_comprometido_anual), 0) as compromiso_anual,
-                COALESCE(SUM(monto_devengado), 0) as devengado,
-                COALESCE(SUM(monto_girado), 0) as girado
+                MAX(monto_pia) as pia,
+                MAX(monto_pim) as pim,
+                MAX(monto_certificado) as certificado,
+                MAX(monto_comprometido_anual) as compromiso_anual,
+                MAX(monto_devengado) as devengado,
+                MAX(monto_girado) as girado
             FROM mef_ejecucion
             WHERE producto_proyecto = :cui
-              AND fecha_importacion = (
-                  SELECT MAX(fecha_importacion) 
-                  FROM mef_ejecucion m2 
-                  WHERE m2.producto_proyecto = mef_ejecucion.producto_proyecto 
-                    AND m2.ano_eje = mef_ejecucion.ano_eje
-              )
             GROUP BY ano_eje
             ORDER BY ano_eje DESC
         """), {"cui": cui}).fetchall()
@@ -192,17 +186,18 @@ def get_ejecucion_by_cui(db: Session, cui: str, years: list[int]) -> dict:
         try:
             result = db.execute(text("""
                 SELECT 
-                    COALESCE(SUM(monto_pia), 0) as pia,
-                    COALESCE(SUM(monto_pim), 0) as pim,
-                    COALESCE(SUM(monto_certificado), 0) as certificado,
-                    COALESCE(SUM(monto_comprometido_anual), 0) as compromiso_anual,
-                    COALESCE(SUM(monto_devengado), 0) as devengado,
-                    COALESCE(SUM(monto_girado), 0) as girado,
-                    COUNT(*) as registros
+                    monto_pia as pia,
+                    monto_pim as pim,
+                    monto_certificado as certificado,
+                    monto_comprometido_anual as compromiso_anual,
+                    monto_devengado as devengado,
+                    monto_girado as girado,
+                    1 as registros -- Dummy count for compatibility
                 FROM mef_ejecucion
                 WHERE producto_proyecto = :cui
                   AND ano_eje = :year
-                  AND fecha_importacion = (SELECT MAX(fecha_importacion) FROM mef_ejecucion WHERE producto_proyecto = :cui AND ano_eje = :year)
+                ORDER BY (monto_girado > 0 OR monto_devengado > 0) DESC, fecha_importacion DESC
+                LIMIT 1
             """), {
                 "cui": cui,
                 "year": year,

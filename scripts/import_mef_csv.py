@@ -114,8 +114,8 @@ def upsert_batch(rows: list):
             ON DUPLICATE KEY UPDATE
                 monto_pia = VALUES(monto_pia),
                 monto_pim = VALUES(monto_pim),
-                monto_devengado = VALUES(monto_devengado),
-                monto_girado = VALUES(monto_girado),
+                monto_devengado = GREATEST(monto_devengado, VALUES(monto_devengado)),
+                monto_girado = GREATEST(monto_girado, VALUES(monto_girado)),
                 monto_certificado = VALUES(monto_certificado),
                 monto_comprometido_anual = VALUES(monto_comprometido_anual),
                 nivel_gobierno = VALUES(nivel_gobierno),

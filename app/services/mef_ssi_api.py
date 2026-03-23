@@ -130,13 +130,14 @@ def get_ejecucion_by_cui_ssi(cui: str) -> Optional[dict]:
             db = SessionLocal()
             query = text("""
                 SELECT ano_eje, SUM(monto_girado) 
-                FROM mef_ejecucion 
+                FROM mef_ejecucion m1
                 WHERE producto_proyecto LIKE :cui 
                   AND fecha_importacion = (
                       SELECT MAX(fecha_importacion) 
                       FROM mef_ejecucion m2 
-                      WHERE m2.producto_proyecto LIKE :cui 
-                        AND m2.ano_eje = mef_ejecucion.ano_eje
+                      WHERE m2.producto_proyecto = m1.producto_proyecto
+                        AND m2.ano_eje = m1.ano_eje
+                        AND m2.monto_girado > 0
                   )
                 GROUP BY ano_eje
             """)

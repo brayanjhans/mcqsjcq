@@ -28,6 +28,12 @@ def create_tables():
             costo_actualizado VARCHAR(50),
             alerta_situacional TEXT,
             pdf_resolucion VARCHAR(500),
+            pdf_acta_terreno VARCHAR(500),
+            pdf_designacion_supervisor VARCHAR(500),
+            pdf_cronograma VARCHAR(500),
+            pdf_suspension_plazo VARCHAR(500),
+            pdf_resolucion_contrato VARCHAR(500),
+            pdf_informe_control VARCHAR(500),
             last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;
     """)

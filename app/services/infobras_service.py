@@ -1,5 +1,6 @@
 import requests
 import json
+import time
 from bs4 import BeautifulSoup
 import re
 import urllib3
@@ -17,24 +18,65 @@ HEADERS = {
 
 class InfobrasService:
     @staticmethod
-    def get_obra_internal_id(cui: str) -> str:
-        """Busca el ID interno de la obra (ObraId) usando el CUI en Infobras."""
-        params_json = '{"codSnip":"' + str(cui) + '"}'
-        params_encoded = urllib.parse.quote(params_json)
-        url_search = f"https://infobras.contraloria.gob.pe/infobrasweb/Mapa/busqueda/obrasBasic?page=0&rowsPerPage=20&Parameters={params_encoded}"
+    def get_obra_internal_id(cui: str, proyecto_nombre: str = None) -> str:
+        """Busca el ID interno de la obra (ObraId) usando el CUI o el Nombre del Proyecto como fallback."""
         
-        try:
-            response = requests.post(url_search, headers=HEADERS, verify=False, timeout=15)
-            response.raise_for_status()
-            data = response.json()
-            resultados = data.get('Result', [])
+        # 1. Intentar por CUI (Más preciso)
+        if cui and cui.isdigit():
+            params_json = '{"codSnip":"' + str(cui) + '"}'
+            params_encoded = urllib.parse.quote(params_json)
+            url_search = f"https://infobras.contraloria.gob.pe/infobrasweb/Mapa/busqueda/obrasBasic?page=0&rowsPerPage=20&Parameters={params_encoded}"
             
-            if resultados and len(resultados) > 0:
-                for res in resultados:
-                    if res.get('codigoObra'):
-                        return str(res.get('codigoObra'))
-        except Exception as e:
-            print(f"[INFOBRAS] Error buscando ID interno para CUI {cui}: {e}")
+            # Búsqueda por CUI con reintentos
+            for attempt in range(3):
+                try:
+                    response = requests.post(url_search, headers=HEADERS, verify=False, timeout=25)
+                    data = response.json()
+                    resultados = data.get('Result', [])
+                    if resultados:
+                        for res in resultados:
+                            if res.get('codigoObra'):
+                                return str(res.get('codigoObra'))
+                    break # Si respondió bien aunque esté vacío, salimos de reintentos
+                except Exception as e:
+                    if attempt == 2: print(f"  ⚠️ Error de conexión Infobras (CUI): {e}")
+                    time.sleep(1)
+
+        # 2. Fallback por Nombre del Proyecto
+        if proyecto_nombre:
+            # Limpiar el nombre para mejorar el matching (quitar prefijos comunes)
+            termino = proyecto_nombre.upper()
+            # Ignorar si es claramente Bienes/Servicios no obras
+            if any(x in termino for x in ["ADQUISICION DE LUMINARIA", "ADQUISICION DE VEHICULO", "SUMINISTRO DE"]):
+                return None
+
+            prefixes = ["MEJORAMIENTO DE LA ", "CONSTRUCCION DE LA ", "CONSTRUCCION DEL ", "MEJORAMIENTO DEL ", "ADQUISICION DE "]
+            for p in prefixes:
+                if termino.startswith(p):
+                    termino = termino.replace(p, "")
+                    break
+            
+            # Usar solo las primeras 4 palabras significativas para no saturar el buscador de Infobras
+            palabras = [w for w in termino.split() if len(w) > 3][:4]
+            termino_busqueda = " ".join(palabras)
+            
+            if len(termino_busqueda) > 5:
+                # print(f"[INFOBRAS] Intentando fallback por nombre: '{termino_busqueda}'")
+                payload = {"palabraClave": termino_busqueda}
+                params_encoded = urllib.parse.quote(json.dumps(payload))
+                url_search = f"https://infobras.contraloria.gob.pe/infobrasweb/Mapa/busqueda/obrasBasic?page=0&rowsPerPage=20&Parameters={params_encoded}"
+                
+                try:
+                    response = requests.post(url_search, headers=HEADERS, verify=False, timeout=15)
+                    data = response.json()
+                    resultados = data.get('Result', [])
+                    if resultados:
+                        # Si solo hay un resultado, lo tomamos. Si hay varios, tomamos el que mas se parezca (o el primero por ahora)
+                        for res in resultados:
+                            if res.get('codigoObra'):
+                                return str(res.get('codigoObra'))
+                except Exception: pass
+                
         return None
 
     @staticmethod
@@ -92,10 +134,7 @@ class InfobrasService:
             for link in soup.find_all('a', href=True):
                 href = link['href'].lower()
                 text_link = link.get_text(strip=True).lower()
-                
-                # Buscar enlaces de descarga de PDF
                 if 'download' in href or '.pdf' in href or 'ViewPDF' in href:
-                    # Si el href o el texto del link contienen palabras clave
                     if any(k in href for k in KEYWORDS_DOC) or any(k in text_link for k in KEYWORDS_DOC):
                         val_url = link['href']
                         if not val_url.startswith('http'):
@@ -109,13 +148,11 @@ class InfobrasService:
                         match = re.search(r'filename:\s*"([^"]+)"', script.string)
                         if match:
                             pdf_filename = match.group(1)
-                            # Búsqueda más relajada en el script
                             datos["DocumentoAprobacionUrl"] = f"https://infobras.contraloria.gob.pe/infobrasweb/Mapa/DownloadFile?filename={pdf_filename}&contentType=application/pdf&extension=.pdf"
                             break
                     
             return datos
-        except Exception as e:
-            print(f"[INFOBRAS] Error extrayendo resumen de ObraId {obra_id}: {e}")
+        except Exception:
             return None
 
     @staticmethod
@@ -127,14 +164,11 @@ class InfobrasService:
             match = re.search(r'var lAvances\s*=\s*(\[.*?\]);', response.text, re.DOTALL)
             if not match:
                 return []
-                
             json_str = match.group(1).strip()
             if json_str == "[]":
                 return []
-                
             datos_js = json.loads(json_str)
             valorizaciones = []
-            
             for dato in datos_js:
                 val = {
                     "Periodo": f"{dato.get('Mes', '')} {dato.get('Anio', '')}",
@@ -148,25 +182,27 @@ class InfobrasService:
                     "Causal": str(dato.get('Causal') or ''),
                     "UrlImagen": ""
                 }
-                
                 img_val = dato.get('lImgValorizacion', [])
                 if img_val and isinstance(img_val, list) and len(img_val) > 0 and img_val[0].get('UrlImg'):
                     val["UrlImagen"] = f"https://infobras.contraloria.gob.pe/InfobrasWeb/{img_val[0].get('UrlImg')}"
-                    
                 valorizaciones.append(val)
-                
             return valorizaciones
-        except Exception as e:
-            print(f"[INFOBRAS] Error obteniendo valorizaciones ObraId {obra_id}: {e}")
+        except Exception:
             return []
 
     @staticmethod
     def sync_infobras_for_cui(cui: str, db: Session) -> bool:
-        """Sincroniza datos directos de Infobras a la BD local actuando como caché permanente."""
-        if not cui or not cui.isdigit():
-            return False
+        """Sincroniza datos de Infobras a la BD usando CUI y Proyecto como criterios."""
+        if not cui and proyecto_nombre:
+            # Si no hay CUI, intentamos buscar solo por nombre
+            pass
             
-        obra_id = InfobrasService.get_obra_internal_id(cui)
+        # Obtener nombre del proyecto desde la cabecera para el fallback
+        q_name = text("SELECT proyecto FROM licitaciones_cabecera WHERE cui = :cui LIMIT 1")
+        row_name = db.execute(q_name, {"cui": cui}).fetchone()
+        proyecto_nombre = row_name[0] if row_name else None
+
+        obra_id = InfobrasService.get_obra_internal_id(cui, proyecto_nombre)
         if not obra_id:
             db.execute(text("""
                 INSERT INTO infobras_obras (cui, obra_id_infobras, entidad, estado_ejecucion) 
@@ -182,14 +218,14 @@ class InfobrasService:
         if not resumen:
             return False
 
-        # --- Extracción de documentos adicionales de otras pestañas ---
+        # --- Extracción de documentos adicionales ---
         docs_extra = {
             "acta_terreno": "-",
             "designacion_supervisor": "-",
             "cronograma": "-",
             "suspension_plazo": "-",
             "resolucion_contrato": "-",
-            "informe_control": f"http://apps8.contraloria.gob.pe/SPIC/srvDownload/ViewPDF?CRES_CODIGO=2024CSI5339&TIPOARCHIVO=ADJUNTO" # Link base genérico o placeholder
+            "informe_control": "-"
         }
 
         # 1. Pestaña de Ejecución (Acta Terreno, Cronograma, Supervisor)
@@ -197,25 +233,14 @@ class InfobrasService:
             url_ejec = f"https://infobras.contraloria.gob.pe/InfobrasWeb/Mapa/DatosEjecucion?ObraId={obra_id}"
             resp_ejec = requests.get(url_ejec, headers=HEADERS, verify=False, timeout=15)
             soup_ejec = BeautifulSoup(resp_ejec.text, 'html.parser')
-            
             for el in soup_ejec.find_all(['button', 'a']):
-                url_doc = el.get('data-download-url')
-                if not url_doc:
-                    onclick = el.get('onclick', '')
-                    match = re.search(r"downloadfile\('([^']+)',\s*'([^']+)'\)", onclick, re.IGNORECASE)
-                    if match:
-                        fid, fname = match.groups()
-                        url_doc = f"/InfobrasWeb/Mapa/DownloadFile?filename={fid}&name={fname}&contentType=application/octet-stream&extension=pdf"
-                
+                url_doc = el.get('data-download-url') or el.get('href')
                 if url_doc:
                     full_url = f"https://infobras.contraloria.gob.pe{url_doc}" if url_doc.startswith('/') else url_doc
                     name_doc = (el.get('data-nombre') or el.get_text(strip=True)).lower()
-                    if 'acta' in name_doc or 'terreno' in name_doc:
-                        docs_extra["acta_terreno"] = full_url
-                    elif 'cronograma' in name_doc or 'resolucion' in name_doc:
-                        docs_extra["cronograma"] = full_url
-                    elif 'memo' in name_doc or 'supervi' in name_doc or 'designa' in name_doc:
-                        docs_extra["designacion_supervisor"] = full_url
+                    if 'acta' in name_doc or 'terreno' in name_doc: docs_extra["acta_terreno"] = full_url
+                    elif 'cronograma' in name_doc: docs_extra["cronograma"] = full_url
+                    elif 'supervi' in name_doc or 'designa' in name_doc: docs_extra["designacion_supervisor"] = full_url
         except: pass
 
         # 2. Pestaña de Variaciones (Suspensión)
@@ -224,7 +249,7 @@ class InfobrasService:
             resp_var = requests.get(url_var, headers=HEADERS, verify=False, timeout=15)
             soup_var = BeautifulSoup(resp_var.text, 'html.parser')
             for el in soup_var.find_all(['button', 'a']):
-                url_doc = el.get('data-download-url')
+                url_doc = el.get('data-download-url') or el.get('href')
                 if url_doc and 'suspension' in (el.get('data-nombre') or el.get_text(strip=True)).lower():
                     docs_extra["suspension_plazo"] = f"https://infobras.contraloria.gob.pe{url_doc}" if url_doc.startswith('/') else url_doc
         except: pass
@@ -235,13 +260,26 @@ class InfobrasService:
             resp_cierre = requests.get(url_cierre, headers=HEADERS, verify=False, timeout=15)
             soup_cierre = BeautifulSoup(resp_cierre.text, 'html.parser')
             for el in soup_cierre.find_all(['button', 'a']):
-                url_doc = el.get('data-download-url')
+                url_doc = el.get('data-download-url') or el.get('href')
                 name_doc = (el.get('data-nombre') or el.get_text(strip=True)).lower()
                 if url_doc and ('resolucion' in name_doc or 'contrato' in name_doc or 'cierre' in name_doc):
                     docs_extra["resolucion_contrato"] = f"https://infobras.contraloria.gob.pe{url_doc}" if url_doc.startswith('/') else url_doc
         except: pass
 
-        # 1. Guardar o actualizar la Obra con campos expandidos
+        # 4. Pestaña de Servicios de Control (Informes Reales)
+        try:
+            url_ctrl = f"https://infobras.contraloria.gob.pe/InfobrasWeb/Mapa/ServiciosControl?ObraId={obra_id}"
+            resp_ctrl = requests.get(url_ctrl, headers=HEADERS, verify=False, timeout=15)
+            soup_ctrl = BeautifulSoup(resp_ctrl.text, 'html.parser')
+            # Buscamos enlaces a informes (usualmente ViewPDF o SPIC)
+            for el in soup_ctrl.find_all('a', href=True):
+                href = el['href'].lower()
+                if 'viewpdf' in href or 'spic' in href:
+                    docs_extra["informe_control"] = el['href']
+                    break
+        except: pass
+
+        # --- Guardar en la BD ---
         q_obra = text("""
             INSERT INTO infobras_obras (
                 cui, obra_id_infobras, entidad, estado_ejecucion, contratista, modalidad,

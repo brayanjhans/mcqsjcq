@@ -154,6 +154,22 @@ export const licitacionService = {
         link.click();
         link.remove();
         window.URL.revokeObjectURL(url);
+    },
+
+    // SUNAT RUC Consultation
+    consultarSunatRuc: async (ruc: string, refresh: boolean = false) => {
+        const response = await api.get(`/api/integraciones/sunat/ruc/${ruc}`, {
+            params: { refresh, _t: new Date().getTime() }
+        });
+        return response.data;
+    },
+
+    // SUNAT Search by Company Name
+    buscarSunatNombre: async (nombre: string) => {
+        const response = await api.get('/api/integraciones/sunat/buscar', {
+            params: { nombre, _t: new Date().getTime() }
+        });
+        return response.data;
     }
 };
 
