@@ -20,7 +20,7 @@ echo ========================================
 echo Servidores Iniciados!
 echo ========================================
 echo.
-echo Backend:  http://localhost:8000/docs
+echo Backend:  http://localhost:8001/docs
 echo Frontend: http://localhost:3000
 echo.
 echo Abriendo navegador...

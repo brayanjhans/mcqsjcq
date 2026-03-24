@@ -314,10 +314,17 @@ def get_ejecucion(id_convocatoria: str, db: Session = Depends(get_db)):
         fecha_publicacion = row[3]
         descripcion = str(row[5]) if row[5] else None
         departamento = str(row[6]).strip().upper() if row[6] else None
-        cui_directo = str(row[7]).strip() if row[7] else None
+        cui_raw = str(row[7]).strip() if row[7] else None
         
+        # If multiple CUIs, take the first one for the summary
+        cui_directo = None
+        if cui_raw:
+            cui_list = [c.strip() for c in cui_raw.split(',') if c.strip()]
+            if cui_list:
+                cui_directo = cui_list[0]
+
         # Determine the year from fecha_publicacion
-        year = 2026  # Default
+        year = fecha_publicacion.year if fecha_publicacion else datetime.now().year
         if fecha_publicacion:
             try:
                 year = fecha_publicacion.year
@@ -382,6 +389,26 @@ def get_ejecucion(id_convocatoria: str, db: Session = Depends(get_db)):
             "monto_adjudicado": 0,
             "porcentaje_girado": 0,
         }
+
+
+@router.get("/ejecucion/cui/{cui}")
+def get_ejecucion_by_cui(cui: str, db: Session = Depends(get_db)):
+    """
+    Fetch financial execution data for a specific CUI.
+    """
+    if not cui or not cui.isdigit():
+        raise HTTPException(status_code=400, detail="CUI inválido")
+        
+    year = datetime.now().year
+    
+    return get_ejecucion_financiera(
+        db, 
+        ruc=None, 
+        year=year, 
+        description=None, 
+        departamento=None, 
+        cui_directo=cui
+    )
 
 
 @router.get("/ejecucion/{id_convocatoria}/debug")

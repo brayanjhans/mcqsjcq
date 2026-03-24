@@ -22,7 +22,9 @@ import {
     X,
     Link,
     Upload,
-    Trash2
+    Trash2,
+    ChevronDown,
+    ChevronUp
 } from "lucide-react";
 import { createPortal } from "react-dom";
 import type { Licitacion, Adjudicacion, EjecucionFinanciera, GarantiasResponse, HistorialAnual } from "@/types/licitacion";
@@ -57,7 +59,7 @@ function HistorialChart({ historial }: { historial: HistorialAnual[] }) {
 
     // Sort descending (most recent first), show 3 or all
     const sorted = [...historial].reverse();
-    const visible = expanded ? sorted : sorted.slice(0, 3);
+    const visible = expanded ? sorted : sorted.slice(0, 10);
 
     const fmt = (n: number | undefined | null) => {
         const val = typeof n === 'number' && isFinite(n) ? n : 0;
@@ -164,13 +166,13 @@ function HistorialChart({ historial }: { historial: HistorialAnual[] }) {
             </div>
 
             {/* Expand / Collapse button */}
-            {historial.length > 3 && (
+            {historial.length > 4 && (
                 <button
                     onClick={() => setExpanded(e => !e)}
                     className="mt-2 w-full flex items-center justify-center gap-1.5 py-2 text-[11px] font-bold text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-lg border border-slate-200 dark:border-white/10 transition-colors"
                 >
                     {expanded
-                        ? <>↑ Mostrar solo los últimos 3 años</>
+                        ? <>↑ Mostrar solo los últimos 4 años</>
                         : <>↓ Ver historial completo ({historial.length} años)</>}
                 </button>
             )}
@@ -187,10 +189,11 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
     const [error, setError] = useState("");
 
     // Integration states
-    const [ejecucion, setEjecucion] = useState<EjecucionFinanciera | null>(null);
+    const [ejecuciones, setEjecuciones] = useState<EjecucionFinanciera[]>([]);
     const [garantiasData, setGarantiasData] = useState<GarantiasResponse | null>(null);
     const [loadingIntegracion, setLoadingIntegracion] = useState(false);
     const [exporting, setExporting] = useState(false);
+    const [visibleCUICount, setVisibleCUICount] = useState(1);
 
     // Portal states
     const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(null);
@@ -340,8 +343,9 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
         try {
             let infobrasData = null;
             
-            // The CUI could be in licitacion.cui or in the already fetched ejecucion.cui
-            const effectiveCui = licitacion.cui || ejecucion?.cui;
+            // Use the first CUI for PDF export or just the first in the list
+            const cuilist = licitacion.cui?.split(',').map(c => c.trim()).filter(c => c) || [];
+            const effectiveCui = cuilist.length > 0 ? cuilist[0] : null;
             
             if (effectiveCui) {
                 try {
@@ -354,11 +358,13 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                 }
             }
 
-            generateLicitacionPDF(licitacion, ejecucion, garantiasData, infobrasData);
+            const primaryEjecucion = ejecuciones.length > 0 ? ejecuciones[0] : null;
+            generateLicitacionPDF(licitacion, primaryEjecucion, garantiasData, infobrasData);
         } catch (err) {
             console.error('Error exporting PDF:', err);
             // Fallback: generate with what we have
-            generateLicitacionPDF(licitacion, ejecucion, garantiasData, null);
+            const primaryEjecucion = ejecuciones.length > 0 ? ejecuciones[0] : null;
+            generateLicitacionPDF(licitacion, primaryEjecucion, garantiasData, null);
         } finally {
             setExporting(false);
         }
@@ -392,13 +398,41 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
         const fetchIntegraciones = async () => {
             setLoadingIntegracion(true);
             try {
-                const [ejec, garant] = await Promise.allSettled([
-                    integracionService.getEjecucion(licitacion.id_convocatoria),
-                    integracionService.getGarantias(licitacion.id_convocatoria),
-                ]);
+                // Split CUIs if multiple exist
+                const cuiList = licitacion.cui?.split(',').map(c => c.trim()).filter(c => c) || [];
+                
+                const promises: Promise<any>[] = [];
+                
+                // Fetch MEF execution for each CUI
+                if (cuiList.length > 0) {
+                    cuiList.forEach(c => {
+                        promises.push(integracionService.getEjecucionCui(c));
+                    });
+                } else {
+                    // Fallback to id_convocatoria if no CUI
+                    promises.push(integracionService.getEjecucion(licitacion.id_convocatoria));
+                }
 
-                if (ejec.status === "fulfilled") setEjecucion(ejec.value);
-                if (garant.status === "fulfilled") setGarantiasData(garant.value);
+                // Also fetch guarantees (only once per contract)
+                promises.push(integracionService.getGarantias(licitacion.id_convocatoria));
+
+                const results = await Promise.allSettled(promises);
+                
+                const newEjecuciones: EjecucionFinanciera[] = [];
+                let newGarantias: GarantiasResponse | null = null;
+
+                results.forEach((res, index) => {
+                    if (res.status === "fulfilled") {
+                        if (index < (cuiList.length || 1)) {
+                            newEjecuciones.push(res.value);
+                        } else {
+                            newGarantias = res.value;
+                        }
+                    }
+                });
+
+                setEjecuciones(newEjecuciones);
+                if (newGarantias) setGarantiasData(newGarantias);
             } catch (err) {
                 console.error("Error fetching integration data:", err);
             } finally {
@@ -656,125 +690,161 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                 </div>
 
                 {/* ========== EJECUCIÓN FINANCIERA CARD (NEW) ========== */}
+                {/* ========== EJECUCIÓN FINANCIERA CARD (MULTI-CUI) ========== */}
                 {adjudicaciones.length > 0 && (
-                    <div className="rounded-2xl border border-slate-200 bg-white p-6 md:p-8 shadow-md dark:border-white/10 dark:bg-[#111c44] animate-in fade-in slide-in-from-bottom-5 duration-500 delay-75 border-t-4 border-t-cyan-500">
-                        <div className="flex items-center gap-3 mb-6">
-                            <Activity className="w-5 h-5 text-blue-500" />
-                            <h3 className="text-lg font-bold text-slate-900 dark:text-white uppercase">ESTADO DE EJECUCIÓN FINANCIERA</h3>
-                            {loadingIntegracion && <Loader2 className="w-4 h-4 text-slate-400 animate-spin" />}
-                            {/* 5.1: Confidence badge */}
-                            {!loadingIntegracion && ejecucion && (
-                                <span className={`ml-auto inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border ${ejecucion.encontrado && (ejecucion.match_type === 'cui_ssi' || ejecucion.match_type === 'cui_exact' || ejecucion.match_type === 'snip_exact' || ejecucion.source === 'ssi_api')
-                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                    : ejecucion.encontrado
-                                        ? 'bg-amber-50 text-amber-700 border-amber-200'
-                                        : 'bg-red-50 text-red-600 border-red-200'
-                                    }`}>
-                                    <span className={`w-2 h-2 rounded-full ${ejecucion.encontrado && (ejecucion.match_type === 'cui_ssi' || ejecucion.match_type === 'cui_exact' || ejecucion.match_type === 'snip_exact' || ejecucion.source === 'ssi_api')
-                                        ? 'bg-emerald-500'
-                                        : ejecucion.encontrado
-                                            ? 'bg-amber-500'
-                                            : 'bg-red-500'
-                                        }`} />
-                                    {ejecucion.encontrado && (ejecucion.match_type === 'cui_ssi' || ejecucion.match_type === 'cui_exact' || ejecucion.match_type === 'snip_exact' || ejecucion.source === 'ssi_api')
-                                        ? `Datos exactos · CUI ${ejecucion.cui} · ${ejecucion.year_found ?? ejecucion.year ?? '—'}`
-                                        : ejecucion.encontrado
-                                            ? `Aprox. ${ejecucion.match_score != null ? Math.round(ejecucion.match_score * 100) + '%' : ''} · ${ejecucion.year_found ?? ejecucion.year ?? '—'}`
-                                            : 'Sin datos MEF'}
-                                </span>
-                            )}
-                        </div>
-
-                        {loadingIntegracion ? (
-                            <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-xl">
-                                <Loader2 className="w-5 h-5 text-indigo-500 animate-spin" />
-                                <div>
-                                    <span className="text-sm text-slate-500 font-medium block">Consultando API del MEF...</span>
-                                    <span className="text-[10px] text-slate-400">La API del MEF puede tardar hasta 3 minutos en responder</span>
-                                </div>
+                    <div className="space-y-6 mt-6">
+                        {loadingIntegracion && ejecuciones.length === 0 ? (
+                            <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-md flex flex-col items-center justify-center gap-3 dark:border-white/10 dark:bg-[#111c44]">
+                                <Activity className="w-8 h-8 text-blue-500 animate-spin" />
+                                <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Consultando datos financieros en el MEF...</span>
                             </div>
-                        ) : ejecucion ? (
-                            <div className="space-y-4">
-                                {/* Financial progress bar */}
-                                {/* Enhanced Financial Table */}
-                                <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-white/10 mb-6">
-                                    <table className="w-full min-w-[700px] text-left">
-                                        <thead>
-                                            <tr className="bg-slate-50 dark:bg-white/5 border-b border-slate-200 dark:border-white/10">
-                                                <th className="py-3 px-4 text-[10px] font-bold uppercase text-slate-500 tracking-wider">PIA</th>
-                                                <th className="py-3 px-4 text-[10px] font-bold uppercase text-slate-500 tracking-wider">PIM</th>
-                                                <th className="py-3 px-4 text-[10px] font-bold uppercase text-slate-500 tracking-wider">Certificación</th>
-                                                <th className="py-3 px-4 text-[10px] font-bold uppercase text-slate-500 tracking-wider">Comp. Anual</th>
-                                                <th className="py-3 px-4 text-[10px] font-bold uppercase text-slate-500 tracking-wider">Devengado</th>
-                                                <th className="py-3 px-4 text-[10px] font-bold uppercase text-slate-500 tracking-wider">Girado</th>
-                                                <th className="py-3 px-4 text-[10px] font-bold uppercase text-slate-500 tracking-wider text-right">Avance %</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="bg-white dark:bg-[#111c44]">
-                                            <tr>
-                                                <td className="py-4 px-4 text-xs font-semibold text-slate-600 dark:text-slate-400">
-                                                    {formatCurrency(ejecucion.pia)}
-                                                </td>
-                                                <td className="py-4 px-4 text-xs font-bold text-slate-900 dark:text-white">
-                                                    {formatCurrency(ejecucion.pim)}
-                                                </td>
-                                                <td className="py-4 px-4 text-xs font-medium text-slate-600 dark:text-slate-400">
-                                                    {formatCurrency(ejecucion.certificado)}
-                                                </td>
-                                                <td className="py-4 px-4 text-xs font-medium text-slate-600 dark:text-slate-400">
-                                                    {formatCurrency(ejecucion.compromiso_anual)}
-                                                </td>
-                                                <td className="py-4 px-4 text-sm font-bold text-blue-600">
-                                                    {formatCurrency(ejecucion.devengado)}
-                                                </td>
-                                                <td className="py-4 px-4 text-sm font-bold text-emerald-600">
-                                                    {formatCurrency(ejecucion.girado)}
-                                                </td>
-                                                <td className="py-4 px-4 text-right">
-                                                    {(() => {
-                                                        const avance = ejecucion.pim > 0 ? (ejecucion.devengado / ejecucion.pim) * 100 : 0;
-                                                        return (
-                                                            <span className={`text-sm font-black ${avance >= 80 ? 'text-emerald-600' : avance >= 40 ? 'text-amber-600' : 'text-slate-600'}`}>
-                                                                {avance.toFixed(1)}%
-                                                            </span>
-                                                        );
-                                                    })()}
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-
-                                {/* Progress Bar */}
-                                <div className="flex justify-between text-[10px] text-slate-400 font-bold uppercase mt-2">
-                                    <span>Avance de Ejecución (Sobre PIM)</span>
-                                </div>
-
-                                {!ejecucion.encontrado && (
-                                    <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-100 rounded-xl">
-                                        <span className="text-amber-600 text-xs font-bold">⚠ Ejecución financiera pendiente</span>
-                                        <span className="text-amber-500 text-[10px]">— Este contrato aún no registra pagos en el MEF</span>
-                                    </div>
-                                )}
-
-                                {/* Historial anual de ejecución (B) */}
-                                {ejecucion.historial && ejecucion.historial.length > 0 && (
-                                    <div className="mt-2 pt-4 border-t border-slate-100 dark:border-white/5">
-                                        <p className="text-[10px] uppercase font-bold text-slate-400 mb-3 tracking-wider">Historial de Ejecución por Año · CUI {ejecucion.cui}</p>
-                                        <div className="overflow-x-auto">
-                                            <HistorialChart historial={ejecucion.historial} />
+                        ) : ejecuciones.length > 0 ? (
+                            <>
+                                {ejecuciones.slice(0, visibleCUICount).map((ejec, idx) => (
+                                    <div id={`cui-card-${idx}`} key={ejec.cui || idx} className="rounded-2xl border border-slate-200 bg-white p-6 md:p-8 shadow-md dark:border-white/10 dark:bg-[#111c44] animate-in fade-in slide-in-from-bottom-5 duration-500 border-t-4 border-t-cyan-500">
+                                        <div className="flex items-center justify-between mb-6">
+                                            <div className="flex items-center gap-3">
+                                                <Activity className="w-5 h-5 text-blue-500" />
+                                                <h3 className="text-lg font-bold text-slate-900 dark:text-white uppercase">CONSULTA AMIGABLE (MEF) {ejecuciones.length > 1 && `${idx + 1}/${ejecuciones.length}`}</h3>
+                                            </div>
+                                            {/* Status Badge */}
+                                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border ${ejec.encontrado && (ejec.match_type === 'cui_ssi' || ejec.match_type === 'cui_exact' || ejec.match_type === 'snip_exact' || ejec.source === 'ssi_api')
+                                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-800'
+                                                : ejec.encontrado
+                                                    ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:border-amber-800'
+                                                    : 'bg-red-50 text-red-600 border-red-200 dark:bg-red-900/20 dark:border-red-800'
+                                                }`}>
+                                                <span className={`w-2 h-2 rounded-full ${ejec.encontrado && (ejec.match_type === 'cui_ssi' || ejec.match_type === 'cui_exact' || ejec.match_type === 'snip_exact' || ejec.source === 'ssi_api')
+                                                    ? 'bg-emerald-500'
+                                                    : ejec.encontrado
+                                                        ? 'bg-amber-500'
+                                                        : 'bg-red-500'
+                                                    }`} />
+                                                {ejec.encontrado
+                                                    ? `CUI ${ejec.cui} · ${ejec.year_found ?? ejec.year ?? '—'}`
+                                                    : `CUI ${ejec.cui} · Sin datos`}
+                                            </span>
                                         </div>
+
+                                        {ejec.encontrado ? (
+                                            <div className="space-y-6">
+                                                <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-white/10 mb-6">
+                                                    <table className="w-full min-w-[700px] text-left">
+                                                        <thead>
+                                                            <tr className="bg-slate-50 dark:bg-white/5 border-b border-slate-200 dark:border-white/10">
+                                                                <th className="py-3 px-4 text-[10px] font-bold uppercase text-slate-500 tracking-wider">PIA</th>
+                                                                <th className="py-3 px-4 text-[10px] font-bold uppercase text-slate-500 tracking-wider">PIM</th>
+                                                                <th className="py-3 px-4 text-[10px] font-bold uppercase text-slate-500 tracking-wider">Certificación</th>
+                                                                <th className="py-3 px-4 text-[10px] font-bold uppercase text-slate-500 tracking-wider">Comp. Anual</th>
+                                                                <th className="py-3 px-4 text-[10px] font-bold uppercase text-slate-500 tracking-wider">Devengado</th>
+                                                                <th className="py-3 px-4 text-[10px] font-bold uppercase text-slate-500 tracking-wider">Girado</th>
+                                                                <th className="py-3 px-4 text-[10px] font-bold uppercase text-slate-500 tracking-wider text-right">Avance %</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody className="bg-white dark:bg-[#111c44]">
+                                                            <tr>
+                                                                <td className="py-4 px-4 text-xs font-semibold text-slate-600 dark:text-slate-400">{formatCurrency(ejec.pia)}</td>
+                                                                <td className="py-4 px-4 text-xs font-bold text-slate-900 dark:text-white">{formatCurrency(ejec.pim)}</td>
+                                                                <td className="py-4 px-4 text-xs font-medium text-slate-600 dark:text-slate-400">{formatCurrency(ejec.certificado)}</td>
+                                                                <td className="py-4 px-4 text-xs font-medium text-slate-600 dark:text-slate-400">{formatCurrency(ejec.compromiso_anual)}</td>
+                                                                <td className="py-4 px-4 text-sm font-bold text-blue-600">{formatCurrency(ejec.devengado)}</td>
+                                                                <td className="py-4 px-4 text-sm font-bold text-emerald-600">{formatCurrency(ejec.girado)}</td>
+                                                                <td className="py-4 px-4 text-right">
+                                                                    <span className={`text-sm font-black ${ejec.porcentaje_girado >= 80 ? 'text-emerald-600' : ejec.porcentaje_girado >= 40 ? 'text-amber-600' : 'text-slate-600'}`}>
+                                                                        {ejec.porcentaje_girado}%
+                                                                    </span>
+                                                                </td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+
+                                                {/* Progress Bar */}
+                                                <div className="relative pt-1">
+                                                    <div className="flex justify-between text-[10px] text-slate-400 font-bold uppercase mb-2">
+                                                        <span>Avance de Ejecución (Sobre PIM)</span>
+                                                    </div>
+                                                    <div className="overflow-hidden h-2 mb-4 text-xs flex rounded-full bg-slate-100 dark:bg-slate-800 shadow-inner">
+                                                        <div
+                                                            style={{ width: `${Math.min(ejec.porcentaje_girado, 100)}%` }}
+                                                            className={`shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center transition-all duration-1000 ${ejec.porcentaje_girado >= 80 ? 'bg-emerald-500' : ejec.porcentaje_girado >= 40 ? 'bg-amber-500' : 'bg-blue-500'}`}
+                                                        ></div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Historial */}
+                                                {ejec.historial && ejec.historial.length > 0 && (
+                                                    <div className="mt-2 pt-4 border-t border-slate-100 dark:border-white/5">
+                                                        <p className="text-[10px] uppercase font-bold text-slate-400 mb-3 tracking-wider">Historial de Ejecución por Año · CUI {ejec.cui}</p>
+                                                        <div className="overflow-x-auto">
+                                                            <HistorialChart historial={ejec.historial} />
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-100 rounded-xl dark:bg-amber-900/10 dark:border-amber-900/30">
+                                                <span className="text-amber-600 dark:text-amber-400 text-xs font-bold">⚠ Ejecución pendiente</span>
+                                                <span className="text-amber-500 dark:text-amber-500/70 text-[10px]">— No se encontraron datos para el CUI {ejec.cui}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+
+                                {/* Toggle Button for Multi-CUI */}
+                                {ejecuciones.length > 1 && (
+                                    <div className="mt-4 flex flex-col items-center gap-3">
+                                        {/* Label */}
+                                        <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                                            Selecciona una obra para ver su ejecución
+                                        </p>
+                                        {/* Numbered CUI Buttons */}
+                                        <div className="flex flex-wrap justify-center gap-2.5">
+                                            {ejecuciones.map((ejec, i) => {
+                                                const isVisible = i < visibleCUICount;
+                                                return (
+                                                    <button
+                                                        key={i}
+                                                        onClick={() => {
+                                                            setVisibleCUICount(i + 1);
+                                                            setTimeout(() => {
+                                                                const el = document.getElementById(`cui-card-${i}`);
+                                                                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                                            }, 80);
+                                                        }}
+                                                        className={`group relative flex flex-col items-center justify-center gap-0.5 px-5 py-3 rounded-2xl font-black transition-all duration-200 border-2 active:scale-95 min-w-[80px] ${
+                                                            isVisible
+                                                                ? 'bg-blue-500 border-blue-400 text-white shadow-lg shadow-blue-400/40 dark:shadow-blue-900/60 scale-105'
+                                                                : 'bg-white dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 hover:border-blue-300 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:scale-105'
+                                                        }`}
+                                                        title={ejec.cui ? `CUI ${ejec.cui}` : `Obra ${i + 1}`}
+                                                    >
+                                                        <span className={`text-[10px] font-bold tracking-widest uppercase ${
+                                                            isVisible ? 'text-blue-100' : 'text-slate-300 dark:text-slate-600 group-hover:text-blue-300'
+                                                        }`}>CUI</span>
+                                                        <span className="text-xl leading-none">{i + 1}</span>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                        {/* Subtitle */}
+                                        <p className="text-[11px] text-slate-400 dark:text-slate-500">
+                                            Mostrando <span className="font-bold text-blue-500">{visibleCUICount}</span> de <span className="font-bold">{ejecuciones.length}</span> obras
+                                        </p>
                                     </div>
                                 )}
-                            </div>
+                            </>
                         ) : (
-                            <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-100 rounded-xl">
-                                <span className="text-amber-600 text-xs font-bold">⚠ Ejecución financiera pendiente</span>
-                                <span className="text-amber-500 text-[10px]">— No se pudo consultar la API del MEF</span>
+                            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/50 p-6 shadow-inner dark:border-slate-700 dark:bg-[#0b122b]/50 text-center">
+                                <Activity className="w-6 h-6 text-slate-300 dark:text-slate-600 mx-auto mb-2" />
+                                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Ejecución Financiera</p>
+                                <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">No se encontró información financiera para los CUIs de este proyecto.</p>
                             </div>
                         )}
                     </div>
                 )}
+
+
 
                 {/* ========== ADJUDICACIONES TABLE (MODIFIED) ========== */}
                 {adjudicaciones.length > 0 ? (
@@ -817,8 +887,17 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                                                 <td className="py-4 px-4 text-center">
                                                     {loadingIntegracion ? (
                                                         <Loader2 className="w-4 h-4 text-slate-300 animate-spin mx-auto" />
-                                                    ) : ejecucion?.encontrado ? (
-                                                        <span className="text-xs font-bold text-emerald-600">{formatCurrency(ejecucion.girado)}</span>
+                                                    ) : ejecuciones.length > 0 ? (
+                                                        <div className="flex flex-col items-center gap-1">
+                                                            {ejecuciones.map((ejec, idx) => ejec.encontrado && (
+                                                                <span key={idx} className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100">
+                                                                    {ejecuciones.length > 1 ? `CUI ${ejec.cui}: ` : ''}{formatCurrency(ejec.girado)}
+                                                                </span>
+                                                            ))}
+                                                            {!ejecuciones.some(e => e.encontrado) && (
+                                                                <span className="text-[10px] text-slate-400 italic">Pendiente</span>
+                                                            )}
+                                                        </div>
                                                     ) : (
                                                         <span className="text-[10px] text-slate-400 italic">Pendiente</span>
                                                     )}
@@ -827,17 +906,24 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                                                 <td className="py-4 px-4 text-center">
                                                     {loadingIntegracion ? (
                                                         <Loader2 className="w-4 h-4 text-slate-300 animate-spin mx-auto" />
-                                                    ) : ejecucion?.encontrado ? (
-                                                        <div className="flex flex-col items-center gap-1">
-                                                            <span className={`text-xs font-bold ${ejecucion.porcentaje_girado >= 80 ? 'text-emerald-600' : ejecucion.porcentaje_girado >= 40 ? 'text-amber-600' : 'text-slate-600'}`}>
-                                                                {ejecucion.porcentaje_girado}%
-                                                            </span>
-                                                            <div className="w-16 bg-slate-200 rounded-full h-1.5 overflow-hidden">
-                                                                <div
-                                                                    className={`h-full rounded-full transition-all ${ejecucion.porcentaje_girado >= 80 ? 'bg-emerald-500' : ejecucion.porcentaje_girado >= 40 ? 'bg-amber-500' : 'bg-slate-400'}`}
-                                                                    style={{ width: `${Math.min(ejecucion.porcentaje_girado, 100)}%` }}
-                                                                />
-                                                            </div>
+                                                    ) : ejecuciones.length > 0 && ejecuciones.some(e => e.encontrado) ? (
+                                                        <div className="flex flex-col items-center gap-2 mt-1">
+                                                            {ejecuciones.map((ejec, idx) => ejec.encontrado && (
+                                                                <div key={idx} className="flex flex-col items-center gap-1">
+                                                                    <div className="flex items-center gap-1.5">
+                                                                        {ejecuciones.length > 1 && <span className="text-[8px] font-black text-slate-400">{ejec.cui}</span>}
+                                                                        <span className={`text-[10px] font-black ${ejec.porcentaje_girado >= 80 ? 'text-emerald-600' : ejec.porcentaje_girado >= 40 ? 'text-amber-600' : 'text-slate-600'}`}>
+                                                                            {ejec.porcentaje_girado}%
+                                                                        </span>
+                                                                    </div>
+                                                                    <div className="w-14 bg-slate-100 dark:bg-slate-700 rounded-full h-1 overflow-hidden shadow-sm">
+                                                                        <div
+                                                                            className={`h-full rounded-full transition-all ${ejec.porcentaje_girado >= 80 ? 'bg-emerald-500' : ejec.porcentaje_girado >= 40 ? 'bg-amber-500' : 'bg-slate-400'}`}
+                                                                            style={{ width: `${Math.min(ejec.porcentaje_girado, 100)}%` }}
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                            ))}
                                                         </div>
                                                     ) : (
                                                         <span className="text-[10px] text-slate-400 italic">—</span>
@@ -1417,8 +1503,22 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                     )}
                 </div>
 
-                {/* NUEVO: ESTADO INFOBRAS (AVANCE FISICO) */}
-                <EstadoInfobras cui={licitacion.cui} />
+                {/* NUEVO: ESTADO INFOBRAS (AVANCE FISICO) - REPEAT FOR EACH CUI (Collapsible) */}
+                {licitacion.cui?.split(',').map(c => c.trim()).filter(c => c).length > 0 && (
+                    <div className={licitacion.cui?.split(',').length > 1 ? "mt-6" : ""}>
+                        {licitacion.cui?.split(',').map(c => c.trim()).filter(c => c).slice(0, visibleCUICount).map((c, i) => (
+                            <EstadoInfobras key={c + i} cui={c} />
+                        ))}
+                    </div>
+                )}
+                
+                {!licitacion.cui && (
+                    <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/50 p-6 shadow-inner dark:border-slate-700 dark:bg-[#0b122b]/50 text-center mt-6">
+                        <Activity className="w-6 h-6 text-slate-300 dark:text-slate-600 mx-auto mb-2" />
+                        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Avance Físico (Infobras)</p>
+                        <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">No se encontró un CUI válido para realizar la consulta en la Contraloría.</p>
+                    </div>
+                )}
 
                 {/* Fianza Upload Modal */}
                 {editingFianzaId && editingFianzaField && isMounted && createPortal(

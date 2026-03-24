@@ -14,6 +14,16 @@ export const integracionService = {
     },
 
     /**
+     * Fetch financial execution data from MEF for a given CUI.
+     */
+    getEjecucionCui: async (cui: string): Promise<EjecucionFinanciera> => {
+        const response = await api.get(`/api/integraciones/ejecucion/cui/${cui}`, {
+            timeout: 200_000,
+        });
+        return response.data;
+    },
+
+    /**
      * Fetch guarantee data from OCDS for a given licitacion.
      */
     getGarantias: async (idConvocatoria: string): Promise<GarantiasResponse> => {

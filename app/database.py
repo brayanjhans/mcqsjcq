@@ -13,7 +13,7 @@ load_dotenv()
 # Database connection URL
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "mysql+pymysql://root:123456789@localhost:3306/garantias_seace"
+    "mysql+pymysql://root:123456789@localhost:3306/mcqs-jcq"
 )
 
 # Create SQLAlchemy engine
