@@ -205,7 +205,7 @@ def get_all_filters(db: Session = Depends(get_db)):
 @router.get("")
 def get_licitaciones(
     page: int = Query(1, ge=1),
-    limit: int = Query(20, ge=1, le=100),
+    limit: int = Query(20, ge=1, le=5000),
     search: Optional[str] = Query(None),
     estado: Optional[str] = Query(None),
     categoria: Optional[str] = Query(None),
@@ -238,7 +238,7 @@ def get_licitaciones(
             # This avoids MySQL optimizer issues with complex UNION joins
             
             found_ids = set()
-            limit_subquery = 200 
+            limit_subquery = 5000 
             
             # A. Fulltext Search
             terms = [f"+{t.replace('*', '')}*" for t in search.strip().split() if len(t) > 1]
