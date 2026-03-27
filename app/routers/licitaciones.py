@@ -425,6 +425,11 @@ def get_licitacion_detalle(
     entidades_str = " | ".join(sorted(entidades)) if entidades else None
     garantias_str = ",".join(sorted(garantias)) if garantias else None
     
+    # Fallback: if fecha_adjudicacion is not set in the header, use the first adjudicacion's date
+    fecha_adj_efectiva = licitacion.fecha_adjudicacion
+    if not fecha_adj_efectiva and adjudicaciones_list:
+        fecha_adj_efectiva = adjudicaciones_list[0].fecha_adjudicacion
+
     return LicitacionDetalleSchema(
         id_convocatoria=licitacion.id_convocatoria,
         cui=licitacion.cui,
@@ -437,6 +442,7 @@ def get_licitacion_detalle(
         monto_estimado=licitacion.monto_estimado,
         moneda=licitacion.moneda,
         fecha_publicacion=licitacion.fecha_publicacion,
+        fecha_adjudicacion=fecha_adj_efectiva,
         estado_proceso=licitacion.estado_proceso,
         ubicacion_completa=licitacion.ubicacion_completa,
         departamento=licitacion.departamento,

@@ -170,6 +170,7 @@ class LicitacionDetalleSchema(BaseModel):
     monto_estimado: Optional[Decimal] = None
     moneda: Optional[str] = None
     fecha_publicacion: Optional[date] = None
+    fecha_adjudicacion: Optional[date] = None
     estado_proceso: Optional[str] = None
     ubicacion_completa: Optional[str] = None
     departamento: Optional[str] = None
