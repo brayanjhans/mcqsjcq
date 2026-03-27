@@ -76,7 +76,7 @@ def get_licitaciones_suggestions(
 @router.get("", response_model=PaginatedLicitacionesSchema)
 def get_licitaciones(
     page: int = Query(1, ge=1, description="Page number"),
-    limit: int = Query(20, ge=1, le=1000, description="Items per page (max 1000)"),
+    limit: int = Query(20, ge=1, le=5000, description="Items per page (max 5000)"),
     search: Optional[str] = Query(None, description="Search in nomenclatura, comprador, descripcion"),
     estado: Optional[str] = Query(None, description="Filter by estado_proceso"),
     # Alias for frontend consistency

@@ -296,6 +296,34 @@ function BusquedaContent() {
         }
     };
 
+    const handleFetchAllLicitaciones = async () => {
+        try {
+            const filters: any = {};
+            if (searchTerm) filters.search = searchTerm;
+            if (departamento) filters.departamento = departamento;
+            if (estado) filters.estado = estado;
+            if (categoria) filters.categoria = categoria;
+            if (anio) filters.year = anio;
+            if (mes) {
+                const monthMap: { [key: string]: number } = { "Enero": 1, "Febrero": 2, "Marzo": 3, "Abril": 4, "Mayo": 5, "Junio": 6, "Julio": 7, "Agosto": 8, "Septiembre": 9, "Octubre": 10, "Noviembre": 11, "Diciembre": 12 };
+                filters.mes = monthMap[String(mes)] || Number(mes);
+            }
+            if (provincia) filters.provincia = provincia;
+            if (distrito) filters.distrito = distrito;
+            if (tipoGarantia) filters.tipo_garantia = tipoGarantia;
+            if (aseguradora) filters.entidad_financiera = aseguradora;
+            if (entidad) filters.comprador = entidad;
+            if (tipoProcedimiento) filters.tipo_procedimiento = tipoProcedimiento;
+
+            // Fetch with a high limit to get all results (max 5000 for safety)
+            const data = await licitacionService.getAll(1, 5000, filters);
+            return data.items;
+        } catch (error) {
+            console.error("Error fetching all licitaciones for PDF:", error);
+            throw error; // Throw so that LicitacionTable handles the fallback
+        }
+    };
+
     const handleClear = () => {
         setSearchTerm("");
         setDepartamento("");
@@ -577,7 +605,12 @@ function BusquedaContent() {
                             ))}
                         </div>
                     ) : (
-                        <LicitacionTable licitaciones={licitaciones} searchTerm={searchTerm} />
+                        <LicitacionTable 
+                            licitaciones={licitaciones} 
+                            searchTerm={searchTerm} 
+                            onFetchAll={handleFetchAllLicitaciones}
+                            totalItems={totalItems}
+                        />
                     )
                 ) : (
                     <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-300 bg-white/50 p-12 text-center dark:border-slate-700 dark:bg-[#111c44]/50">

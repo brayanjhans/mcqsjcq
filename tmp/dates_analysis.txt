@@ -1,0 +1,37 @@
+TOTAL RUTAS UNICAS CON FECHAS: 9
+
+[date]
+   ejemplo: 2026-03-16T12:25:22.436052-05:00
+   ejemplo: 2026-03-16T12:25:22.430294-05:00
+
+[publishedDate]
+   ejemplo: 2026-03-16T12:25:22.436069-05:00
+   ejemplo: 2026-03-16T12:25:22.430311-05:00
+
+[tender.datePublished]
+   ejemplo: 2026-03-13T23:33:00-05:00
+   ejemplo: 2026-03-13T22:01:00-05:00
+
+[tender.documents.dateModified]
+   ejemplo: 2026-03-12T17:43:16-05:00
+   ejemplo: 2026-03-12T17:43:16-05:00
+
+[tender.documents.datePublished]
+   ejemplo: 2026-03-13T23:38:45-05:00
+   ejemplo: 2026-03-13T22:01:00-05:00
+
+[tender.enquiryPeriod.endDate]
+   ejemplo: 2026-03-18T23:59:00-05:00
+   ejemplo: 2026-03-18T23:59:00-05:00
+
+[tender.enquiryPeriod.startDate]
+   ejemplo: 2026-03-14T00:01:00-05:00
+   ejemplo: 2026-03-14T00:01:00-05:00
+
+[tender.tenderPeriod.endDate]
+   ejemplo: 2026-03-13T00:00:00-05:00
+   ejemplo: 2026-03-13T00:00:00-05:00
+
+[tender.tenderPeriod.startDate]
+   ejemplo: 2026-03-13T00:00:00-05:00
+   ejemplo: 2026-03-13T00:00:00-05:00
