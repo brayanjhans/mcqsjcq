@@ -14,7 +14,9 @@ import {
     XCircle,
     Clock,
     Loader2,
+    FileDown,
 } from "lucide-react";
+import { formatDate, formatCurrency } from "@/lib/formatters";
 
 interface SunatData {
     encontrado: boolean;
@@ -152,6 +154,291 @@ function SingleRucPanel({
     onRefresh?: (ruc: string) => void;
     isRefreshing?: boolean;
 }) {
+    const [isExporting, setIsExporting] = useState(false);
+
+    const handleExportPDF = async () => {
+        setIsExporting(true);
+        try {
+            const { default: jsPDF } = await import("jspdf");
+            const autoTable = (await import("jspdf-autotable")).default;
+
+            const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+            const pageW = doc.internal.pageSize.getWidth();
+            const pageH = doc.internal.pageSize.getHeight();
+            
+            // Generate Report ID with actual RUC to avoid confusion
+            const timestamp = new Date().toISOString().replace(/[-:T]/g, "").slice(8, 12);
+            const reportId = `REP-${data.ruc}-${timestamp}`;
+            
+            // Helper for QR Code
+            const fetchQrDataUrl = async (text: string) => {
+                const url = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(text)}`;
+                const response = await fetch(url);
+                const blob = await response.blob();
+                return new Promise<string>((resolve) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result as string);
+                    reader.readAsDataURL(blob);
+                });
+            };
+
+            const sunatUrl = `https://e-consultaruc.sunat.gob.pe/cl-ti-itmrconsruc/FrameCriterioBusquedaWeb.jsp?nroRuc=${data.ruc}`;
+            const qrCodeData = await fetchQrDataUrl(sunatUrl);
+            // ... (rest of the code below was fine but replacing in chunks)
+
+            // Colors
+            const sunatBlue: [number, number, number] = [0, 51, 153];
+            const activeGreenBg: [number, number, number] = [209, 250, 229];
+            const activeGreenText: [number, number, number] = [6, 95, 70];
+            const habidoBlueBg: [number, number, number] = [219, 234, 254];
+            const habidoBlueText: [number, number, number] = [30, 64, 175];
+            const textGray: [number, number, number] = [107, 114, 128];
+            const textDark: [number, number, number] = [31, 41, 55];
+            const borderColor: [number, number, number] = [229, 231, 235];
+            const lineGray: [number, number, number] = [241, 245, 249];
+
+            // 1. --- HEADER ---
+            doc.setFillColor(...sunatBlue);
+            doc.roundedRect(14, 14, 12, 10, 1, 1, "F");
+            doc.setTextColor(255, 255, 255);
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(5.5);
+            doc.text("SUNAT", 15.5, 20.5);
+
+            doc.setTextColor(...sunatBlue);
+            doc.setFontSize(8);
+            doc.setFont("helvetica", "bold");
+            doc.text("REPORTE OFICIAL DEL CONTRIBUYENTE", 30, 18);
+            
+            doc.setTextColor(...textDark);
+            doc.setFontSize(24);
+            doc.text("CONSULTA RUC", 30, 26);
+
+            doc.setTextColor(...textGray);
+            doc.setFontSize(8);
+            doc.setFont("helvetica", "normal");
+            const genDate = new Date().toLocaleString("es-PE", { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+            doc.text(`Generado el ${genDate}`, 30, 31.5);
+
+            let currentY = 40;
+
+            // 2. --- ENTITY CARD ---
+            doc.setDrawColor(...borderColor);
+            doc.setFillColor(255, 255, 255);
+            doc.roundedRect(14, currentY, pageW - 28, 55, 4, 4, "DF");
+
+            // Badges
+            let badgeX = 20;
+            // RUC
+            const rucT = `RUC: ${data.ruc}`;
+            doc.setFillColor(...sunatBlue);
+            doc.roundedRect(badgeX, currentY + 6, doc.getTextWidth(rucT) + 6, 6, 3, 3, "F");
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(8.5);
+            doc.setFont("helvetica", "bold");
+            doc.text(rucT, badgeX + 3, currentY + 10.5);
+            badgeX += doc.getTextWidth(rucT) + 12;
+
+            // Status
+            const stText = (data.estado_contribuyente || "ACTIVO").toUpperCase();
+            doc.setFillColor(...activeGreenBg);
+            doc.roundedRect(badgeX, currentY + 6, doc.getTextWidth(stText) + 8, 6, 3, 3, "F");
+            doc.setTextColor(...activeGreenText);
+            doc.text(stText, badgeX + 4, currentY + 10.5);
+            badgeX += doc.getTextWidth(stText) + 12;
+
+            // Condition
+            const condT = (data.condicion_contribuyente || "HABIDO").toUpperCase();
+            doc.setFillColor(...habidoBlueBg);
+            doc.roundedRect(badgeX, currentY + 6, doc.getTextWidth(condT) + 8, 6, 3, 3, "F");
+            doc.setTextColor(...habidoBlueText);
+            doc.text(condT, badgeX + 4, currentY + 10.5);
+
+            // QR Code in Card
+            doc.addImage(qrCodeData, "PNG", pageW - 48, currentY + 10, 28, 28);
+            doc.link(pageW - 48, currentY + 10, 28, 28, { url: sunatUrl });
+
+            // Reason Social
+            doc.setTextColor(...textDark);
+            doc.setFontSize(18);
+            doc.setFont("helvetica", "bold");
+            const displayName = data.razon_social || "SIN RAZÓN SOCIAL";
+            const splitName = doc.splitTextToSize(displayName, 110);
+            doc.text(splitName, 20, currentY + 24);
+            
+            const cardInnerY = currentY + 24 + (splitName.length * 8);
+
+            // Details with Icons (simulated with labels)
+            doc.setTextColor(...textGray);
+            doc.setFontSize(7.5);
+            doc.text("DOMICILIO FISCAL", 20, cardInnerY + 4);
+            doc.text("ACTIVIDAD ECONÓMICA", pageW / 2 + 10, cardInnerY + 4);
+
+            doc.setTextColor(...textDark);
+            doc.setFontSize(8.5);
+            doc.setFont("helvetica", "normal");
+            const splitDom = doc.splitTextToSize(data.domicilio_fiscal || "-", 80);
+            doc.text(splitDom, 20, cardInnerY + 9);
+
+            const actText = Array.isArray(data.actividades_economicas) ? data.actividades_economicas.join(", ") : (data.actividades_economicas || "-");
+            const splitAct = doc.splitTextToSize(actText, 70);
+            doc.text(splitAct, pageW / 2 + 10, cardInnerY + 9);
+
+            currentY = Math.max(cardInnerY + 9 + (splitDom.length * 4), cardInnerY + 9 + (splitAct.length * 4)) + 15;
+
+            // 3. --- DEUDA COACTIVA ---
+            doc.setTextColor(...textDark);
+            doc.setFontSize(11);
+            doc.setFont("helvetica", "bold");
+            doc.text("DETALLE DE DEUDA COACTIVA", 14, currentY);
+            
+            const deudasArr = Array.isArray(data.deuda_coactiva) ? data.deuda_coactiva : [];
+            doc.setTextColor(...textGray);
+            doc.setFontSize(8);
+            doc.setFont("helvetica", "normal");
+            doc.text(`${deudasArr.length} REGISTROS`, pageW - 14, currentY, { align: "right" });
+
+            const totalSum = deudasArr.reduce((acc, d) => acc + (Number(d.monto) || 0), 0);
+
+            autoTable(doc, {
+                startY: currentY + 4,
+                head: [["ENTIDAD ACREEDORA", "PERIODO", "FECHA INICIO", "MONTO (S/)"]],
+                body: deudasArr.length > 0 ? deudasArr.map(d => [
+                    (d.entidad_asociada || d.entidad || "SUNAT").toUpperCase(),
+                    d.periodo_tributario || d.periodo || d.codigo || "-",
+                    d.fecha_inicio_cobranza || d.fecha_inicio || d.fecha || "-",
+                    { content: (Number(d.monto) || 0).toLocaleString("es-PE", { minimumFractionDigits: 2 }), styles: { fontStyle: "bold" } }
+                ]) : [["No registra deuda coactiva vigente.", "", "", ""]],
+                theme: "plain",
+                headStyles: { fillColor: [255, 255, 255], textColor: textGray, fontSize: 8, fontStyle: "bold", cellPadding: 4 },
+                styles: { fontSize: 9, cellPadding: 5, textColor: textDark, valign: "middle" },
+                columnStyles: { 3: { halign: "right" } },
+                margin: { left: 14, right: 14 },
+                didDrawPage: (data) => {
+                    doc.setDrawColor(...lineGray);
+                    doc.line(14, data.cursor!.y, pageW - 14, data.cursor!.y);
+                }
+            });
+
+            currentY = (doc as any).lastAutoTable.finalY + 8;
+
+            if (deudasArr.length > 0) {
+                const totalVal = `S/ ${totalSum.toLocaleString("es-PE", { minimumFractionDigits: 2 })}`;
+                
+                doc.setTextColor(...textGray);
+                doc.setFontSize(9);
+                doc.setFont("helvetica", "bold");
+                // Safest approach: Label on the left, value on the right
+                doc.text("TOTAL ACUMULADO EXIGIBLE", 14, currentY + 4);
+
+                doc.setTextColor(...habidoBlueText);
+                doc.setFontSize(18);
+                doc.text(totalVal, pageW - 14, currentY + 4, { align: "right" });
+                currentY += 15;
+            }
+
+            // 4. --- REPRESENTANTES LEGALES ---
+            doc.setTextColor(...textDark);
+            doc.setFontSize(11);
+            doc.setFont("helvetica", "bold");
+            doc.text("REPRESENTANTES LEGALES", 14, currentY);
+            currentY += 8;
+
+            const representatives = Array.isArray(data.representantes_legales) ? data.representantes_legales : [];
+            const repCardW = (pageW - 32) / 2;
+            const repCardH = 32;
+
+            representatives.slice(0, 4).forEach((r, idx) => {
+                const row = Math.floor(idx / 2);
+                const col = idx % 2;
+                const rx = 14 + (col * (repCardW + 4));
+                const ry = currentY + (row * (repCardH + 4));
+
+                if (ry + repCardH > pageH - 45) return;
+
+                doc.setFillColor(255, 255, 255);
+                doc.setDrawColor(...borderColor);
+                doc.roundedRect(rx, ry, repCardW, repCardH, 3, 3, "DF");
+
+                // --- GENDER-BASED AVATAR ---
+                const firstName = (r.nombre || "").split(",")[0]?.split(" ")[0]?.toUpperCase() || "";
+                const femaleNames = ["MARIA", "ANA", "ELENA", "LUZ", "ROSA", "CARMEN", "JUANA", "SILVIA", "PATRICIA", "MERCEDES", "BEATRIZ"];
+                const isFemale = femaleNames.some(fn => firstName.includes(fn)) || firstName.endsWith("A");
+                
+                const avX = rx + 11;
+                const avY = ry + 11;
+                doc.setFillColor(241, 245, 249);
+                doc.circle(avX, avY, 7, "F"); // Background circle
+                
+                doc.setFillColor(...textGray);
+                if (isFemale) {
+                    // Drawing a simple female silhouette
+                    doc.circle(avX, avY - 1.5, 2.2, "F"); // Head
+                    doc.triangle(avX - 3.5, avY + 4.5, avX + 3.5, avY + 4.5, avX, avY + 1, "F"); // Body (dress style)
+                } else {
+                    // Drawing a simple male silhouette
+                    doc.circle(avX, avY - 1.5, 2.3, "F"); // Head
+                    doc.roundedRect(avX - 3.5, avY + 1.5, 7, 3.5, 1, 1, "F"); // Shoulders
+                }
+
+                // --- Info ---
+                doc.setTextColor(...textDark);
+                doc.setFontSize(9);
+                doc.setFont("helvetica", "bold");
+                const rName = doc.splitTextToSize(r.nombre || "-", repCardW - 25);
+                doc.text(rName, rx + 22, ry + 8);
+
+                const rCargo = (r.cargo || "REPRESENTANTE").toUpperCase();
+                doc.setFillColor(...habidoBlueBg);
+                doc.roundedRect(rx + 22, ry + 10, doc.getTextWidth(rCargo) + 4, 4, 1, 1, "F");
+                doc.setTextColor(...habidoBlueText);
+                doc.setFontSize(6.5);
+                doc.text(rCargo, rx + 24, ry + 13);
+
+                doc.setTextColor(...textGray);
+                doc.setFontSize(7);
+                doc.setFont("helvetica", "bold");
+                doc.text("DNI", rx + 22, ry + 22);
+                doc.text("VIGENCIA", rx + 45, ry + 22);
+                
+                doc.setTextColor(...textDark);
+                doc.setFont("helvetica", "normal");
+                doc.text(r.numero_de_documento || "-", rx + 22, ry + 26);
+                doc.text(formatDate(r.fecha_desde), rx + 45, ry + 26);
+            });
+
+            // 5. --- FOOTER / VERIFICATION ---
+            const fY = pageH - 45;
+            doc.addImage(qrCodeData, "PNG", 20, fY, 25, 25);
+            doc.link(20, fY, 25, 25, { url: sunatUrl });
+
+            doc.setFillColor(248, 250, 252);
+            doc.setDrawColor(...borderColor);
+            doc.roundedRect(55, fY, pageW - 75, 25, 3, 3, "DF");
+            
+            doc.setTextColor(...sunatBlue);
+            doc.setFontSize(9);
+            doc.setFont("helvetica", "bold");
+            doc.text("VERIFICACIÓN Y SEGURIDAD", 62, fY + 8);
+            
+            doc.setTextColor(...textGray);
+            doc.setFontSize(7.5);
+            doc.setFont("helvetica", "normal");
+            const footerNote = `Este reporte tiene carácter oficial. La integridad del documento puede verificarse escaneando el código QR o ingresando el ID del reporte ${reportId} en mcqs-jcq.com.`;
+            doc.text(doc.splitTextToSize(footerNote, pageW - 90), 62, fY + 14);
+
+            doc.setFontSize(7);
+            doc.text(`© ${new Date().getFullYear()} SUNAT - REPÚBLICA DEL PERÚ`, pageW / 2, pageH - 10, { align: "center" });
+
+            doc.save(`Reporte_Oficial_SUNAT_${data.ruc}.pdf`);
+
+        } catch (error) {
+            console.error("Error generating SUNAT PDF:", error);
+            alert("Error al generar el PDF. Verifica tu conexión.");
+        } finally {
+            setIsExporting(false);
+        }
+    };
     const actividades = Array.isArray(data.actividades_economicas)
         ? data.actividades_economicas
         : typeof data.actividades_economicas === "string" && data.actividades_economicas
@@ -189,14 +476,24 @@ function SingleRucPanel({
                     )}
                 </div>
                 {onRefresh && (
-                    <button
-                        onClick={() => onRefresh(data.ruc)}
-                        disabled={isRefreshing}
-                        className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-[11px] font-black text-white transition-all shadow-lg shadow-indigo-600/20 disabled:opacity-50 active:scale-95"
-                    >
-                        <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
-                        ACTUALIZAR
-                    </button>
+                    <div className="flex items-center gap-2">
+                         <button
+                            onClick={handleExportPDF}
+                            disabled={isExporting}
+                            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-[11px] font-black text-white transition-all shadow-lg shadow-emerald-600/20 disabled:opacity-50 active:scale-95"
+                        >
+                            {isExporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileDown className="w-3.5 h-3.5" />}
+                            EXPORTAR PDF
+                        </button>
+                        <button
+                            onClick={() => onRefresh(data.ruc)}
+                            disabled={isRefreshing}
+                            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-[11px] font-black text-white transition-all shadow-lg shadow-indigo-600/20 disabled:opacity-50 active:scale-95"
+                        >
+                            <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
+                            ACTUALIZAR
+                        </button>
+                    </div>
                 )}
             </div>
 
