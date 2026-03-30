@@ -61,22 +61,22 @@ const TABS: { id: TabId; label: string; icon: React.ReactNode; color: string; gr
         id: "datos", 
         label: "Datos SUNAT", 
         icon: <Building2 className="w-4 h-4" />,
-        color: "text-indigo-600",
-        gradient: "from-indigo-600 to-violet-600"
+        color: "text-[#1e3a8a]",
+        gradient: "from-[#1e3a8a] to-[#1e40af]"
     },
     { 
         id: "deuda", 
         label: "Deuda Coactiva", 
         icon: <AlertTriangle className="w-4 h-4" />,
-        color: "text-blue-600",
-        gradient: "from-blue-500 to-cyan-600"
+        color: "text-[#1e3a8a]",
+        gradient: "from-[#1e3a8a] to-[#1e40af]"
     },
     { 
         id: "representantes", 
         label: "Representante Legal", 
         icon: <Users className="w-4 h-4" />,
-        color: "text-emerald-600",
-        gradient: "from-emerald-500 to-teal-600"
+        color: "text-[#1e3a8a]",
+        gradient: "from-[#1e3a8a] to-[#1e40af]"
     },
 ];
 
@@ -84,20 +84,20 @@ function EstadoBadge({ estado }: { estado: string }) {
     const upper = (estado || "").toUpperCase();
     if (upper === "ACTIVO") {
         return (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-500 text-white shadow-sm shadow-emerald-500/20">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black bg-[#10b981] text-white shadow-sm shadow-emerald-500/10 tracking-wider">
                 <CheckCircle2 className="w-3.5 h-3.5" /> ACTIVO
             </span>
         );
     }
     if (upper === "BAJA" || upper.includes("BAJA")) {
         return (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black bg-rose-500 text-white shadow-sm shadow-rose-500/20">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black bg-rose-600 text-white shadow-sm shadow-rose-500/10 tracking-wider">
                 <XCircle className="w-3.5 h-3.5" /> {upper}
             </span>
         );
     }
     return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black bg-slate-500 text-white shadow-sm shadow-slate-500/20">
+        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black bg-slate-600 text-white shadow-sm shadow-slate-500/10 tracking-wider">
             <Clock className="w-3.5 h-3.5" /> {upper || "N/A"}
         </span>
     );
@@ -107,13 +107,13 @@ function CondicionBadge({ condicion }: { condicion: string }) {
     const upper = (condicion || "").toUpperCase();
     if (upper === "HABIDO") {
         return (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black bg-indigo-500 text-white shadow-sm shadow-indigo-500/20">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black bg-[#1e3a8a] text-white shadow-sm shadow-indigo-500/10 tracking-wider">
                 <CheckCircle2 className="w-3.5 h-3.5" /> HABIDO
             </span>
         );
     }
     return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black bg-orange-500 text-white shadow-sm shadow-orange-500/20">
+        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black bg-amber-600 text-white shadow-sm shadow-orange-500/10 tracking-wider">
             <AlertTriangle className="w-3.5 h-3.5" /> {upper || "N/A"}
         </span>
     );
@@ -484,17 +484,17 @@ function SingleRucPanel({
                          <button
                             onClick={handleExportPDF}
                             disabled={isExporting}
-                            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-[11px] font-black text-white transition-all shadow-lg shadow-emerald-600/20 disabled:opacity-50 active:scale-95"
+                            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#1e3a8a] hover:bg-[#1e40af] text-[11px] font-black text-white transition-all shadow-lg shadow-indigo-900/10 disabled:opacity-50 active:scale-95 uppercase tracking-wider"
                         >
-                            {isExporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileDown className="w-3.5 h-3.5" />}
+                            {isExporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileDown className="w-4 h-4" />}
                             EXPORTAR PDF
                         </button>
                         <button
                             onClick={() => onRefresh(data.ruc)}
                             disabled={isRefreshing}
-                            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-[11px] font-black text-white transition-all shadow-lg shadow-indigo-600/20 disabled:opacity-50 active:scale-95"
+                            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-700 hover:bg-indigo-800 text-[11px] font-black text-white transition-all shadow-lg shadow-indigo-900/10 disabled:opacity-50 active:scale-95 uppercase tracking-wider"
                         >
-                            <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
+                            <RefreshCw className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`} />
                             ACTUALIZAR
                         </button>
                     </div>
@@ -708,35 +708,31 @@ export const SunatRucPanel: React.FC<Props> = ({ data, onClose, onRefresh, isRef
     }
 
     return (
-        <div className="rounded-2xl border border-indigo-200/50 bg-white shadow-lg shadow-indigo-500/5 dark:border-indigo-800/20 dark:bg-[#111c44] overflow-hidden">
-            {/* Top Bar */}
-            <div className="flex items-center justify-between px-6 py-4 bg-gradient-to-r from-indigo-600 to-blue-700 border-b border-indigo-400/20 shadow-inner">
-                <div className="flex items-center gap-2">
-                    <div className="p-1.5 bg-white/20 rounded-lg backdrop-blur-md">
-                        <Building2 className="w-4 h-4 text-white" />
+        <div className="rounded-2xl border border-slate-200 bg-white shadow-lg shadow-slate-900/5 dark:border-slate-800 dark:bg-[#111c44] overflow-hidden">
+            {/* Tab Content Header */}
+            <div className="flex items-center justify-between p-4 mb-4 border-b border-white/10 bg-[#1e3a8a] text-white shadow-xl shadow-blue-900/10">
+                <div className="flex items-center gap-3">
+                    <div className="p-2 bg-white/10 rounded-xl">
+                        <Building2 className="w-5 h-5 text-white" />
                     </div>
-                    <div className="flex flex-col">
-                        <span className="text-[10px] font-black text-indigo-100 uppercase tracking-widest leading-none mb-1">
-                            Consulta RUC
-                        </span>
-                        <span className="text-sm font-extrabold text-white leading-none">
-                            SUNAT OFICIAL
-                        </span>
+                    <div>
+                        <div className="text-[10px] font-black text-white/70 uppercase tracking-widest">Consulta RUC</div>
+                        <div className="text-sm font-black whitespace-nowrap">SUNAT OFICIAL</div>
                     </div>
-                    {currentItem.fecha_consulta && (
-                        <div className="ml-4 pl-4 border-l border-white/20">
-                            <span className="text-[10px] text-indigo-100/60 block">Última Consulta</span>
-                            <span className="text-[10px] font-bold text-white uppercase">
-                                {new Date(currentItem.fecha_consulta).toLocaleString("es-PE")}
-                            </span>
-                        </div>
-                    )}
                 </div>
-                <button
+                
+                <div className="hidden md:block h-8 w-px bg-white/20 mx-4"></div>
+
+                <div className="flex-1">
+                    <div className="text-[10px] font-black text-white/50 uppercase tracking-widest">Última Consulta</div>
+                    <div className="text-[11px] font-bold">{currentItem.fecha_consulta ? new Date(currentItem.fecha_consulta).toLocaleString("es-PE") : "-"}</div>
+                </div>
+
+                <button 
                     onClick={onClose}
-                    className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-all active:scale-90"
+                    className="p-2 hover:bg-white/10 rounded-xl transition-colors group"
                 >
-                    <X className="w-4 h-4" />
+                    <X className="w-5 h-5 text-white/70 group-hover:text-white transition-colors" />
                 </button>
             </div>
 
