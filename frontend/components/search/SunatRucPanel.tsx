@@ -17,6 +17,7 @@ import {
     FileDown,
 } from "lucide-react";
 import { formatDate, formatCurrency } from "@/lib/formatters";
+import { LOGO_MQS_B64 } from "@/lib/utils/pdfAssets";
 
 interface SunatData {
     encontrado: boolean;
@@ -213,6 +214,9 @@ function SingleRucPanel({
             doc.setTextColor(...textDark);
             doc.setFontSize(24);
             doc.text("CONSULTA RUC", 30, 26);
+
+            // 1.1 --- SYSTEM LOGO (TOP RIGHT) ---
+            doc.addImage(LOGO_MQS_B64, "PNG", pageW - 32, 14, 18, 18);
 
             doc.setTextColor(...textGray);
             doc.setFontSize(8);
