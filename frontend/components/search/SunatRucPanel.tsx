@@ -188,7 +188,7 @@ function SingleRucPanel({
             // ... (rest of the code below was fine but replacing in chunks)
 
             // Colors
-            const sunatBlue: [number, number, number] = [0, 51, 153];
+            const sunatBlue: [number, number, number] = [30, 58, 138];
             const activeGreenBg: [number, number, number] = [209, 250, 229];
             const activeGreenText: [number, number, number] = [6, 95, 70];
             const habidoBlueBg: [number, number, number] = [219, 234, 254];

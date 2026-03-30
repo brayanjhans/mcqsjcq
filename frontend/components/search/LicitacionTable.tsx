@@ -66,7 +66,7 @@ export const LicitacionTable: React.FC<Props> = ({
 
         const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
 
-        const primaryColor: [number, number, number] = [79, 70, 229];
+        const primaryColor: [number, number, number] = [30, 58, 138];
         const headerText: [number, number, number] = [255, 255, 255];
         const altRow: [number, number, number] = [245, 247, 255];
         const borderColor: [number, number, number] = [220, 220, 240];
@@ -150,7 +150,7 @@ export const LicitacionTable: React.FC<Props> = ({
             columnStyles: {
                 0: { halign: "center", cellWidth: 7 },
                 1: { cellWidth: 35, fontStyle: "bold" },
-                2: { cellWidth: 26, fontStyle: "bold", textColor: [79, 70, 229] },
+                2: { cellWidth: 26, fontStyle: "bold", textColor: [30, 58, 138] },
                 3: { cellWidth: 36 },
                 4: { halign: "right", cellWidth: 22 },
                 5: { halign: "right", cellWidth: 22, textColor: [5, 150, 105] },
@@ -223,18 +223,18 @@ export const LicitacionTable: React.FC<Props> = ({
             {/* Table */}
             <div className="w-full overflow-x-auto rounded-xl border border-slate-200 shadow-sm dark:border-white/10 dark:bg-[#111c44]">
                 <table className="w-full text-left text-sm text-slate-600 dark:text-slate-300 border-separate border-spacing-0">
-                    <thead className="bg-[#4F46E5] text-white uppercase font-extrabold text-[11px] tracking-wider sticky top-0 dark:bg-indigo-600 relative">
+                    <thead className="bg-[#1e3a8a] text-white uppercase font-extrabold text-[11px] tracking-wider sticky top-0 dark:bg-indigo-600 relative">
                         <tr>
-                            <th className="px-2.5 py-2.5 whitespace-nowrap text-center rounded-tl-xl border-b-2 border-[#4338ca] dark:border-indigo-700 text-[10px]">N°</th>
-                            <th className="px-2.5 py-2.5 min-w-[120px] max-w-[160px] whitespace-normal border-b-2 border-[#4338ca] dark:border-indigo-700 text-[10px]">Entidad</th>
-                            <th className="px-2.5 py-2.5 min-w-[110px] max-w-[150px] whitespace-normal border-b-2 border-[#4338ca] dark:border-indigo-700 text-[10px]">Nomenclatura</th>
-                            <th className="px-2.5 py-2.5 min-w-[160px] border-b-2 border-[#4338ca] dark:border-indigo-700 text-[10px]">Descripción</th>
-                            <th className="px-2.5 py-2.5 min-w-[100px] whitespace-nowrap text-right border-b-2 border-[#4338ca] dark:border-indigo-700 text-[10px]">Monto Est.</th>
-                            <th className="px-2.5 py-2.5 min-w-[100px] whitespace-nowrap text-right border-b-2 border-[#4338ca] dark:border-indigo-700 text-[10px]">Monto Adj.</th>
-                            <th className="px-2.5 py-2.5 min-w-[150px] max-w-[200px] whitespace-normal border-b-2 border-[#4338ca] dark:border-indigo-700 text-[10px]">Consorcio y Consorciado</th>
-                            <th className="px-2.5 py-2.5 min-w-[90px] border-b-2 border-[#4338ca] dark:border-indigo-700 text-[10px]">Fecha</th>
-                            <th className="px-2.5 py-2.5 min-w-[90px] border-b-2 border-[#4338ca] dark:border-indigo-700 text-[10px]">Aseguradora</th>
-                            <th className="px-2.5 py-2.5 text-center sticky right-0 bg-[#4F46E5] dark:bg-indigo-600 z-10 shadow-[-4px_0_10px_-4px_rgba(0,0,0,0.1)] rounded-tr-xl border-b-2 border-[#4338ca] dark:border-indigo-700 text-[10px]">Acciones</th>
+                            <th className="px-2.5 py-2.5 whitespace-nowrap text-center rounded-tl-xl border-b-2 border-[#1e3a8a] dark:border-indigo-700 text-[10px]">N°</th>
+                            <th className="px-2.5 py-2.5 min-w-[120px] max-w-[160px] whitespace-normal border-b-2 border-[#1e3a8a] dark:border-indigo-700 text-[10px]">Entidad</th>
+                            <th className="px-2.5 py-2.5 min-w-[110px] max-w-[150px] whitespace-normal border-b-2 border-[#1e3a8a] dark:border-indigo-700 text-[10px]">Nomenclatura</th>
+                            <th className="px-2.5 py-2.5 min-w-[160px] border-b-2 border-[#1e3a8a] dark:border-indigo-700 text-[10px]">Descripción</th>
+                            <th className="px-2.5 py-2.5 min-w-[100px] whitespace-nowrap text-right border-b-2 border-[#1e3a8a] dark:border-indigo-700 text-[10px]">Monto Est.</th>
+                            <th className="px-2.5 py-2.5 min-w-[100px] whitespace-nowrap text-right border-b-2 border-[#1e3a8a] dark:border-indigo-700 text-[10px]">Monto Adj.</th>
+                            <th className="px-2.5 py-2.5 min-w-[150px] max-w-[200px] whitespace-normal border-b-2 border-[#1e3a8a] dark:border-indigo-700 text-[10px]">Consorcio y Consorciado</th>
+                            <th className="px-2.5 py-2.5 min-w-[90px] border-b-2 border-[#1e3a8a] dark:border-indigo-700 text-[10px]">Fecha</th>
+                            <th className="px-2.5 py-2.5 min-w-[90px] border-b-2 border-[#1e3a8a] dark:border-indigo-700 text-[10px]">Aseguradora</th>
+                            <th className="px-2.5 py-2.5 text-center sticky right-0 bg-[#1e3a8a] dark:bg-indigo-600 z-10 shadow-[-4px_0_10px_-4px_rgba(0,0,0,0.1)] rounded-tr-xl border-b-2 border-[#1e3a8a] dark:border-indigo-700 text-[10px]">Acciones</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200 bg-white dark:divide-white/5 dark:bg-[#111c44]">
@@ -246,7 +246,7 @@ export const LicitacionTable: React.FC<Props> = ({
                                 <td className="px-2.5 py-2.5 text-[11px] font-bold text-slate-800 uppercase leading-snug dark:text-slate-200">
                                     {getHighlightedText(lic.comprador, searchTerm)}
                                 </td>
-                                <td className="px-2.5 py-2.5 text-[11px] font-bold text-[#4F46E5] uppercase leading-tight dark:text-indigo-400">
+                                <td className="px-2.5 py-2.5 text-[11px] font-bold text-[#1e3a8a] uppercase leading-tight dark:text-indigo-400">
                                     {lic.nomenclatura ? getHighlightedText(lic.nomenclatura, searchTerm) : "SIN NOMENCLATURA"}
                                 </td>
                                 <td className="px-2.5 py-2.5 text-[10px] text-slate-600 dark:text-slate-400">
@@ -318,7 +318,7 @@ export const LicitacionTable: React.FC<Props> = ({
                                 <td className="px-2.5 py-2.5 text-center sticky right-0 bg-white shadow-[-4px_0_10px_-4px_rgba(0,0,0,0.05)] text-[10px] dark:bg-[#111c44] border-l border-slate-100 dark:border-white/5">
                                     <Link
                                         href={`${basePath}/${lic.id_convocatoria}`}
-                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#4F46E5] hover:bg-[#4338ca] text-white rounded-lg font-bold transition-all shadow-sm"
+                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#1e3a8a] hover:bg-[#1e40af] text-white rounded-lg font-bold transition-all shadow-sm"
                                     >
                                         <Eye className="w-3 h-3" />
                                         <span>Detalles</span>
