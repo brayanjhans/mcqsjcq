@@ -1,6 +1,9 @@
 import api from '../api';
 import type { Licitacion, SearchFilters } from '@/types/licitacion';
 
+const searchCache = new Map<string, { timestamp: number, data: any }>();
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes cache
+
 export const licitacionService = {
     // Get paginated licitaciones with filters
     getAll: async (page: number, limit: number, filters: SearchFilters = {}) => {
@@ -15,10 +18,20 @@ export const licitacionService = {
             (params[key] === undefined || params[key] === '' || params[key] === null) && delete params[key]
         );
 
-        // Add Timestamp to prevent caching
+        // Check cache before fetching
+        const cacheKey = JSON.stringify(params);
+        const cached = searchCache.get(cacheKey);
+        if (cached && (Date.now() - cached.timestamp < CACHE_TTL_MS)) {
+            return cached.data;
+        }
+
+        // Add Timestamp to prevent axios/browser caching
         params._t = new Date().getTime();
 
         const response = await api.get('/api/licitaciones', { params });
+        
+        // Save to cache
+        searchCache.set(cacheKey, { timestamp: Date.now(), data: response.data });
         return response.data;
     },
 
