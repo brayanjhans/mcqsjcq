@@ -55,9 +55,6 @@ export const AutocompleteSearch: React.FC<AutocompleteSearchProps> = ({
             // Trigger main search if 3+ chars or empty (to clear)
             if (query.length >= 3 || query.length === 0) {
                 onSearch(query);
-                if (query.length >= 3) {
-                    saveToHistory(query);
-                }
             }
 
             if (query.length >= 3) {
