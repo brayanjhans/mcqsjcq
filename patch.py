@@ -1,0 +1,6 @@
+c = open('scripts/vps_import_v2.py', encoding='utf-8').read()
+c = c.replace("'estado_proceso', 'descripcion', 'proyecto', 'cui'", "'descripcion', 'proyecto', 'cui'")
+c = c.replace("'estado_item', 'validado', 'observaciones'", "'validado', 'observaciones'")
+c = c.replace("'adelanto_directo', 'estado_item', 'validado'", "'adelanto_directo', 'validado'")
+open('scripts/vps_import_v2.py', 'w', encoding='utf-8').write(c)
+print('Patched successfully!')

@@ -459,11 +459,25 @@ def invocar_etl(anios, archivos_actualizados=None):
         return False
         
     logging.info("--------------------------------------------------")
+    logging.info(f"🚁 INICIANDO FASE 1.5: (RESCATE DE CONTRATOS REZAGADOS EN OCDS LIVE)")
+    logging.info("--------------------------------------------------")
+    try:
+        import importlib
+        sys.path.insert(0, motor_etl_dir)
+        import rescate_contratos_retrasados
+        importlib.reload(rescate_contratos_retrasados)
+        rescate_contratos_retrasados.main(years=anios)
+    except Exception as e:
+        logging.error(f"Error Ejecutando Fase 1.5: {e}")
+        traceback.print_exc()
+        
+    logging.info("--------------------------------------------------")
     logging.info(f"🚀 INICIANDO ETL FASE 2: (APIS PRIVADAS SEACE - AÑOS {anios})")
     logging.info("--------------------------------------------------")
     try:
+        if 'motor_consorcios_seace' in sys.modules:
+            del sys.modules['motor_consorcios_seace']
         import motor_consorcios_seace
-        import importlib
         importlib.reload(motor_consorcios_seace)
         for a in anios:
             motor_consorcios_seace.main(year=a)

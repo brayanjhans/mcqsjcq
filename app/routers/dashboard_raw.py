@@ -8,6 +8,9 @@ from sqlalchemy import text
 from app.database import get_db
 from typing import Optional
 from decimal import Decimal
+from cachetools import TTLCache
+
+DASHBOARD_CACHE = TTLCache(maxsize=100, ttl=600)  # 10 minute cache
 
 router = APIRouter(prefix="/api/dashboard", tags=["Dashboard"])
 
@@ -25,6 +28,10 @@ def get_dashboard_kpis(
     """
     Get dashboard KPIs using data from licitaciones_cabecera.
     """
+    cache_key = f"kpis_{year}_{mes}_{estado}_{tipo_procedimiento}_{categoria}_{departamento}"
+    if cache_key in DASHBOARD_CACHE:
+        return DASHBOARD_CACHE[cache_key]
+
     try:
         # Build WHERE clause for filters
         where_clauses = []
@@ -64,7 +71,7 @@ def get_dashboard_kpis(
         sql_kpis = text(f"""
             SELECT 
                 COALESCE(SUM(monto_estimado), 0) as monto_total,
-                COUNT(DISTINCT id_convocatoria) as total_licitaciones
+                COUNT(*) as total_licitaciones
             FROM licitaciones_cabecera
             {where_sql}
         """)
@@ -73,72 +80,12 @@ def get_dashboard_kpis(
         monto_total = float(result[0]) if result[0] else 0
         total_licitaciones = result[1] or 0
         
-        # 2. Top 5 departamentos
-        sql_deptos = text(f"""
-            SELECT 
-                departamento as nombre,
-                COUNT(*) as total,
-                COALESCE(SUM(monto_estimado), 0) as monto
-            FROM licitaciones_cabecera
-            WHERE departamento IS NOT NULL AND departamento != ''
-            {("AND " + " AND ".join(where_clauses)) if where_clauses else ""}
-            GROUP BY departamento
-            ORDER BY total DESC
-            LIMIT 5
-        """)
+        top_departamentos = []
+        top_entidades = []
+        distribucion_categorias = []
+        distribucion_estados = []
         
-        deptos = db.execute(sql_deptos, params).fetchall()
-        top_departamentos = [{"nombre": row[0], "total": row[1], "monto": float(row[2]) if row[2] else 0} for row in deptos]
-        
-        # 3. Top 5 entidades compradoras
-        sql_entidades = text(f"""
-            SELECT 
-                comprador as nombre,
-                COUNT(*) as total,
-                COALESCE(SUM(monto_estimado), 0) as monto
-            FROM licitaciones_cabecera
-            WHERE comprador IS NOT NULL AND comprador != ''
-            {("AND " + " AND ".join(where_clauses)) if where_clauses else ""}
-            GROUP BY comprador
-            ORDER BY total DESC
-            LIMIT 5
-        """)
-        
-        entidades = db.execute(sql_entidades, params).fetchall()
-        top_entidades = [{"nombre": row[0], "total": row[1], "monto": float(row[2]) if row[2] else 0} for row in entidades]
-        
-        # 4. Distribución por categoría (Bien/Obra/Servicio/Consultoría)
-        sql_categorias = text(f"""
-            SELECT 
-                categoria as nombre,
-                COUNT(*) as total,
-                COALESCE(SUM(monto_estimado), 0) as monto
-            FROM licitaciones_cabecera
-            WHERE categoria IS NOT NULL AND categoria != ''
-            {("AND " + " AND ".join(where_clauses)) if where_clauses else ""}
-            GROUP BY categoria
-            ORDER BY total DESC
-        """)
-        
-        categorias = db.execute(sql_categorias, params).fetchall()
-        distribucion_categorias = [{"nombre": row[0], "total": row[1], "monto": float(row[2]) if row[2] else 0} for row in categorias]
-        
-        # 5. Licitaciones por estado
-        sql_estados = text(f"""
-            SELECT 
-                estado_proceso as nombre,
-                COUNT(*) as total
-            FROM licitaciones_cabecera
-            WHERE estado_proceso IS NOT NULL AND estado_proceso != ''
-            {("AND " + " AND ".join(where_clauses)) if where_clauses else ""}
-            GROUP BY estado_proceso
-            ORDER BY total DESC
-        """)
-        
-        estados = db.execute(sql_estados, params).fetchall()
-        distribucion_estados = [{"nombre": row[0], "total": row[1]} for row in estados]
-        
-        return {
+        ans = {
             "monto_total_estimado": str(Decimal(str(monto_total))),
             "total_licitaciones": total_licitaciones,
             "top_departamentos": top_departamentos,
@@ -146,6 +93,8 @@ def get_dashboard_kpis(
             "distribucion_categorias": distribucion_categorias,
             "distribucion_estados": distribucion_estados
         }
+        DASHBOARD_CACHE[cache_key] = ans
+        return ans
     except Exception as e:
         import traceback
         traceback.print_exc()
@@ -168,6 +117,10 @@ def get_distribution_by_type(
     departamento: Optional[str] = Query(None),
     db: Session = Depends(get_db)
 ):
+    cache_key = f"dist_{year}_{mes}_{estado}_{tipo_procedimiento}_{categoria}_{departamento}"
+    if cache_key in DASHBOARD_CACHE:
+        return DASHBOARD_CACHE[cache_key]
+
     try:
         # Build filters
         where_clauses = ["categoria IS NOT NULL", "categoria != ''"]
@@ -254,6 +207,8 @@ def get_distribution_by_type(
         # Sort by value DESC
         data.sort(key=lambda x: x["value"], reverse=True)
         
+        DASHBOARD_CACHE[cache_key] = {"data": data}
+        
         return {"data": data}
     except Exception as e:
         return {"data": [], "error": str(e)}
@@ -268,6 +223,10 @@ def get_stats_by_status(
     departamento: Optional[str] = Query(None),
     db: Session = Depends(get_db)
 ):
+    cache_key = f"stats_{year}_{mes}_{estado}_{tipo_procedimiento}_{categoria}_{departamento}"
+    if cache_key in DASHBOARD_CACHE:
+        return DASHBOARD_CACHE[cache_key]
+
     try:
         # Build filters
         where_clauses = ["estado_proceso IS NOT NULL", "estado_proceso != ''"]
@@ -314,6 +273,7 @@ def get_stats_by_status(
         """)
         result = db.execute(sql, params).fetchall()
         data = [{"name": row[0], "value": row[1]} for row in result]
+        DASHBOARD_CACHE[cache_key] = {"data": data}
         return {"data": data}
     except Exception as e:
         return {"data": [], "error": str(e)}
@@ -328,6 +288,10 @@ def get_monthly_trend(
     departamento: Optional[str] = Query(None),
     db: Session = Depends(get_db)
 ):
+    cache_key = f"trend_{year}_{mes}_{estado}_{tipo_procedimiento}_{categoria}_{departamento}"
+    if cache_key in DASHBOARD_CACHE:
+        return DASHBOARD_CACHE[cache_key]
+
     try:
         # Build filters
         where_clauses = []
@@ -387,6 +351,8 @@ def get_monthly_trend(
                 "value": float(row[2]) if row else 0
             })
             
+        DASHBOARD_CACHE[cache_key] = {"data": data}
+            
         return {"data": data}
     except Exception as e:
         return {"data": [], "error": str(e)}
@@ -400,6 +366,10 @@ def get_department_ranking(
     categoria: Optional[str] = Query(None),
     db: Session = Depends(get_db)
 ):
+    cache_key = f"dept_rank_{year}_{mes}_{estado}_{tipo_procedimiento}_{categoria}"
+    if cache_key in DASHBOARD_CACHE:
+        return DASHBOARD_CACHE[cache_key]
+
     try:
         # Build filters
         where_clauses = ["departamento IS NOT NULL", "departamento != ''"]
@@ -445,6 +415,7 @@ def get_department_ranking(
         
         result = db.execute(sql, params).fetchall()
         data = [{"name": row[0], "count": row[1], "amount": float(row[2])} for row in result]
+        DASHBOARD_CACHE[cache_key] = {"data": data}
         return {"data": data}
     except Exception as e:
         return {"data": [], "error": str(e)}
@@ -459,6 +430,10 @@ def get_financial_entities_ranking(
     categoria: Optional[str] = Query(None),
     db: Session = Depends(get_db)
 ):
+    cache_key = f"fin_rank_{year}_{mes}_{departamento}_{estado}_{tipo_procedimiento}_{categoria}"
+    if cache_key in DASHBOARD_CACHE:
+        return DASHBOARD_CACHE[cache_key]
+        
     try:
         # Build SQL with filters - targeted at 'c' (cabecera)
         where_clauses = []
@@ -559,6 +534,8 @@ def get_financial_entities_ranking(
         if not data:
             data = []
 
+        DASHBOARD_CACHE[cache_key] = {"data": data}
+        DASHBOARD_CACHE[cache_key] = {"data": data}
         return {"data": data}
     except Exception as e:
          return {"data": [], "error": str(e)}
@@ -573,6 +550,10 @@ def get_province_ranking(
     categoria: Optional[str] = Query(None),
     db: Session = Depends(get_db)
 ):
+    cache_key = f"prov_rank_{department}_{year}_{mes}_{estado}_{tipo_procedimiento}_{categoria}"
+    if cache_key in DASHBOARD_CACHE:
+        return DASHBOARD_CACHE[cache_key]
+
     try:
         # Build filters
         where_clauses = ["departamento = :department", "provincia IS NOT NULL", "provincia != ''"]
@@ -618,6 +599,7 @@ def get_province_ranking(
         
         result = db.execute(sql, params).fetchall()
         data = [{"name": row[0], "count": row[1], "amount": float(row[2])} for row in result]
+        DASHBOARD_CACHE[cache_key] = {"data": data}
         return {"data": data}
     except Exception as e:
         return {"data": [], "error": str(e)}

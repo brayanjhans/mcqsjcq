@@ -1,0 +1,2 @@
+('licitaciones_cabecera', 0, 'PRIMARY', 1, 'id', 'A', 439034, None, None, '', 'BTREE', '', '', 'YES', None)
+('licitaciones_cabecera', 0, 'idx_id_convocatoria', 1, 'id_convocatoria', 'A', 429374, None, None, 'YES', 'BTREE', '', '', 'YES', None)

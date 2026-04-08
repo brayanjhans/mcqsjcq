@@ -125,38 +125,25 @@ export default function EcommerceDashboardPage() {
     }, [getQueryParams]); // Re-fetch on global filter change
 
 
-    // 2a. KPIs - Licitaciones
+    // 2. KPIs - Licitaciones y Monto
     useEffect(() => {
-        async function fetchKpisLic() {
+        async function fetchKpis() {
             try {
                 setLoadingKpis(true);
                 const query = getQueryParams();
                 const res = await fetch(`/api/dashboard/kpis?${query}`).then(r => r.json());
                 setKpisLic(res);
-            } catch (e) {
-                console.error("KPI Lic error", e);
-            } finally {
-                setLoadingKpis(false);
-            }
-        }
-        fetchKpisLic();
-    }, [getQueryParams]);
-
-    // 2b. KPIs - Monto
-    useEffect(() => {
-        async function fetchKpisMonto() {
-            try {
-                const query = getQueryParams();
-                const res = await fetch(`/api/dashboard/kpis?${query}`).then(r => r.json());
                 setKpisMonto({
                     ...res,
                     monto_total_adjudicado: parseFloat(res?.monto_total_estimado || "0")
                 });
             } catch (e) {
-                console.error("KPI Monto error", e);
+                console.error("KPI error", e);
+            } finally {
+                setLoadingKpis(false);
             }
         }
-        fetchKpisMonto();
+        fetchKpis();
     }, [getQueryParams]);
 
     // 4a. Map Data - Department Ranking

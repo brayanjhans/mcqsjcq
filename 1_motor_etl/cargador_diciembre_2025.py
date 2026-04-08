@@ -182,8 +182,12 @@ def procesar_archivo_diciembre(conn):
                     monto, moneda, fecha, estado, ubic_full, dep, prov, dist, "2025-12_seace_v3.json"
                 ))
                 
-                # 4. ADJUDICACIONES
+                # 4. ADJUDICACIONES (solo awards activos = el ganador real de la Buena Pro)
                 for aw in compiled.get('awards', []):
+                    # Filtrar solo el award ganador (status='active'). Los awards
+                    # cancelados o desiertos no son la Buena Pro y no deben insertarse.
+                    if aw.get('status', '').lower() != 'active':
+                        continue
                     id_adj_raw = aw.get('id')
                     id_adj = safe_str(id_adj_raw, 100)
                     if not id_adj: continue
@@ -225,9 +229,16 @@ def _guardar(cursor, conn, cabeceras, adjudicaciones):
      ubicacion_completa, departamento, provincia, distrito, archivo_origen)
     VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
     ON DUPLICATE KEY UPDATE
-        categoria=VALUES(categoria), tipo_procedimiento=VALUES(tipo_procedimiento),
-        departamento=VALUES(departamento), provincia=VALUES(provincia), distrito=VALUES(distrito),
-        fecha_publicacion=VALUES(fecha_publicacion),
+        categoria = COALESCE(NULLIF(VALUES(categoria), ''), categoria), 
+        tipo_procedimiento = COALESCE(NULLIF(VALUES(tipo_procedimiento), ''), tipo_procedimiento),
+        departamento = COALESCE(NULLIF(VALUES(departamento), ''), departamento), 
+        provincia = COALESCE(NULLIF(VALUES(provincia), ''), provincia), 
+        distrito = COALESCE(NULLIF(VALUES(distrito), ''), distrito),
+        fecha_publicacion = COALESCE(NULLIF(VALUES(fecha_publicacion), ''), fecha_publicacion),
+        estado_proceso = CASE 
+            WHEN estado_proceso = 'CONTRATADO' AND VALUES(estado_proceso) != 'CONTRATADO' THEN estado_proceso
+            ELSE COALESCE(NULLIF(VALUES(estado_proceso), ''), estado_proceso)
+        END,
         last_update=NOW();
     """
     sql_adj = """
@@ -235,9 +246,15 @@ def _guardar(cursor, conn, cabeceras, adjudicaciones):
     (id_adjudicacion, id_contrato, id_convocatoria, ganador_nombre, ganador_ruc, monto_adjudicado, fecha_adjudicacion, estado_item)
     VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
     ON DUPLICATE KEY UPDATE
-        id_contrato=VALUES(id_contrato),
-        fecha_adjudicacion=VALUES(fecha_adjudicacion),
-        ganador_nombre=VALUES(ganador_nombre);
+        id_contrato = COALESCE(NULLIF(VALUES(id_contrato), ''), id_contrato),
+        fecha_adjudicacion = COALESCE(NULLIF(VALUES(fecha_adjudicacion), ''), fecha_adjudicacion),
+        ganador_nombre = COALESCE(NULLIF(VALUES(ganador_nombre), ''), ganador_nombre),
+        ganador_ruc = COALESCE(NULLIF(VALUES(ganador_ruc), ''), ganador_ruc),
+        monto_adjudicado = COALESCE(VALUES(monto_adjudicado), monto_adjudicado),
+        estado_item = CASE
+            WHEN estado_item = 'CONTRATADO' AND VALUES(estado_item) != 'CONTRATADO' THEN estado_item
+            ELSE COALESCE(NULLIF(VALUES(estado_item), ''), estado_item)
+        END;
     """
     insertar_lote_seguro(cursor, sql_cab, cabeceras, "Cabeceras")
     if adjudicaciones:

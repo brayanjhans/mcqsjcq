@@ -75,7 +75,7 @@ def process_record(record):
         return None, []
         
     nomenclatura = safe_str(tender.get("title"), 500)
-    descripcion = safe_str(tender.get("description"), 2000)
+    descripcion = safe_str(tender.get("description") or compiled.get("planning", {}).get("budget", {}).get("project"), 2000)
     
     monto_estimado, moneda = extract_amount(tender.get("value"))
     
@@ -147,17 +147,36 @@ def process_record(record):
     awards = compiled.get("awards", [])
     contracts = compiled.get("contracts", [])
     
+    # Tomamos solo el award activo (el ganador real de la Buena Pro).
+    # Ignorar awards cancelados o desiertos para poblar la cabecera.
+    # Algunos registros de SEACE no traen status a nivel de Award, pero sí a nivel de Item.
+    active_awards = []
+    for aw in awards:
+        status = str(aw.get("status") or "").lower()
+        item_active = any(str(it.get("status", "")).lower() == "active" for it in aw.get("items", []))
+        if status == "active" or (not status and (item_active or aw.get("value"))):
+             active_awards.append(aw)
+    
     fecha_adjudicacion_cabecera = None
     estado_proceso = safe_str(tender.get("status"), 50)
     
-    if awards:
-        fecha_adjudicacion_cabecera = safe_str(awards[0].get("date"), 50)
-        # Si tender.status está vacío, pero tiene Adjudicaciones, el proceso está Adjudicado o Consentido
+    if active_awards:
+        fecha_adjudicacion_cabecera = safe_str(active_awards[0].get("date"), 50)
+        # Si tender.status está vacío, pero tiene adjudicaciones activas, el proceso está Adjudicado
         if not estado_proceso or estado_proceso == "None":
-            estado_proceso = ESTADOS_AWARD.get(awards[0].get("status"), "ADJUDICADO")
+            estado_proceso = ESTADOS_AWARD.get(active_awards[0].get("status"), "ADJUDICADO")
+
             
     # Última revisión del estado con contratos firmados (más prioridad)
-    if contracts:
+    has_real_contracts = len(contracts) > 0
+    # Algunas veces el contrato viene embebido en el bloque de award en otras extensiones
+    if not has_real_contracts:
+        for aw in awards:
+            if aw.get("contracts") or any(c.get("status") == "active" for c in aw.get("contracts", [])):
+                has_real_contracts = True
+                break
+
+    if has_real_contracts:
         estado_proceso = "CONTRATADO"
     else:
         estado_proceso = safe_str(ESTADOS_AWARD.get(estado_proceso, estado_proceso) or estado_proceso, 50)
@@ -197,12 +216,12 @@ def process_record(record):
 
     adjudicaciones_list = []
     
-    for aw in awards:
+    for aw in active_awards:  # Solo awards activos (ganador real de la Buena Pro)
         id_adjudicacion = safe_str(aw.get("id"), 255)
         
-        # Traducimos estado item
         orig_status = aw.get("status")
         estado_item = safe_str(ESTADOS_AWARD.get(orig_status, orig_status) or orig_status, 50)
+
         
         fecha_adjudicacion = safe_str(aw.get("date"), 50)
         monto_adjudicado, moneda_adj = extract_amount(aw.get("value"))
@@ -218,15 +237,18 @@ def process_record(record):
             g = suppliers[0]
             ganador_nombre = safe_str(g.get("name"), 255)
             if g.get("id") and str(g["id"]).startswith("PE-RUC-"):
-                ganador_ruc = str(g["id"]).replace("PE-RUC-", "")
+                ruc_tmp = str(g["id"]).replace("PE-RUC-", "").strip()
+                if len(ruc_tmp) == 11 and ruc_tmp.isdigit():
+                    ganador_ruc = ruc_tmp
         elif len(suppliers) > 1:
             ganador_nombre = "CONSORCIO " + " - ".join([str(s.get("name", "")) for s in suppliers])
             ganador_ruc = "CONSORCIO" 
             for s in suppliers:
                 sn = safe_str(s.get("name"), 255)
-                sr = str(s.get("id", "")).replace("PE-RUC-", "")
+                sr = str(s.get("id", "")).replace("PE-RUC-", "").strip()
                 if sn: nombres_cons.append(sn)
-                if sr: rucs_cons.append(sr)
+                if len(sr) == 11 and sr.isdigit():
+                    rucs_cons.append(sr)
         
         # Buscar el contrato asociado para sacar estado / fecha fin / URLs
         rel_contracts = contract_by_award.get(str(aw.get("id")), [])
@@ -321,19 +343,22 @@ def guardar_bd(todo_cabeceras, todo_adjudicaciones):
             (id_convocatoria, ocid, nomenclatura, descripcion, comprador, entidad_ruc, categoria, 
              tipo_procedimiento, monto_estimado, moneda, fecha_publicacion, fecha_adjudicacion, estado_proceso, origen_tipo,
              ubicacion_completa, departamento, provincia, distrito)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) AS new_row
             ON DUPLICATE KEY UPDATE
-                estado_proceso = VALUES(estado_proceso),
-                fecha_adjudicacion = VALUES(fecha_adjudicacion),
-                monto_estimado = VALUES(monto_estimado),
-                fecha_publicacion = COALESCE(VALUES(fecha_publicacion), fecha_publicacion)
+                monto_estimado = COALESCE(new_row.monto_estimado, licitaciones_cabecera.monto_estimado),
+                fecha_publicacion = COALESCE(new_row.fecha_publicacion, licitaciones_cabecera.fecha_publicacion),
+                fecha_adjudicacion = COALESCE(new_row.fecha_adjudicacion, licitaciones_cabecera.fecha_adjudicacion),
+                estado_proceso = CASE 
+                    WHEN licitaciones_cabecera.estado_proceso = 'CONTRATADO' AND new_row.estado_proceso != 'CONTRATADO' THEN licitaciones_cabecera.estado_proceso
+                    ELSE COALESCE(NULLIF(new_row.estado_proceso, ''), licitaciones_cabecera.estado_proceso)
+                END
         """
         
         cab_data = []
         for c in todo_cabeceras:
             # Formatear fechas a string limpias 'YYYY-MM-DD' si hay
-            f_pub = str(c["fecha_publicacion"])[:10] if c["fecha_publicacion"] else None
-            f_adj = str(c["fecha_adjudicacion"])[:10] if c["fecha_adjudicacion"] else None
+            f_pub = str(c["fecha_publicacion"])[:10] if c["fecha_publicacion"] and str(c["fecha_publicacion"]).strip() not in ('', 'None') else None
+            f_adj = str(c["fecha_adjudicacion"])[:10] if c["fecha_adjudicacion"] and str(c["fecha_adjudicacion"]).strip() not in ('', 'None') else None
             
             cab_data.append((
                 c["id_convocatoria"], c["ocid"], c["nomenclatura"], c["descripcion"],
@@ -363,22 +388,24 @@ def guardar_bd(todo_cabeceras, todo_adjudicaciones):
              fecha_fin_contrato, rucs_consorciados, nombres_consorciados, total_miembros,
              ubicacion_completa, departamento, provincia, distrito,
              url_pdf_contrato, url_pdf_cartafianza, url_pdf_consorcio)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) AS new_row
             ON DUPLICATE KEY UPDATE 
-                id_contrato = VALUES(id_contrato),
-                ganador_nombre = COALESCE(NULLIF(ganador_nombre, ''), VALUES(ganador_nombre)),
-                estado_item = VALUES(estado_item),
-                monto_final = VALUES(monto_final),
-                url_pdf_contrato = COALESCE(VALUES(url_pdf_contrato), url_pdf_contrato),
-                url_pdf_cartafianza = COALESCE(VALUES(url_pdf_cartafianza), url_pdf_cartafianza),
-                url_pdf_consorcio = COALESCE(VALUES(url_pdf_consorcio), url_pdf_consorcio),
-                entidad_financiera = COALESCE(entidad_financiera, VALUES(entidad_financiera))
+                id_contrato = COALESCE(NULLIF(new_row.id_contrato, ''), licitaciones_adjudicaciones.id_contrato),
+                ganador_nombre = COALESCE(NULLIF(new_row.ganador_nombre, ''), licitaciones_adjudicaciones.ganador_nombre),
+                monto_final = COALESCE(new_row.monto_final, licitaciones_adjudicaciones.monto_final),
+                estado_item = CASE 
+                    WHEN licitaciones_adjudicaciones.estado_item = 'CONTRATADO' AND new_row.estado_item != 'CONTRATADO' THEN licitaciones_adjudicaciones.estado_item
+                    ELSE COALESCE(NULLIF(new_row.estado_item, ''), licitaciones_adjudicaciones.estado_item)
+                END,
+                url_pdf_contrato = COALESCE(NULLIF(new_row.url_pdf_contrato, ''), licitaciones_adjudicaciones.url_pdf_contrato),
+                url_pdf_cartafianza = COALESCE(NULLIF(new_row.url_pdf_cartafianza, ''), licitaciones_adjudicaciones.url_pdf_cartafianza),
+                url_pdf_consorcio = COALESCE(NULLIF(new_row.url_pdf_consorcio, ''), licitaciones_adjudicaciones.url_pdf_consorcio)
         """
         
         adj_data = []
         for a in todo_adjudicaciones:
-            f_adj2 = str(a["fecha_adjudicacion"])[:10] if a["fecha_adjudicacion"] else None
-            f_fin = str(a["fecha_fin_contrato"])[:10] if a["fecha_fin_contrato"] else None
+            f_adj2 = str(a["fecha_adjudicacion"])[:10] if a["fecha_adjudicacion"] and str(a["fecha_adjudicacion"]).strip() not in ('', 'None') else None
+            f_fin = str(a["fecha_fin_contrato"])[:10] if a["fecha_fin_contrato"] and str(a["fecha_fin_contrato"]).strip() not in ('', 'None') else None
             
             adj_data.append((
                 a["id_adjudicacion"], a["id_contrato"], a["id_convocatoria"], a["ocid"],

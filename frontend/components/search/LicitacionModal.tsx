@@ -446,19 +446,12 @@ export default function LicitacionModal({
                                                 onChange={(e) => setFormData({ ...formData, estado_proceso: e.target.value })}
                                             >
                                                 <option value="">Seleccionar...</option>
-                                                {estadosOptions.length > 0 ? (
-                                                    estadosOptions.map((est: string, i: number) => (
-                                                        <option key={i} value={est}>{est}</option>
-                                                    ))
-                                                ) : (
-                                                    <>
-                                                        <option value="CONVOCADO">CONVOCADO</option>
-                                                        <option value="ADJUDICADO">ADJUDICADO</option>
-                                                        <option value="CONTRATADO">CONTRATADO</option>
-                                                        <option value="NULO">NULO</option>
-                                                        <option value="DESIERTO">DESIERTO</option>
-                                                    </>
-                                                )}
+                                                {Array.from(new Set([
+                                                    ...estadosOptions,
+                                                    "CONVOCADO", "ADJUDICADO", "CONTRATADO", "DESIERTO", "NULO", "CANCELADO", "SUSPENDIDO", "RETROTRAÍDO"
+                                                ])).sort().map((est: string, i: number) => (
+                                                    <option key={i} value={est}>{est}</option>
+                                                ))}
                                             </select>
                                         </div>
                                     </div>
