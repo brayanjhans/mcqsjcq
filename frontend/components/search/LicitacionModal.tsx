@@ -440,15 +440,16 @@ export default function LicitacionModal({
                                                 className={`w-full p-2.5 rounded-lg border dark:border-slate-600 text-sm font-bold focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none
                                                 ${formData.estado_proceso === 'CONVOCADO' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' :
                                                         formData.estado_proceso === 'ADJUDICADO' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-                                                            formData.estado_proceso === 'CONTRATADO' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                                                                'bg-white dark:bg-slate-800/50 text-slate-700 dark:text-slate-300 border-slate-200'}`}
+                                                            formData.estado_proceso === 'CONSENTIDO' ? 'bg-emerald-100 text-emerald-800 border-emerald-300' :
+                                                                formData.estado_proceso === 'CONTRATADO' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                                                                    'bg-white dark:bg-slate-800/50 text-slate-700 dark:text-slate-300 border-slate-200'}`}
                                                 value={formData.estado_proceso || 'CONVOCADO'}
                                                 onChange={(e) => setFormData({ ...formData, estado_proceso: e.target.value })}
                                             >
                                                 <option value="">Seleccionar...</option>
                                                 {Array.from(new Set([
                                                     ...estadosOptions,
-                                                    "CONVOCADO", "ADJUDICADO", "CONTRATADO", "DESIERTO", "NULO", "CANCELADO", "SUSPENDIDO", "RETROTRAÍDO"
+                                                    "CONVOCADO", "ADJUDICADO", "CONTRATADO", "CONSENTIDO", "DESIERTO", "NULO", "CANCELADO", "SUSPENDIDO", "RETROTRAÍDO"
                                                 ])).sort().map((est: string, i: number) => (
                                                     <option key={i} value={est}>{est}</option>
                                                 ))}

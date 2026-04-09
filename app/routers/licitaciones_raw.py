@@ -107,7 +107,7 @@ def get_all_filters(db: Session = Depends(get_db)):
                          "CUSCO", "HUANCAVELICA", "HUANUCO", "ICA", "JUNIN", "LA LIBERTAD", "LAMBAYEQUE",  
                          "LIMA", "LORETO", "MADRE DE DIOS", "MOQUEGUA", "PASCO", "PIURA", "PUNO", 
                          "SAN MARTIN", "TACNA", "TUMBES", "UCAYALI"],
-        "estados": ["CONVOCADO", "ADJUDICADO", "CONTRATADO", "NULO", "DESIERTO", "CANCELADO", "SUSPENDIDO"],
+        "estados": ["CONVOCADO", "ADJUDICADO", "CONTRATADO", "CONSENTIDO", "NULO", "DESIERTO", "CANCELADO", "SUSPENDIDO"],
         "categorias": ["BIENES", "SERVICIOS", "OBRAS", "CONSULTORIA DE OBRAS"],
         "aseguradoras": ALL_ENTITIES, # Dynamic from app/data/financial_entities.py
         "anios": [2026, 2025, 2024],

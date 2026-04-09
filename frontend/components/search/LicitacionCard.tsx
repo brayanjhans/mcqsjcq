@@ -136,7 +136,7 @@ export const LicitacionCard: React.FC<Props> = ({
 
     // LOGIC
     const statusUpper = licitacion.estado_proceso?.toUpperCase() || "SIN ESTADO";
-    const isContratado = statusUpper.includes("CONTRATADO") || statusUpper.includes("ADJUDICADO");
+    const isContratado = statusUpper.includes("CONTRATADO") || statusUpper.includes("ADJUDICADO") || statusUpper.includes("CONSENTIDO");
     const isConvocado = statusUpper.includes("CONVOCADO");
     const isCancelado = statusUpper.includes("CANCELADO") || statusUpper.includes("DESIERTO") || statusUpper.includes("NULO");
 
@@ -149,6 +149,7 @@ export const LicitacionCard: React.FC<Props> = ({
         let styles = "bg-slate-100 text-slate-700 border-slate-200";
         if (isConvocado) styles = "bg-[#FFF9C4] text-[#8D6E1F] border-[#FDE047]"; // Yellow
         else if (statusUpper === "ACTIVO") styles = "bg-blue-50 text-blue-700 border-blue-200"; // Blue for Active
+        else if (statusUpper.includes("CONSENTIDO")) styles = "bg-emerald-100 text-emerald-800 border-emerald-300"; // Emerald stronger
         else if (isContratado) styles = "bg-slate-100 text-slate-600 border-slate-200"; // Light Gray
         else if (isCancelado) styles = "bg-red-50 text-red-700 border-red-200"; // Red
 
