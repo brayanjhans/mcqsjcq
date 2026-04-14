@@ -24,7 +24,8 @@ import {
     Upload,
     Trash2,
     ChevronDown,
-    ChevronUp
+    ChevronUp,
+    Clock
 } from "lucide-react";
 import { createPortal } from "react-dom";
 import type { Licitacion, Adjudicacion, EjecucionFinanciera, GarantiasResponse, HistorialAnual } from "@/types/licitacion";
@@ -226,6 +227,7 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
     const [isDeletingFianza, setIsDeletingFianza] = useState(false);
 
     const [isMounted, setIsMounted] = useState(false);
+    const [isCronogramaOpen, setIsCronogramaOpen] = useState(false);
     useEffect(() => {
         setIsMounted(true);
     }, []);
@@ -726,6 +728,135 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                         </div>
 
                     </div>
+                </div>
+
+                {/* SECTION: CRONOGRAMA DETALLADO (Desplegable) */}
+                <div className="border border-slate-200 dark:border-white/10 rounded-2xl overflow-hidden bg-white dark:bg-[#111c44] mt-6 shadow-lg animate-in fade-in slide-in-from-bottom-6 duration-500 delay-100">
+                    <button
+                        type="button"
+                        onClick={() => setIsCronogramaOpen(!isCronogramaOpen)}
+                        className="w-full flex items-center justify-between p-5 md:p-6 bg-slate-50/50 dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 transition-colors"
+                    >
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 rounded-xl bg-indigo-100 dark:bg-indigo-900/30">
+                                <Clock className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                            </div>
+                            <div className="text-left">
+                                <h3 className="text-base font-black text-slate-900 dark:text-white uppercase tracking-tight">Listado de Acciones</h3>
+                                <p className="text-[11px] text-slate-500 mt-0.5">
+                                    {licitacion.acciones_json ? 'Historial detallado extraído desde el portal SEACE' : 'Acciones aún no escaneadas'}
+                                </p>
+                            </div>
+                        </div>
+                        {isCronogramaOpen ? (
+                            <ChevronUp className="w-5 h-5 text-slate-400" />
+                        ) : (
+                            <ChevronDown className="w-5 h-5 text-slate-400" />
+                        )}
+                    </button>
+
+                    {isCronogramaOpen && (
+                        <div className="p-2 md:p-4 bg-slate-50/30 dark:bg-[#0b122b]/30">
+                            {(() => {
+                                if (!licitacion.acciones_json) {
+                                    return (
+                                        <div className="text-center p-12 bg-white dark:bg-[#111c44] rounded-xl border border-dashed border-slate-200 dark:border-white/10 m-2">
+                                            <Clock className="w-12 h-12 text-slate-200 dark:text-slate-700 mx-auto mb-4" />
+                                            <p className="text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Información en Proceso</p>
+                                            <p className="text-xs text-slate-400 mt-1">Este proceso está pendiente de perfilado por el robot del sistema.</p>
+                                        </div>
+                                    );
+                                }
+
+                                try {
+                                    const itemsData = JSON.parse(licitacion.acciones_json);
+                                    if (!Array.isArray(itemsData) || itemsData.length === 0) throw new Error("Empty data");
+
+                                    return (
+                                        <div className="space-y-4">
+                                            {itemsData.map((item: any, idx: number) => (
+                                                <div key={idx} className="bg-white dark:bg-[#111c44] rounded-2xl shadow-sm border border-slate-200 dark:border-white/5 overflow-hidden">
+                                                    <div className="overflow-x-auto">
+                                                        <table className="w-full text-left border-collapse">
+                                                            <thead>
+                                                                <tr className="bg-slate-50/80 dark:bg-white/5 border-b border-slate-200 dark:border-white/10">
+                                                                    <th className="py-4 px-4 text-[11px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 text-center w-16">N°</th>
+                                                                    <th className="py-4 px-4 text-[11px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 border-l border-slate-200/50 dark:border-white/5">Situación / Acción</th>
+                                                                    <th className="py-4 px-4 text-[11px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 text-center border-l border-slate-200/50 dark:border-white/5">Fecha y Hora</th>
+                                                                    <th className="py-4 px-4 text-[11px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 border-l border-slate-200/50 dark:border-white/5 font-mono">Motivo de Registro</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody className="divide-y divide-slate-100 dark:divide-white/5">
+                                                                {item.acciones && item.acciones.map((acc: any, aidx: number) => {
+                                                                    const situacionKey = Object.keys(acc).find(k => k.toLowerCase().includes('situaci')) || '';
+                                                                    const situacion = acc[situacionKey] || acc['Situación'] || acc['Situacion'] || "";
+                                                                    
+                                                                    const fechaKey = Object.keys(acc).find(k => k.toLowerCase().includes('fecha')) || '';
+                                                                    const fechaVal = acc[fechaKey] || "—";
+
+                                                                    const isSuccess = situacion.toLowerCase().includes('adjudic') || situacion.toLowerCase().includes('publicac') || situacion.toLowerCase().includes('consent');
+                                                                    const isAlert = situacion.toLowerCase().includes('suspend') || situacion.toLowerCase().includes('cancel') || situacion.toLowerCase().includes('nulid');
+                                                                    const isInfo = situacion.toLowerCase().includes('post') || situacion.toLowerCase().includes('retro');
+
+                                                                    return (
+                                                                        <tr key={aidx} className="group hover:bg-indigo-50/50 dark:hover:bg-indigo-500/5 transition-all relative">
+                                                                            <td className="py-5 px-4 text-center">
+                                                                                <div className="flex items-center justify-center">
+                                                                                    <span className="text-xs font-mono font-black text-indigo-500 bg-indigo-50 dark:bg-indigo-900/40 px-2 py-1 rounded-md border border-indigo-100 dark:border-indigo-800 shadow-sm">
+                                                                                        {acc['Nro.'] || acc['N°'] || (aidx + 1)}
+                                                                                    </span>
+                                                                                </div>
+                                                                            </td>
+                                                                            <td className="py-5 px-4 relative">
+                                                                                {/* Animated Left Accent Bar */}
+                                                                                <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity rounded-r-full" />
+                                                                                
+                                                                                <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-tight shadow-sm border ${
+                                                                                    isSuccess ? 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-300' :
+                                                                                    isAlert ? 'bg-red-50 text-red-800 border-red-200 dark:bg-red-900/40 dark:text-red-300' :
+                                                                                    isInfo ? 'bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-900/40 dark:text-amber-300' :
+                                                                                    'bg-indigo-50 text-indigo-800 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300'
+                                                                                }`}>
+                                                                                    {isSuccess && <ShieldCheck className="w-3.5 h-3.5" />}
+                                                                                    {isAlert && <Activity className="w-3.5 h-3.5" />}
+                                                                                    {isInfo && <Clock className="w-3.5 h-3.5" />}
+                                                                                    {!isSuccess && !isAlert && !isInfo && <Tag className="w-3.5 h-3.5" />}
+                                                                                    {situacion || "ACCIÓN REGISTRADA"}
+                                                                                </div>
+                                                                            </td>
+                                                                            <td className="py-5 px-4 text-center">
+                                                                                <div className="flex flex-col items-center gap-1">
+                                                                                    <div className="flex items-center gap-1.5 text-xs font-mono font-black text-slate-900 dark:text-slate-100 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 px-3 py-1.5 rounded-xl shadow-sm">
+                                                                                        <Calendar className="w-3.5 h-3.5 text-indigo-400" />
+                                                                                        {fechaVal}
+                                                                                    </div>
+                                                                                </div>
+                                                                            </td>
+                                                                            <td className="py-5 px-4 max-w-sm">
+                                                                                <p className="text-[12.5px] font-bold text-slate-800 dark:text-slate-200 line-clamp-2 hover:line-clamp-none transition-all cursor-help leading-relaxed tracking-tight" title={acc['Motivo'] || acc['Detalle'] || ""}>
+                                                                                    {acc['Motivo'] || acc['Detalle'] || "Sin motivo registrado formalmente en el sistema."}
+                                                                                </p>
+                                                                            </td>
+                                                                        </tr>
+                                                                    );
+                                                                })}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    );
+                                } catch (e) {
+                                    return (
+                                        <div className="text-center p-6 bg-red-50 dark:bg-red-900/10 rounded-xl border border-red-100 dark:border-red-900/30">
+                                            <p className="text-sm font-medium text-red-600 dark:text-red-400">Error al decodificar el formato de acciones.</p>
+                                        </div>
+                                    );
+                                }
+                            })()}
+                        </div>
+                    )}
                 </div>
 
 

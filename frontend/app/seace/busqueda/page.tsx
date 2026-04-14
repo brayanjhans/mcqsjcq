@@ -97,6 +97,7 @@ function BusquedaContent() {
     const [sunatData, setSunatData] = useState<any>(null);
     const [sunatLoading, setSunatLoading] = useState(false);
     const [sunatVisible, setSunatVisible] = useState(false);
+    const [selectedSunatIndex, setSelectedSunatIndex] = useState(0);
 
     // URL Persistence Logic
     const router = useRouter();
@@ -530,9 +531,11 @@ function BusquedaContent() {
                 {sunatVisible && sunatData && !sunatLoading && (
                     <SunatRucPanel
                         data={sunatData}
-                        onClose={() => { setSunatVisible(false); setSunatData(null); }}
+                        onClose={() => setSunatVisible(false)}
                         onRefresh={(ruc) => handleSunatRucLookup(ruc, true)}
                         isRefreshing={sunatLoading}
+                        selectedIndex={selectedSunatIndex}
+                        onSelectedIndexChange={setSelectedSunatIndex}
                     />
                 )}
 
@@ -610,6 +613,89 @@ function BusquedaContent() {
                             searchTerm={searchTerm} 
                             onFetchAll={handleFetchAllLicitaciones}
                             totalItems={totalItems}
+                            ruc={(() => {
+                                // 1. Check if SUNAT data is available
+                                if (sunatData) {
+                                    if (Array.isArray(sunatData)) {
+                                        const item = sunatData[selectedSunatIndex];
+                                        if (item?.encontrado) return item.ruc;
+                                        // Fallback to first if index is out of bounds
+                                        return sunatData[0]?.ruc;
+                                    }
+                                    return sunatData.encontrado ? sunatData.ruc : undefined;
+                                }
+
+                                // 2. Check if searchTerm is a RUC
+                                const term = searchTerm.trim();
+                                if (/^\d{11}$/.test(term)) return term;
+
+                                // 3. Fallback: Extract from search results if homogeneous
+                                if (licitaciones.length > 0) {
+                                    // Try winner RUC
+                                    let candidateRuc = licitaciones[0].ganador_ruc;
+                                    
+                                    // Try consortium RUCs string
+                                    if (!candidateRuc || !/^\d{11}$/.test(candidateRuc)) {
+                                        candidateRuc = licitaciones[0].rucs_consorciados?.split('|')[0]?.trim();
+                                    }
+
+                                    // Try members list
+                                    if (!candidateRuc || !/^\d{11}$/.test(candidateRuc)) {
+                                        candidateRuc = licitaciones[0].miembros_consorcio?.[0]?.ruc_miembro;
+                                    }
+
+                                    if (candidateRuc && /^\d{11}$/.test(candidateRuc)) {
+                                        // Check if at least the first 5 results share this RUC
+                                        const isHomogeneous = licitaciones.slice(0, Math.min(5, licitaciones.length)).every(l => 
+                                            l.ganador_ruc === candidateRuc || 
+                                            l.rucs_consorciados?.includes(candidateRuc) ||
+                                            l.miembros_consorcio?.some(m => m.ruc_miembro === candidateRuc)
+                                        );
+                                        if (isHomogeneous) return candidateRuc;
+                                    }
+                                }
+                                
+                                return undefined;
+                            })()}
+                            entityName={(() => {
+                                // 1. Check if SUNAT data is available
+                                if (sunatData) {
+                                    if (Array.isArray(sunatData)) {
+                                        const item = sunatData[selectedSunatIndex];
+                                        return item?.razon_social || sunatData[0]?.razon_social;
+                                    }
+                                    return sunatData.razon_social;
+                                }
+
+                                // 2. Fallback: Search for the RUC in Results
+                                const term = searchTerm.trim();
+                                const isRuc = /^\d{11}$/.test(term);
+
+                                if (isRuc && licitaciones.length > 0) {
+                                    // Look for the RUC in winners or consortium members
+                                    for (const lic of licitaciones) {
+                                        // Match direct winner
+                                        if (lic.ganador_ruc === term && lic.ganador_nombre) {
+                                            return lic.ganador_nombre;
+                                        }
+                                        // Match member of consortium
+                                        const memberMatch = lic.miembros_consorcio?.find(m => m.ruc_miembro === term);
+                                        if (memberMatch?.nombre_miembro) {
+                                            return memberMatch.nombre_miembro;
+                                        }
+                                    }
+                                }
+
+                                // 3. Fallback: Consensus name (first few results)
+                                if (licitaciones.length > 0) {
+                                    const first = licitaciones[0].ganador_nombre;
+                                    if (first && first !== "NO INFORMADO" && first !== "N/A" && first !== "N/D") {
+                                        const isConsensus = licitaciones.slice(0, 3).every(l => l.ganador_nombre === first);
+                                        if (isConsensus) return first;
+                                    }
+                                }
+                                return undefined;
+                            })()}
                         />
                     )
                 ) : (

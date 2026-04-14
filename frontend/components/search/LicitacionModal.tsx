@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Trophy, FileText, Calendar, Building2, MapPin, DollarSign, Plus, Trash2, AlertCircle } from 'lucide-react';
+import { X, Trophy, FileText, Calendar, Building2, MapPin, DollarSign, Plus, Trash2, AlertCircle, ChevronDown, ChevronUp, Clock } from 'lucide-react';
 import type { Licitacion } from '@/types/licitacion';
 import { licitacionService } from '@/lib/services/licitacionService';
 import { DEFAULT_TIPOS_PROCEDIMIENTO } from '@/lib/constants/procedimientos';
@@ -31,6 +31,7 @@ export default function LicitacionModal({
     const [activeTab, setActiveTab] = useState<'general' | 'adjudicaciones'>('general');
     const [formData, setFormData] = useState<Partial<Licitacion> & { adjudicaciones?: any[] }>({});
     const [isMounted, setIsMounted] = useState(false);
+    const [isCronogramaOpen, setIsCronogramaOpen] = useState(false);
 
     // Dynamic filter options
     const [tiposProcedimiento, setTiposProcedimiento] = useState<string[]>(DEFAULT_TIPOS_PROCEDIMIENTO);
@@ -520,6 +521,94 @@ export default function LicitacionModal({
                                             </div>
                                         </div>
                                     </div>
+                                </div>
+
+                                {/* SECTION 5: CRONOGRAMA DETALLADO (Desplegable) */}
+                                <div className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden bg-white dark:bg-[#111c44] mt-6 shadow-sm">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsCronogramaOpen(!isCronogramaOpen)}
+                                        className="w-full flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            <div className="p-1.5 rounded-lg bg-indigo-100 dark:bg-indigo-900/30">
+                                                <Clock className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                                            </div>
+                                            <div className="text-left">
+                                                <h3 className="text-sm font-bold text-slate-800 dark:text-white">Cronograma Detallado del Procedimiento</h3>
+                                                <p className="text-[11px] text-slate-500">
+                                                    {formData.cronograma_detalle_json ? 'Historial cronológico capturado desde SEACE' : 'Cronograma aún no escaneado'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        {isCronogramaOpen ? (
+                                            <ChevronUp className="w-5 h-5 text-slate-400" />
+                                        ) : (
+                                            <ChevronDown className="w-5 h-5 text-slate-400" />
+                                        )}
+                                    </button>
+
+                                    {isCronogramaOpen && (
+                                        <div className="p-5 border-t border-slate-200 dark:border-slate-700">
+                                            {(() => {
+                                                if (!formData.cronograma_detalle_json) {
+                                                    return (
+                                                        <div className="text-center p-6 bg-slate-50 dark:bg-slate-800/20 rounded-lg border border-dashed border-slate-200 dark:border-slate-700">
+                                                            <Clock className="w-8 h-8 text-slate-300 mx-auto mb-2 opacity-50" />
+                                                            <p className="text-sm font-medium text-slate-500">Este proceso aún no ha sido perfilado detalladamente por el robot backend.</p>
+                                                        </div>
+                                                    );
+                                                }
+
+                                                try {
+                                                    const cronograma = JSON.parse(formData.cronograma_detalle_json);
+                                                    if (!Array.isArray(cronograma) || cronograma.length === 0) {
+                                                        throw new Error("Empty array");
+                                                    }
+
+                                                    return (
+                                                        <div className="relative pl-4 space-y-6 before:absolute before:inset-0 before:ml-[1.4rem] before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-indigo-100 before:via-indigo-500 before:to-indigo-100 dark:before:from-indigo-900/50 dark:before:via-indigo-500/50 dark:before:to-indigo-900/50">
+                                                            {cronograma.map((hito: any, idx: number) => {
+                                                                const isLast = idx === cronograma.length - 1;
+                                                                return (
+                                                                    <div key={idx} className="relative flex items-start gap-4">
+                                                                        <div className="absolute left-[-2px] ml-1 mt-1 p-1 rounded-full bg-white dark:bg-[#111c44] border-2 border-indigo-500 shadow-sm z-10 flex-shrink-0">
+                                                                            <div className="w-2 h-2 rounded-full bg-indigo-500" />
+                                                                        </div>
+                                                                        <div className="ml-8 w-full group">
+                                                                            <div className="p-3 bg-slate-50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-700 rounded-lg shadow-sm group-hover:border-indigo-200 dark:group-hover:border-indigo-800/50 group-hover:shadow-md transition-all">
+                                                                                <h4 className="text-xs font-bold text-slate-700 dark:text-slate-200 mb-1 leading-tight">{hito.Etapa || hito.etapa || "Hito"}</h4>
+                                                                                <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-slate-500 font-medium">
+                                                                                    {(hito['Fecha Inicio'] || hito.fecha_inicio) && (
+                                                                                        <span className="flex items-center gap-1">
+                                                                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                                                                                            Inicio: {hito['Fecha Inicio'] || hito.fecha_inicio}
+                                                                                        </span>
+                                                                                    )}
+                                                                                    {(hito['Fecha Fin'] || hito.fecha_fin) && (
+                                                                                        <span className="flex items-center gap-1">
+                                                                                            <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
+                                                                                            Fin: {hito['Fecha Fin'] || hito.fecha_fin}
+                                                                                        </span>
+                                                                                    )}
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    );
+                                                } catch (e) {
+                                                    return (
+                                                        <div className="text-center p-4">
+                                                            <p className="text-sm font-medium text-red-400">Error al decodificar el formato del cronograma.</p>
+                                                        </div>
+                                                    );
+                                                }
+                                            })()}
+                                        </div>
+                                    )}
                                 </div>
 
                             </div>

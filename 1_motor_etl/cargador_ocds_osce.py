@@ -5,6 +5,7 @@ import json
 import zipfile
 import logging
 import pymysql
+import re
 from pymysql.constants import CLIENT
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dotenv import load_dotenv
@@ -150,21 +151,73 @@ def process_record(record):
     # Tomamos solo el award activo (el ganador real de la Buena Pro).
     # Ignorar awards cancelados o desiertos para poblar la cabecera.
     # Algunos registros de SEACE no traen status a nivel de Award, pero sí a nivel de Item.
+    # IMPORTANTE: Filtrar awards "fantasma" de SEACE:
+    #   - suppliers=None o lista vacía  → no hay proveedor real
+    #   - RUC = 99999999999            → award de consolidación/resumen
+    PHANTOM_RUCS = {"99999999999", "PE-RUC-99999999999"}
+
+    def ruc_from_award_id(award_id):
+        m = re.search(r'-(\d{11})$', str(award_id or ''))
+        if m and m.group(1) != '99999999999':
+            return m.group(1)
+        return None
+
+    def is_phantom_award(aw):
+        sups = aw.get("suppliers") or []
+        if not sups:
+            return ruc_from_award_id(aw.get("id")) is None
+        for s in sups:
+            sid = str(s.get("id", "")).strip()
+            if sid in PHANTOM_RUCS or sid.replace("PE-RUC-", "") == "99999999999":
+                return True
+        return False
+        
+    parties = compiled.get('parties', [])
+    parties_by_id = {}
+    for p in parties:
+        pid = str(p.get('identifier', {}).get('id', '') or '')
+        if pid:
+            parties_by_id[f'PE-RUC-{pid}'] = p
+            parties_by_id[pid] = p
+        poid = str(p.get('id', '') or '')
+        if poid:
+            parties_by_id[poid] = p
+
     active_awards = []
     for aw in awards:
+        if is_phantom_award(aw):
+            continue  # Ignorar awards fantasma
         status = str(aw.get("status") or "").lower()
-        item_active = any(str(it.get("status", "")).lower() == "active" for it in aw.get("items", []))
-        if status == "active" or (not status and (item_active or aw.get("value"))):
-             active_awards.append(aw)
+        item_active = any(
+            str(it.get("status", "")).lower() == "active" or
+            str(it.get("statusDetails", "")).upper() in ["ADJUDICADO", "CONSENTIDO", "APELADO", "CONTRATADO", "ACTIVO"]
+            for it in aw.get("items", [])
+        )
+        # Aceptar si: status=active, items activos, O tiene monto (incluso con status=None)
+        if status == "active" or item_active or (aw.get("value") and not status in ["cancelled", "unsuccessful"]):
+            active_awards.append(aw)
     
     fecha_adjudicacion_cabecera = None
     estado_proceso = safe_str(tender.get("status"), 50)
     
     if active_awards:
         fecha_adjudicacion_cabecera = safe_str(active_awards[0].get("date"), 50)
-        # Si tender.status está vacío, pero tiene adjudicaciones activas, el proceso está Adjudicado
-        if not estado_proceso or estado_proceso == "None":
-            estado_proceso = ESTADOS_AWARD.get(active_awards[0].get("status"), "ADJUDICADO")
+        
+        # Recopilar detalles adicionales de estado desde los items de los awards
+        detalle_estado_global = []
+        for aw in active_awards:
+            for it in aw.get("items", []):
+                sd = str(it.get("statusDetails") or "").upper().strip()
+                if sd: detalle_estado_global.append(sd)
+                
+        # Si tender.status está vacío, pero tiene adjudicaciones activas
+        if not estado_proceso or estado_proceso == "None" or estado_proceso.upper() in ["CONVOCADO", "ADJUDICADO"]:
+            if "CONSENTIDO" in detalle_estado_global:
+                estado_proceso = "CONSENTIDO"
+            elif "APELADO" in detalle_estado_global:
+                estado_proceso = "APELADO"
+            elif not estado_proceso or estado_proceso == "None" or estado_proceso.upper() == "CONVOCADO":
+                estado_proceso = ESTADOS_AWARD.get(active_awards[0].get("status"), "ADJUDICADO")
 
             
     # Última revisión del estado con contratos firmados (más prioridad)
@@ -216,39 +269,86 @@ def process_record(record):
 
     adjudicaciones_list = []
     
+    # Fallback si no hay active awards pero el tender indica ganador
+    if not active_awards:
+        tenderers = tender.get('tenderers') or []
+        if len(tenderers) == 1:
+            # Crear un pseudo-award
+            t = tenderers[0]
+            aw_pseudo = {
+                "id": f"pseudo-{id_convocatoria}",
+                "status": "active",
+                "date": fecha_adjudicacion_cabecera,
+                "suppliers": [t],
+                "items": [{"statusDetails": estado_proceso}]
+            }
+            active_awards.append(aw_pseudo)
+    
     for aw in active_awards:  # Solo awards activos (ganador real de la Buena Pro)
         id_adjudicacion = safe_str(aw.get("id"), 255)
         
         orig_status = aw.get("status")
-        estado_item = safe_str(ESTADOS_AWARD.get(orig_status, orig_status) or orig_status, 50)
+        
+        # Extraer estado del item (Ej. CONSENTIDO)
+        detalle_estado_items = []
+        for it in aw.get("items", []):
+            sd = str(it.get("statusDetails") or "").upper().strip()
+            if sd: detalle_estado_items.append(sd)
+            
+        if "CONSENTIDO" in detalle_estado_items:
+            estado_item = "CONSENTIDO"
+        elif "APELADO" in detalle_estado_items:
+            estado_item = "APELADO"
+        else:
+            estado_item = safe_str(ESTADOS_AWARD.get(orig_status, orig_status) or orig_status, 50)
 
         
         fecha_adjudicacion = safe_str(aw.get("date"), 50)
         monto_adjudicado, moneda_adj = extract_amount(aw.get("value"))
         
         # Ganadores (Proveedores/Consorciados)
-        suppliers = aw.get("suppliers", [])
+        suppliers = aw.get("suppliers") or []
         ganador_ruc = None
         ganador_nombre = None
         rucs_cons = []
         nombres_cons = []
-        
+
+        def extract_ruc(sid):
+            """Extrae RUC de 11 dígitos del campo id del supplier."""
+            sid = str(sid or "").strip()
+            # Formato estándar: PE-RUC-XXXXXXXXXXX
+            ruc = sid.replace("PE-RUC-", "").strip()
+            if len(ruc) == 11 and ruc.isdigit():
+                return ruc
+            # Algunos registros solo traen el número directamente
+            if len(sid) == 11 and sid.isdigit():
+                return sid
+            return None
+
         if len(suppliers) == 1:
             g = suppliers[0]
             ganador_nombre = safe_str(g.get("name"), 255)
-            if g.get("id") and str(g["id"]).startswith("PE-RUC-"):
-                ruc_tmp = str(g["id"]).replace("PE-RUC-", "").strip()
-                if len(ruc_tmp) == 11 and ruc_tmp.isdigit():
-                    ganador_ruc = ruc_tmp
+            ganador_ruc = extract_ruc(g.get("id"))
         elif len(suppliers) > 1:
             ganador_nombre = "CONSORCIO " + " - ".join([str(s.get("name", "")) for s in suppliers])
-            ganador_ruc = "CONSORCIO" 
+            ganador_ruc = "CONSORCIO"
             for s in suppliers:
                 sn = safe_str(s.get("name"), 255)
-                sr = str(s.get("id", "")).replace("PE-RUC-", "").strip()
-                if sn: nombres_cons.append(sn)
-                if len(sr) == 11 and sr.isdigit():
+                sr = extract_ruc(s.get("id"))
+                if sn:
+                    nombres_cons.append(sn)
+                if sr:
                     rucs_cons.append(sr)
+        else:
+            ruc = ruc_from_award_id(aw.get('id'))
+            if ruc:
+                ganador_ruc = ruc
+                key = f'PE-RUC-{ruc}'
+                party = parties_by_id.get(key) or parties_by_id.get(ruc)
+                if party:
+                    ganador_nombre = safe_str(party.get('name'), 255)
+                else:
+                    ganador_nombre = f'RUC-{ruc}'
         
         # Buscar el contrato asociado para sacar estado / fecha fin / URLs
         rel_contracts = contract_by_award.get(str(aw.get("id")), [])

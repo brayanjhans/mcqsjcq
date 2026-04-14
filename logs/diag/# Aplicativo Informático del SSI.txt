@@ -1,0 +1,102 @@
+# Aplicativo Informático del SSI
+
+-    
+-    
+-    
+-    
+-    
+-    
+- 
+                                [Acceso a Operadores](https://ofi5.mef.gob.pe/invierte/#!/login/repssi)
+                            
+[Acceso a Operadores](https://ofi5.mef.gob.pe/invierte/#!/login/repssi)
+- 
+                                
+                                    https://ofi5.mef.gob.pe/geoinvierteportals/
+
+                                    
+                                            
+                                    
+
+                                
+                            
+- 
+                                
+                                    
+                                    
+                                        Vista Resumen
+                                    
+                                
+                            
+- 
+                                
+                                    
+                                            
+                                    
+                                
+                            
+- 
+                        
+                            
+                        
+                    
+- 
+                        
+                            
+                        
+                    
+- 
+                        
+                            
+                        
+                        
+                            Faltan 30 días
+                        
+                    
+- 
+                        
+                            
+                        
+                    
+- 
+                        
+                            
+                        
+                    
+- 
+                        
+                            
+                        
+
+
+
+                    
+- La información es actualizada diariamente. Última actualización: .  
+- Montos expresados en soles.
+- Cualquier modificación realizada durante el día en los formatos, se visualizará en este módulo al día siguiente.
+- La sección, Datos Generales, extrae información del Banco de Inversiones del Sistema Nacional de Programación Multianual y Gestión de Inversiones (Invierte.pe)
+- La sección, Contrataciones, extrae información del Sistema Electrónico de Contrataciones del Estado (SEACE) operado por el Organismo Especializado para las Contrataciones Públicas Eficientes (OECE).
+- La sección, Contrataciones, extrae información del mecanismo de Obras por Impuestos (OxI) que remiten las Entidades Públicas/Empresas Privadas a la Dirección General de Política de Promoción de la Inversión Privada (DGPPIP).
+- La sección, Ejecución Financiera, extrae información del Portal de Transparencia Económica - Consulta Amigable (Presupuesto y Ejecución de Gasto).
+- La sección, Ejecución Financiera, de las inversiones a cargo de las empresas públicas bajo el ámbito del Fondo Nacional de Financiamiento de la Actividad Empresarial del Estado (FONAFE) es compartida por dicha entidad, y actualizada mensualmente. Última actualización: mes de marzo. 
+- La sección, INFObras, extrae información del Sistema de Información de Obras Públicas (Infobras) operado por la Contraloría General de la República (CGR).
+- El Ministerio de Economía y Finanzas es responsable de la información de las secciones Datos Generales y Ejecución Financiera.
+- La trazabilidad de la información de las inversiones en las bases de datos del MEF, OECE y CGR está en proceso. Por ello, la información de las secciones Contrataciones e INFObras es referencial.
+
+##### Búsqueda por nombre
+
+##### Búsqueda Agregada
+- 
+                                    
+                                    Gobierno Nacional
+                                
+- 
+                                    
+                                    Gobierno Regional
+                                
+- 
+                                    
+                                    Gobierno Local
+                                
+
+###### SE IDENTIFICARON LAS SIGUIENTES ALERTAS DE RIESGO:

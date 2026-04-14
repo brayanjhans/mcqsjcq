@@ -522,7 +522,8 @@ def get_licitaciones(
                 lc.departamento,
                 lc.provincia,
                 lc.distrito,
-                lc.entidad_ruc
+                lc.entidad_ruc,
+                lc.cronograma_detalle_json
             FROM licitaciones_cabecera lc
             {where_sql.replace('licitaciones_cabecera', 'lc') if where_sql else ''}
             ORDER BY lc.fecha_publicacion DESC
@@ -554,6 +555,7 @@ def get_licitaciones(
                 "provincia": row[13],
                 "distrito": row[14],
                 "entidad_ruc": row[15],
+                "cronograma_detalle_json": row[16] if len(row) > 16 else None,
                 # Default empty fields (filled by batch fetch)
                 "ganador_nombre": None,
                 "ganador_ruc": None,
@@ -943,7 +945,7 @@ def get_licitacion_detail(
                 monto_estimado, moneda, fecha_publicacion,
                 estado_proceso, ubicacion_completa,
                 departamento, provincia, distrito,
-                entidad_ruc, cui
+                entidad_ruc, cui, cronograma_detalle_json, acciones_json
             FROM licitaciones_cabecera
             WHERE id_convocatoria = :id
         """)
@@ -960,7 +962,7 @@ def get_licitacion_detail(
                     monto_estimado, moneda, fecha_publicacion,
                     estado_proceso, ubicacion_completa,
                     departamento, provincia, distrito,
-                    entidad_ruc, cui
+                    entidad_ruc, cui, cronograma_detalle_json, acciones_json
                 FROM licitaciones_cabecera
                 WHERE id_convocatoria LIKE :id_pattern
                 LIMIT 1
@@ -988,8 +990,12 @@ def get_licitacion_detail(
             "distrito": row[14],
             "entidad_ruc": row[15],
             "cui": row[16],
+            "cronograma_detalle_json": row[17] if len(row) > 17 else None,
+            "acciones_json": row[18] if len(row) > 18 else None,
             "debug_flag_raw_endpoint": True
         }
+        
+        print(f"DEBUG BACKEND - JSON: {licitacion.get('cronograma_detalle_json')}")
         
         # Get adjudicaciones
         adj_sql = text("""

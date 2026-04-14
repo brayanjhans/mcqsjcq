@@ -52,6 +52,8 @@ interface Props {
     onClose: () => void;
     onRefresh?: (ruc: string) => void;
     isRefreshing?: boolean;
+    selectedIndex?: number;
+    onSelectedIndexChange?: (index: number) => void;
 }
 
 type TabId = "datos" | "deuda" | "representantes";
@@ -681,9 +683,8 @@ function SingleRucPanel({
     );
 }
 
-export const SunatRucPanel: React.FC<Props> = ({ data, onClose, onRefresh, isRefreshing }) => {
+export const SunatRucPanel: React.FC<Props> = ({ data, onClose, onRefresh, isRefreshing, selectedIndex = 0, onSelectedIndexChange }) => {
     const [activeTab, setActiveTab] = useState<TabId>("datos");
-    const [selectedIndex, setSelectedIndex] = useState(0);
 
     // Support both single result and array (search by name)
     const items = Array.isArray(data) ? data : [data];
@@ -746,7 +747,10 @@ export const SunatRucPanel: React.FC<Props> = ({ data, onClose, onRefresh, isRef
                         {items.map((item, idx) => (
                             <button
                                 key={idx}
-                                onClick={() => { setSelectedIndex(idx); setActiveTab("datos"); }}
+                                onClick={() => { 
+                                    if (onSelectedIndexChange) onSelectedIndexChange(idx); 
+                                    setActiveTab("datos"); 
+                                }}
                                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
                                     idx === selectedIndex
                                         ? "bg-indigo-600 text-white shadow-sm"

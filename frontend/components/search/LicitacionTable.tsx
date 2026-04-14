@@ -10,6 +10,8 @@ interface Props {
     basePath?: string;
     onFetchAll?: () => Promise<Licitacion[]>;
     totalItems?: number;
+    ruc?: string;
+    entityName?: string;
 }
 
 export const LicitacionTable: React.FC<Props> = ({
@@ -18,6 +20,8 @@ export const LicitacionTable: React.FC<Props> = ({
     basePath = "/seace/busqueda",
     onFetchAll,
     totalItems,
+    ruc,
+    entityName,
 }) => {
     const [exporting, setExporting] = useState(false);
 
@@ -75,7 +79,18 @@ export const LicitacionTable: React.FC<Props> = ({
         doc.setFillColor(...primaryColor);
         doc.rect(0, 0, pageW, 18, "F");
 
-        const titleText = searchTerm ? searchTerm.toUpperCase() : "BÚSQUEDA DE PROCEDIMIENTOS";
+        let titleText = entityName || (searchTerm ? searchTerm.toUpperCase() : "BÚSQUEDA DE PROCEDIMIENTOS");
+        
+        // Ensure RUC is always labeled if present
+        if (ruc) {
+            if (entityName) {
+                titleText = `${entityName} - RUC: ${ruc}`;
+            } else if (ruc !== searchTerm) {
+                titleText = `${titleText} - RUC: ${ruc}`;
+            } else {
+                titleText = `RUC: ${ruc}`;
+            }
+        }
         doc.setTextColor(...headerText);
         doc.setFont("helvetica", "bold");
         doc.setFontSize(11);
@@ -173,9 +188,10 @@ export const LicitacionTable: React.FC<Props> = ({
             doc.text(`Página ${i} de ${pageCount}`, pageW - 8, doc.internal.pageSize.getHeight() - 4, { align: "right" });
         }
 
-        const filename = searchTerm
-            ? `reporte_${searchTerm.replace(/[^a-zA-Z0-9]/g, "_").substring(0, 30)}.pdf`
-            : "reporte_procedimientos.pdf";
+        const cleanSearch = searchTerm ? searchTerm.replace(/[^a-zA-Z0-9]/g, "_").substring(0, 30) : "procedimientos";
+        const filename = ruc 
+            ? `reporte_${cleanSearch}_${ruc}.pdf`
+            : `reporte_${cleanSearch}.pdf`;
 
         doc.save(filename);
     };
