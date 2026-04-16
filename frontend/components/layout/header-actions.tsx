@@ -35,7 +35,7 @@ export function HeaderActions() {
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             const target = event.target as HTMLElement;
-            if (activeDropdown && !target.closest('.relative')) {
+            if (activeDropdown && !target.closest('.dropdown-container')) {
                 setActiveDropdown(null);
             }
         };
@@ -307,7 +307,7 @@ export function HeaderActions() {
                     </div>
 
                     {/* Notifications */}
-                    <div className="flex w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-slate-50 dark:bg-slate-800/50 backdrop-blur-md items-center justify-center transition-all relative shrink-0">
+                    <div className="flex w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-slate-50 dark:bg-slate-800/50 backdrop-blur-md items-center justify-center transition-all relative shrink-0 dropdown-container">
                         <NotificationDropdown
                             isOpen={activeDropdown === 'notifications'}
                             onToggle={() => setActiveDropdown(activeDropdown === 'notifications' ? null : 'notifications')}
@@ -316,7 +316,7 @@ export function HeaderActions() {
                     </div>
 
                     {/* User Profile */}
-                    <div className="relative shrink-0">
+                    <div className="relative shrink-0 dropdown-container">
                         <button
                             onClick={() => setActiveDropdown(isProfileOpen ? null : 'profile')}
                             className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-slate-100 dark:bg-slate-800/50 backdrop-blur-md flex items-center justify-center text-gray-700 dark:text-gray-200 hover:scale-105 active:scale-95 group p-0"

@@ -47,6 +47,39 @@ const PdfIcon = ({ className }: { className?: string }) => (
     />
 );
 
+export const formatDateInSpanish = (dateString: string | undefined | null) => {
+    if (!dateString || typeof dateString !== 'string') return "—";
+    
+    const months = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+
+    // 1. Tratar de parsear formato ISO (YYYY-MM-DD o YYYY-MM-DDTHH:MM:SS)
+    if (dateString.includes("-")) {
+        const parts = dateString.split("T")[0].split("-");
+        if (parts.length === 3) {
+            const [year, month, day] = parts;
+            const monthIndex = parseInt(month, 10) - 1;
+            if (monthIndex >= 0 && monthIndex < 12) {
+                return `${parseInt(day, 10)} de ${months[monthIndex]} de ${year}`;
+            }
+        }
+    }
+
+    // 2. Tratar de parsear formato de Actions Peruano (DD/MM/YYYY HH:MM)
+    const partsSpace = dateString.split(" ");
+    if (partsSpace.length > 0) {
+        const dateParts = partsSpace[0].split("/");
+        if (dateParts.length === 3) {
+            const [day, month, year] = dateParts;
+            const monthIndex = parseInt(month, 10) - 1;
+            if (monthIndex >= 0 && monthIndex < 12) {
+                return `${parseInt(day, 10)} de ${months[monthIndex]} de ${year}`;
+            }
+        }
+    }
+
+    return dateString.split("T")[0]; // Fallback más limpio
+};
+
 interface Props {
     id: string;
     basePath?: string;
@@ -727,21 +760,6 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                             
                             <div className="flex-1 p-5 md:p-6 pb-2">
                                 {(() => {
-                                    const formatDateInSpanish = (dateString: string) => {
-                                        if (!dateString || typeof dateString !== 'string') return "—";
-                                        const parts = dateString.split(" ");
-                                        if (parts.length === 0) return dateString;
-                                        const dateParts = parts[0].split("/");
-                                        if (dateParts.length !== 3) return parts[0];
-                                        const [day, month, year] = dateParts;
-                                        const months = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
-                                        const monthIndex = parseInt(month, 10) - 1;
-                                        if (monthIndex >= 0 && monthIndex < 12) {
-                                            return `${parseInt(day, 10)} de ${months[monthIndex]} de ${year}`;
-                                        }
-                                        return parts[0];
-                                    };
-
                                     if (!licitacion.acciones_json) {
                                         return (
                                             <div className="text-center py-12 flex flex-col items-center justify-center">
@@ -760,6 +778,27 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                                         const itemsData = JSON.parse(licitacion.acciones_json);
                                         if (!Array.isArray(itemsData) || itemsData.length === 0) throw new Error("Empty data");
 
+                                        // Adaptative size based on items count to prevent vertical blowout
+                                        const totalActionsCount = itemsData.reduce((acc: number, item: any) => acc + (item.acciones ? item.acciones.length : 0), 0);
+                                        const mode = totalActionsCount > 14 ? "ultracompact" : totalActionsCount > 8 ? "compact" : "normal";
+                                        
+                                        const sz = mode === "ultracompact" ? {
+                                            itemMt: "mt-0", dot: "w-2 h-2 -left-[5px] top-1 ring-2", 
+                                            boxPt: "pt-0", boxPb: "pb-0.5",
+                                            label: "text-[6.5px] px-1 py-0", text: "text-[7.5px] leading-none", gap: "gap-0",
+                                            linePb: "pb-0.5"
+                                        } : mode === "compact" ? {
+                                            itemMt: "mt-0.5", dot: "w-2 h-2 -left-[5px] top-1 ring-2", 
+                                            boxPt: "pt-0.5", boxPb: "pb-1",
+                                            label: "text-[7.5px] px-1 py-0.5", text: "text-[8px] leading-tight", gap: "gap-0.5",
+                                            linePb: "pb-1"
+                                        } : {
+                                            itemMt: "mt-1.5", dot: "w-3 h-3 -left-[7px] top-1.5 ring-4", 
+                                            boxPt: "pt-1", boxPb: "pb-1.5",
+                                            label: "text-[8px] px-1.5 py-0.5", text: "text-[9px]", gap: "gap-1",
+                                            linePb: "pb-1"
+                                        };
+
                                         return (
                                             <div className="space-y-0">
                                                 {itemsData.map((item: any, idx: number) => (
@@ -774,13 +813,18 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                                                             const isAlert = situacion.toLowerCase().includes('suspend') || situacion.toLowerCase().includes('cancel') || situacion.toLowerCase().includes('nulid');
                                                             const isInfo = situacion.toLowerCase().includes('post') || situacion.toLowerCase().includes('retro');
 
+                                                            const borderColorClass = isSuccess ? 'border-emerald-400/60 dark:border-emerald-500/40 drop-shadow-[0_1px_1px_rgba(16,185,129,0.3)]' : 
+                                                                                     isAlert ? 'border-red-400/60 dark:border-red-500/40 drop-shadow-[0_1px_1px_rgba(239,68,68,0.3)]' : 
+                                                                                     isInfo ? 'border-amber-400/60 dark:border-amber-500/40 drop-shadow-[0_1px_1px_rgba(245,158,11,0.3)]' : 
+                                                                                     'border-indigo-400/60 dark:border-indigo-500/40 drop-shadow-[0_1px_1px_rgba(99,102,241,0.3)]';
+
                                                             return (
-                                                                <div key={aidx} className="relative pl-4 pb-2 border-l-2 border-slate-200 dark:border-slate-700 last:border-l-transparent last:pb-0 group hover:bg-slate-50/50 dark:hover:bg-white/5 transition-colors duration-300 mt-1">
-                                                                    <span className={`absolute -left-[7px] top-1.5 w-3 h-3 rounded-full ring-4 ring-[#fafafa] dark:ring-[#111c44] transition-colors shadow-sm ${
+                                                                <div key={aidx} className={`relative pl-4 border-l-2 border-slate-200 dark:border-slate-700 last:border-l-transparent last:pb-0 group hover:bg-slate-50/50 dark:hover:bg-white/5 transition-colors duration-300 ${sz.itemMt} ${sz.linePb}`}>
+                                                                    <span className={`absolute rounded-full ring-[#fafafa] dark:ring-[#111c44] transition-colors shadow-sm ${sz.dot} ${
                                                                         isSuccess ? 'bg-emerald-500' : isAlert ? 'bg-red-500' : isInfo ? 'bg-amber-500' : 'bg-indigo-400'
                                                                     }`} />
-                                                                    <div className="flex flex-col items-start gap-1.5 w-full pb-2.5 border-b border-dashed border-slate-200 dark:border-white/10 group-last:border-b-0 group-last:pb-0">
-                                                                        <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider shadow-sm border ${
+                                                                    <div className={`flex flex-col items-start w-full border-b-2 border-solid group-last:border-b-0 group-last:pb-0 transition-colors ${sz.gap} ${sz.boxPt} ${sz.boxPb} ${borderColorClass}`}>
+                                                                        <span className={`inline-flex items-center rounded font-black uppercase tracking-wider shadow-sm border ${sz.label} ${
                                                                              isSuccess ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-300' :
                                                                              isAlert ? 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/40 dark:text-red-300' :
                                                                              isInfo ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/40 dark:text-amber-300' :
@@ -788,7 +832,7 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                                                                         }`}>
                                                                             {situacion}
                                                                         </span>
-                                                                        <span className="text-[9px] font-black text-slate-400 tracking-wide">{formatDateInSpanish(fechaVal)}</span>
+                                                                        <span className={`font-black text-slate-400 tracking-wide ${sz.text}`}>{formatDateInSpanish(fechaVal)}</span>
                                                                     </div>
                                                                 </div>
                                                             );
@@ -1077,8 +1121,8 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                                                         )}
                                                     </div>
                                                 </td>
-                                                <td className="py-4 px-4 text-xs font-medium text-slate-600 dark:text-slate-400 text-center">
-                                                    {formatDate(adj.fecha_adjudicacion)}
+                                                <td className="py-4 px-4 text-xs font-bold text-slate-600 dark:text-slate-300 text-center tracking-tight">
+                                                    {formatDateInSpanish(adj.fecha_adjudicacion)}
                                                 </td>
                                                 <td className="py-4 px-4 text-center">
                                                     <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-[10px] font-bold uppercase text-slate-600">
