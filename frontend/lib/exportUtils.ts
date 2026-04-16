@@ -1,6 +1,7 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
+import { LOGO_MQS_B64, LOGO_JCQ_B64 } from "@/lib/utils/pdfAssets";
 
 interface ExportData {
     columns: { key: string; label: string }[];
@@ -11,16 +12,24 @@ interface ExportData {
 
 export const exportToPDF = ({ columns, data, title, subtitle }: ExportData) => {
     const doc = new jsPDF();
+    const pageW = doc.internal.pageSize.getWidth();
+
+    try {
+        doc.addImage(LOGO_MQS_B64, 'PNG', 14, 6, 20, 12);
+        doc.addImage(LOGO_JCQ_B64, 'PNG', pageW - 34, 6, 20, 12);
+    } catch (e) {
+        console.warn("Could not load logos into PDF", e);
+    }
 
     // Header
     doc.setFontSize(20);
     doc.setTextColor(40, 40, 40);
-    doc.text(title, 14, 22);
+    doc.text(title, 14, 28);
 
     if (subtitle) {
         doc.setFontSize(12);
         doc.setTextColor(100, 100, 100);
-        doc.text(subtitle, 14, 32);
+        doc.text(subtitle, 14, 36);
     }
 
     // Define columns for autoTable

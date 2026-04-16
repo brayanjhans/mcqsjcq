@@ -25,7 +25,12 @@ import {
     Trash2,
     ChevronDown,
     ChevronUp,
-    Clock
+    Clock,
+    Phone,
+    Mail,
+    TrendingUp,
+    BarChart3,
+    Package
 } from "lucide-react";
 import { createPortal } from "react-dom";
 import type { Licitacion, Adjudicacion, EjecucionFinanciera, GarantiasResponse, HistorialAnual } from "@/types/licitacion";
@@ -567,296 +572,243 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                 </div>
 
 
-                {/* Main Card */}
-                <div className="rounded-2xl border border-slate-200 bg-white shadow-lg dark:border-white/10 dark:bg-[#111c44] animate-in fade-in slide-in-from-bottom-4 duration-500 overflow-hidden">
-
-                    {/* Top accent bar */}
+                {/* 1. CENTRAL UNIFIED CARD (With Side Timeline) */}
+                <div className="rounded-2xl border border-slate-200 bg-white shadow-xl dark:border-white/10 dark:bg-[#111c44] overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    
+                    {/* ACCENT BAR */}
                     <div className="h-1.5 w-full bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500" />
 
-                    {/* Header */}
-                    <div className="p-5 md:p-6">
-                        <div className="flex flex-col lg:flex-row justify-between items-start gap-4">
-                            {/* Left: Process Info */}
-                            <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-3 mb-2">
-                                    <span className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 text-white flex items-center justify-center shadow-md flex-shrink-0">
-                                        <FileText className="w-4 h-4" />
+                    <div className="grid grid-cols-1 lg:grid-cols-3">
+                        
+                        {/* LEFT SECTION: 2 Columns for Process Details */}
+                        <div className="lg:col-span-2 flex flex-col">
+                            {/* TOP: Identification & Financials */}
+                            <div className="p-5 md:p-6 lg:p-8">
+                                <div className="flex items-center gap-4 mb-3 justify-start">
+                                    <span className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-blue-600 text-white flex items-center justify-center shadow-lg flex-shrink-0">
+                                        <FileText className="w-5 h-5" />
                                     </span>
-                                    <div>
-                                        <h1 className="text-xl font-black text-slate-900 dark:text-white leading-tight tracking-tight">
-                                            PROCESO {licitacion.id_convocatoria}
-                                        </h1>
-                                        <p className="text-[11px] text-slate-400 font-mono mt-0.5">
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex flex-col xl:flex-row xl:items-center gap-2 xl:gap-3 mb-1">
+                                            <h1 className="text-xl md:text-2xl font-black text-slate-900 dark:text-white leading-tight tracking-tight whitespace-nowrap">
+                                                PROCESO {licitacion.id_convocatoria}
+                                            </h1>
+                                            <div className="flex gap-2 flex-row flex-nowrap items-center max-w-full overflow-x-auto scrollbar-hide pb-1 xl:pb-0">
+                                                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase border shadow-sm transition-all duration-300 hover:scale-105 hover:-translate-y-0.5 cursor-default ${
+                                                    licitacion.estado_proceso === "CONVOCA"
+                                                        ? "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:border-amber-700"
+                                                        : licitacion.estado_proceso?.includes("CONTRATADO") || licitacion.estado_proceso?.includes("ADJUDICADO")
+                                                            ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-700"
+                                                            : "bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600"
+                                                }`}>
+                                                    <span className={`w-1.5 h-1.5 rounded-full ${
+                                                        licitacion.estado_proceso === "CONVOCA" ? "bg-amber-500"
+                                                        : licitacion.estado_proceso?.includes("CONTRATADO") || licitacion.estado_proceso?.includes("ADJUDICADO") ? "bg-emerald-500"
+                                                        : "bg-slate-400"
+                                                    }`} />
+                                                    {licitacion.estado_proceso || "PENDIENTE"}
+                                                </span>
+                                                <span className="inline-flex items-center px-3 py-1 rounded-full bg-purple-50 text-purple-700 text-[10px] font-black uppercase border border-purple-200 shadow-sm dark:bg-purple-900/20 dark:border-purple-700 dark:text-purple-300 transition-all duration-300 hover:scale-105 hover:-translate-y-0.5 cursor-default">
+                                                    {licitacion.categoria || "BIENES"}
+                                                </span>
+                                                {(() => {
+                                                    const idContrato = licitacion.id_contrato || (licitacion.adjudicaciones?.find(a => a.id_contrato)?.id_contrato);
+                                                    if (!idContrato) return null;
+                                                    return (
+                                                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-[10px] font-black uppercase border border-slate-200 shadow-sm dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 transition-all duration-300 hover:scale-105 hover:-translate-y-0.5 cursor-default">
+                                                            <FileText className="w-3 h-3 text-slate-500" />
+                                                            CONTRATO: {idContrato}
+                                                        </span>
+                                                    );
+                                                })()}
+                                            </div>
+                                        </div>
+                                        <p className="text-[11px] text-slate-400 font-mono tracking-wider">
                                             {licitacion.ocid || "OCID no disponible"}
                                         </p>
                                     </div>
                                 </div>
 
                                 {licitacion.descripcion && (
-                                    <p className="text-xs font-semibold text-slate-700 dark:text-slate-200 mb-2 leading-relaxed pr-4 uppercase tracking-wide">
+                                    <p className="text-xs font-bold text-slate-600 dark:text-slate-300 leading-relaxed uppercase tracking-wide pr-8 mt-4 mb-6">
                                         {licitacion.descripcion}
                                     </p>
                                 )}
 
-                                <div className="flex flex-wrap gap-2">
-                                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase border ${
-                                        licitacion.estado_proceso === "CONVOCA"
-                                            ? "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:border-amber-700"
-                                            : licitacion.estado_proceso?.includes("CONTRATADO") || licitacion.estado_proceso?.includes("ADJUDICADO")
-                                                ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-700"
-                                                : "bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600"
-                                    }`}>
-                                        <span className={`w-1.5 h-1.5 rounded-full ${
-                                            licitacion.estado_proceso === "CONVOCA" ? "bg-amber-500"
-                                            : licitacion.estado_proceso?.includes("CONTRATADO") || licitacion.estado_proceso?.includes("ADJUDICADO") ? "bg-emerald-500"
-                                            : "bg-slate-400"
-                                        }`} />
-                                        {licitacion.estado_proceso || "PENDIENTE"}
-                                    </span>
-                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-purple-50 text-purple-700 text-[11px] font-bold uppercase border border-purple-200 dark:bg-purple-900/20 dark:border-purple-700 dark:text-purple-300">
-                                        {licitacion.categoria || "BIENES"}
-                                    </span>
+                                {/* FINANCIAL BAR - Using full width of 2 columns to perfectly align */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
+                                    <div className="group bg-slate-50 dark:bg-white/5 p-4 rounded-2xl border border-slate-100 dark:border-white/5 flex items-center gap-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-indigo-200 dark:hover:border-indigo-500/30 cursor-default shadow-sm">
+                                        <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 ring-1 ring-indigo-200 dark:ring-indigo-800 transition-all duration-300 group-hover:scale-110 group-hover:ring-4 group-hover:ring-indigo-100 dark:group-hover:ring-indigo-900">
+                                            <TrendingUp className="w-5 h-5 transition-transform duration-300 group-hover:-translate-y-0.5" />
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Monto Estimado</p>
+                                            <p className="text-xl font-black text-slate-800 dark:text-white leading-none">
+                                                {formatCurrency(licitacion.monto_estimado, licitacion.moneda)}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="group bg-emerald-50/30 dark:bg-emerald-900/10 p-4 rounded-2xl border border-emerald-100/50 dark:border-emerald-800/20 flex items-center gap-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-emerald-300 dark:hover:border-emerald-500/30 cursor-default shadow-sm">
+                                        <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 ring-1 ring-emerald-200 dark:ring-emerald-800 transition-all duration-300 group-hover:scale-110 group-hover:ring-4 group-hover:ring-emerald-100 dark:group-hover:ring-emerald-900">
+                                            <DollarSign className="w-5 h-5 transition-transform duration-300 group-hover:-translate-y-0.5" />
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-black text-emerald-600/70 dark:text-emerald-400/70 uppercase tracking-widest mb-0.5">Monto Adjudicado</p>
+                                            <p className="text-xl font-black text-emerald-700 dark:text-emerald-300 leading-none">
+                                                {formatCurrency(licitacion.monto_total_adjudicado, licitacion.moneda)}
+                                            </p>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
-                            {/* Right: Monto + Fecha Convocatoria */}
-                            <div className="w-full lg:w-64 flex-shrink-0 bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-indigo-900/30 dark:to-blue-900/20 rounded-xl border border-indigo-100 dark:border-indigo-800/50 p-4 shadow-sm">
-                                <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-0.5">Monto Estimado</p>
-                                <p className="text-2xl font-black text-indigo-600 dark:text-indigo-400 leading-tight">
-                                    {formatCurrency(licitacion.monto_estimado, licitacion.moneda)}
-                                </p>
-                                <div className="mt-2 pt-2 border-t border-indigo-100 dark:border-indigo-800/50">
-                                    <div className="flex items-center justify-between gap-2">
-                                        <div className="flex items-center gap-1">
-                                            <Calendar className="w-3 h-3 text-indigo-400" />
-                                            <span className="text-[10px] text-indigo-500 dark:text-indigo-400 font-semibold uppercase">Fec. Convocatoria</span>
+                            {/* BOTTOM: Entidad & Detalles Tecnicos */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 border-t border-slate-100 dark:border-white/5 flex-1 align-top">
+                                {/* ENTIDAD */}
+                                <div className="p-5 md:p-6 lg:p-8 border-b md:border-b-0 border-slate-100 dark:border-white/5">
+                                    <div className="flex items-center gap-3 mb-4">
+                                        <div className="w-9 h-9 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center shadow-sm">
+                                            <Building2 className="w-5 h-5" />
                                         </div>
-                                        <span className="text-xs font-black text-indigo-700 dark:text-indigo-300 bg-indigo-100 dark:bg-indigo-800/50 px-2 py-0.5 rounded-md">
-                                            {formatDate(licitacion.fecha_publicacion)}
+                                        <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Entidad Convocante</h3>
+                                    </div>
+                                    <p className="text-[15px] font-black text-slate-800 dark:text-slate-100 uppercase leading-snug mb-4">
+                                        {licitacion.comprador}
+                                    </p>
+                                    <div className="flex items-start gap-2 bg-slate-50 dark:bg-white/5 p-4 rounded-2xl border border-slate-100 dark:border-white/5 transition-all duration-300 hover:-translate-y-1 hover:shadow-md cursor-default group hover:border-blue-200 dark:hover:border-blue-900/50">
+                                        <MapPin className="w-4 h-4 text-blue-500 shrink-0 mt-0.5 transition-transform duration-300 group-hover:scale-110" />
+                                        <span className="text-xs text-slate-600 dark:text-slate-400 uppercase font-bold leading-relaxed transition-colors group-hover:text-slate-800 dark:group-hover:text-slate-200">
+                                            {licitacion.ubicacion_completa || `${licitacion.departamento || ''} - ${licitacion.provincia || ''}`}
                                         </span>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
-                    </div>
 
-                    {/* Details Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-slate-100 dark:divide-white/5 border-t border-slate-100 dark:border-white/5">
-
-                        {/* Column 1: Entidad */}
-                        <div className="p-4 md:p-5">
-                            <div className="flex items-center gap-2 mb-2">
-                                <span className="w-6 h-6 rounded-md bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center">
-                                    <Building2 className="w-3 h-3 text-blue-500" />
-                                </span>
-                                <h3 className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Entidad Convocante</h3>
-                            </div>
-                            <p className="text-sm font-bold text-slate-800 dark:text-slate-100 uppercase leading-snug mb-1.5">
-                                {licitacion.comprador}
-                            </p>
-                            <div className="flex items-start gap-1.5">
-                                <MapPin className="w-3 h-3 text-slate-400 shrink-0 mt-0.5" />
-                                <span className="text-[11px] text-slate-500 dark:text-slate-400 uppercase font-medium leading-snug">
-                                    {licitacion.ubicacion_completa || `${licitacion.departamento || ''} - ${licitacion.provincia || ''}`}
-                                </span>
-                            </div>
-                        </div>
-
-                        {/* Column 2: Detalles Técnicos */}
-                        <div className="p-4 md:p-5">
-                            <div className="flex items-center gap-2 mb-2">
-                                <span className="w-6 h-6 rounded-md bg-violet-50 dark:bg-violet-900/30 flex items-center justify-center">
-                                    <FileText className="w-3 h-3 text-violet-500" />
-                                </span>
-                                <h3 className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Detalles Técnicos</h3>
-                            </div>
-                            <div className="space-y-2">
-                                <div>
-                                    <p className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Nomenclatura</p>
-                                    <p className="text-xs font-bold text-slate-700 dark:text-slate-200">{licitacion.nomenclatura}</p>
-                                </div>
-                                <div className="grid grid-cols-2 gap-2">
-                                    <div className="bg-slate-50 dark:bg-white/5 rounded-lg p-2 border border-slate-100 dark:border-white/5">
-                                        <p className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Tipo Proceso</p>
-                                        <p className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 leading-snug">{licitacion.tipo_procedimiento || "N/A"}</p>
-                                    </div>
-                                    <div className="bg-slate-50 dark:bg-white/5 rounded-lg p-2 border border-slate-100 dark:border-white/5">
-                                        <p className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Moneda</p>
-                                        <p className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">{licitacion.moneda || "PEN"}</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Column 3: Resumen Adjudicación */}
-                        <div className="p-4 md:p-5">
-                            <div className="flex items-center gap-2 mb-2">
-                                <span className="w-6 h-6 rounded-md bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center">
-                                    <DollarSign className="w-3 h-3 text-emerald-500" />
-                                </span>
-                                <h3 className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Resumen de Adjudicación</h3>
-                            </div>
-                            <div className="space-y-2">
-                                {/* Monto Adjudicado + Fecha de Adjudicación */}
-                                <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-lg p-2.5 border border-emerald-100 dark:border-emerald-800/40">
-                                    <p className="text-[9px] uppercase font-bold text-emerald-600 dark:text-emerald-400 tracking-wider">Monto Adjudicado</p>
-                                    <p className="text-sm font-black text-emerald-700 dark:text-emerald-300">{formatCurrency(licitacion.monto_total_adjudicado, licitacion.moneda)}</p>
-                                    <div className="mt-2 pt-2 border-t border-emerald-200 dark:border-emerald-700/50 flex items-center justify-between gap-2">
-                                        <div className="flex items-center gap-1">
-                                            <Calendar className="w-3 h-3 text-emerald-500" />
-                                            <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold uppercase">Fec. Adjudicación</span>
+                                {/* DETALLES TECNICOS */}
+                                <div className="p-5 md:p-6 lg:p-8 bg-slate-50/20 md:border-l border-slate-100 dark:border-white/5">
+                                    <div className="flex items-center gap-3 mb-4">
+                                        <div className="w-9 h-9 rounded-xl bg-violet-500/10 text-violet-500 flex items-center justify-center shadow-sm">
+                                            <FileText className="w-5 h-5" />
                                         </div>
-                                        <span className="text-xs font-black text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-800/50 px-2 py-0.5 rounded-md">
-                                            {formatDate(licitacion.fecha_adjudicacion || licitacion.adjudicaciones?.[0]?.fecha_adjudicacion)}
-                                        </span>
+                                        <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Detalles Técnicos</h3>
                                     </div>
-                                </div>
-                                {/* Items + Garantía */}
-                                <div className="grid grid-cols-2 gap-2">
-                                    <div className="bg-slate-50 dark:bg-white/5 p-2 rounded-lg border border-slate-100 dark:border-white/5 text-center">
-                                        <span className="text-[9px] block text-slate-400 uppercase font-bold tracking-wider">Items</span>
-                                        <span className="text-base font-black text-slate-700 dark:text-white">{licitacion.total_adjudicaciones || 0}</span>
-                                    </div>
-                                    <div className="bg-slate-50 dark:bg-white/5 p-2 rounded-lg border border-slate-100 dark:border-white/5 text-center">
-                                        <span className="text-[9px] block text-slate-400 uppercase font-bold tracking-wider">Garantía</span>
-                                        <span className={`text-sm font-black ${licitacion.con_garantia_bancaria === 0 ? 'text-red-500' : 'text-emerald-600 dark:text-emerald-400'}`}>
-                                            {licitacion.con_garantia_bancaria === 0 ? "No" : "Sí"}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                    </div>
-                </div>
-
-                {/* SECTION: CRONOGRAMA DETALLADO (Desplegable) */}
-                <div className="border border-slate-200 dark:border-white/10 rounded-2xl overflow-hidden bg-white dark:bg-[#111c44] mt-6 shadow-lg animate-in fade-in slide-in-from-bottom-6 duration-500 delay-100">
-                    <button
-                        type="button"
-                        onClick={() => setIsCronogramaOpen(!isCronogramaOpen)}
-                        className="w-full flex items-center justify-between p-5 md:p-6 bg-slate-50/50 dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 transition-colors"
-                    >
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-xl bg-indigo-100 dark:bg-indigo-900/30">
-                                <Clock className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-                            </div>
-                            <div className="text-left">
-                                <h3 className="text-base font-black text-slate-900 dark:text-white uppercase tracking-tight">Listado de Acciones</h3>
-                                <p className="text-[11px] text-slate-500 mt-0.5">
-                                    {licitacion.acciones_json ? 'Historial detallado extraído desde el portal SEACE' : 'Acciones aún no escaneadas'}
-                                </p>
-                            </div>
-                        </div>
-                        {isCronogramaOpen ? (
-                            <ChevronUp className="w-5 h-5 text-slate-400" />
-                        ) : (
-                            <ChevronDown className="w-5 h-5 text-slate-400" />
-                        )}
-                    </button>
-
-                    {isCronogramaOpen && (
-                        <div className="p-2 md:p-4 bg-slate-50/30 dark:bg-[#0b122b]/30">
-                            {(() => {
-                                if (!licitacion.acciones_json) {
-                                    return (
-                                        <div className="text-center p-12 bg-white dark:bg-[#111c44] rounded-xl border border-dashed border-slate-200 dark:border-white/10 m-2">
-                                            <Clock className="w-12 h-12 text-slate-200 dark:text-slate-700 mx-auto mb-4" />
-                                            <p className="text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Información en Proceso</p>
-                                            <p className="text-xs text-slate-400 mt-1">Este proceso está pendiente de perfilado por el robot del sistema.</p>
+                                    <div className="space-y-4">
+                                        <div className="bg-white dark:bg-white/5 rounded-2xl p-4 border border-slate-100 dark:border-white/5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md cursor-default hover:border-violet-200 dark:hover:border-violet-500/30">
+                                            <p className="text-[9px] uppercase font-black text-slate-400 tracking-widest mb-1.5">Nomenclatura</p>
+                                            <p className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-tight">{licitacion.nomenclatura}</p>
                                         </div>
-                                    );
-                                }
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="bg-white dark:bg-white/5 rounded-2xl p-4 border border-slate-100 dark:border-white/5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md cursor-default hover:border-indigo-200 dark:hover:border-indigo-500/30">
+                                                <p className="text-[9px] uppercase font-black text-slate-400 tracking-widest mb-1">Tipo Proceso</p>
+                                                <p className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase leading-tight">{licitacion.tipo_procedimiento || "N/A"}</p>
+                                            </div>
+                                            <div className="bg-white dark:bg-white/5 rounded-2xl p-4 border border-slate-100 dark:border-white/5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md cursor-default hover:border-indigo-200 dark:hover:border-indigo-500/30">
+                                                <p className="text-[9px] uppercase font-black text-slate-400 tracking-widest mb-1">Moneda</p>
+                                                <p className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase">{licitacion.moneda || "PEN"}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
 
-                                try {
-                                    const itemsData = JSON.parse(licitacion.acciones_json);
-                                    if (!Array.isArray(itemsData) || itemsData.length === 0) throw new Error("Empty data");
+                        {/* RIGHT SECTION: TIMELINE (Takes 1 column) */}
+                        <div className="lg:col-span-1 border-t lg:border-t-0 lg:border-l border-slate-100 dark:border-white/5 bg-[#fafafa] dark:bg-[#111c44] flex flex-col">
+                            <div className="p-5 md:p-6 border-b border-slate-100 dark:border-white/5 sticky top-0 z-10 bg-[#fafafa] dark:bg-[#111c44]">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-600 flex items-center justify-center shadow-sm">
+                                        <Clock className="w-5 h-5" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-[12px] font-black text-slate-800 dark:text-slate-200 uppercase tracking-[0.2em] leading-tight">Listado de Acciones</h3>
+                                        <p className="text-[9px] text-slate-400 font-bold uppercase mt-0.5">Historial del Proceso</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div className="flex-1 p-5 md:p-6 pb-2">
+                                {(() => {
+                                    const formatDateInSpanish = (dateString: string) => {
+                                        if (!dateString || typeof dateString !== 'string') return "—";
+                                        const parts = dateString.split(" ");
+                                        if (parts.length === 0) return dateString;
+                                        const dateParts = parts[0].split("/");
+                                        if (dateParts.length !== 3) return parts[0];
+                                        const [day, month, year] = dateParts;
+                                        const months = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+                                        const monthIndex = parseInt(month, 10) - 1;
+                                        if (monthIndex >= 0 && monthIndex < 12) {
+                                            return `${parseInt(day, 10)} de ${months[monthIndex]} de ${year}`;
+                                        }
+                                        return parts[0];
+                                    };
 
-                                    return (
-                                        <div className="space-y-4">
-                                            {itemsData.map((item: any, idx: number) => (
-                                                <div key={idx} className="bg-white dark:bg-[#111c44] rounded-2xl shadow-sm border border-slate-200 dark:border-white/5 overflow-hidden">
-                                                    <div className="overflow-x-auto">
-                                                        <table className="w-full text-left border-collapse">
-                                                            <thead>
-                                                                <tr className="bg-slate-50/80 dark:bg-white/5 border-b border-slate-200 dark:border-white/10">
-                                                                    <th className="py-4 px-4 text-[11px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 text-center w-16">N°</th>
-                                                                    <th className="py-4 px-4 text-[11px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 border-l border-slate-200/50 dark:border-white/5">Situación / Acción</th>
-                                                                    <th className="py-4 px-4 text-[11px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 text-center border-l border-slate-200/50 dark:border-white/5">Fecha y Hora</th>
-                                                                    <th className="py-4 px-4 text-[11px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 border-l border-slate-200/50 dark:border-white/5 font-mono">Motivo de Registro</th>
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody className="divide-y divide-slate-100 dark:divide-white/5">
-                                                                {item.acciones && item.acciones.map((acc: any, aidx: number) => {
-                                                                    const situacionKey = Object.keys(acc).find(k => k.toLowerCase().includes('situaci')) || '';
-                                                                    const situacion = acc[situacionKey] || acc['Situación'] || acc['Situacion'] || "";
-                                                                    
-                                                                    const fechaKey = Object.keys(acc).find(k => k.toLowerCase().includes('fecha')) || '';
-                                                                    const fechaVal = acc[fechaKey] || "—";
-
-                                                                    const isSuccess = situacion.toLowerCase().includes('adjudic') || situacion.toLowerCase().includes('publicac') || situacion.toLowerCase().includes('consent');
-                                                                    const isAlert = situacion.toLowerCase().includes('suspend') || situacion.toLowerCase().includes('cancel') || situacion.toLowerCase().includes('nulid');
-                                                                    const isInfo = situacion.toLowerCase().includes('post') || situacion.toLowerCase().includes('retro');
-
-                                                                    return (
-                                                                        <tr key={aidx} className="group hover:bg-indigo-50/50 dark:hover:bg-indigo-500/5 transition-all relative">
-                                                                            <td className="py-5 px-4 text-center">
-                                                                                <div className="flex items-center justify-center">
-                                                                                    <span className="text-xs font-mono font-black text-indigo-500 bg-indigo-50 dark:bg-indigo-900/40 px-2 py-1 rounded-md border border-indigo-100 dark:border-indigo-800 shadow-sm">
-                                                                                        {acc['Nro.'] || acc['N°'] || (aidx + 1)}
-                                                                                    </span>
-                                                                                </div>
-                                                                            </td>
-                                                                            <td className="py-5 px-4 relative">
-                                                                                {/* Animated Left Accent Bar */}
-                                                                                <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity rounded-r-full" />
-                                                                                
-                                                                                <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-tight shadow-sm border ${
-                                                                                    isSuccess ? 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-300' :
-                                                                                    isAlert ? 'bg-red-50 text-red-800 border-red-200 dark:bg-red-900/40 dark:text-red-300' :
-                                                                                    isInfo ? 'bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-900/40 dark:text-amber-300' :
-                                                                                    'bg-indigo-50 text-indigo-800 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300'
-                                                                                }`}>
-                                                                                    {isSuccess && <ShieldCheck className="w-3.5 h-3.5" />}
-                                                                                    {isAlert && <Activity className="w-3.5 h-3.5" />}
-                                                                                    {isInfo && <Clock className="w-3.5 h-3.5" />}
-                                                                                    {!isSuccess && !isAlert && !isInfo && <Tag className="w-3.5 h-3.5" />}
-                                                                                    {situacion || "ACCIÓN REGISTRADA"}
-                                                                                </div>
-                                                                            </td>
-                                                                            <td className="py-5 px-4 text-center">
-                                                                                <div className="flex flex-col items-center gap-1">
-                                                                                    <div className="flex items-center gap-1.5 text-xs font-mono font-black text-slate-900 dark:text-slate-100 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 px-3 py-1.5 rounded-xl shadow-sm">
-                                                                                        <Calendar className="w-3.5 h-3.5 text-indigo-400" />
-                                                                                        {fechaVal}
-                                                                                    </div>
-                                                                                </div>
-                                                                            </td>
-                                                                            <td className="py-5 px-4 max-w-sm">
-                                                                                <p className="text-[12.5px] font-bold text-slate-800 dark:text-slate-200 line-clamp-2 hover:line-clamp-none transition-all cursor-help leading-relaxed tracking-tight" title={acc['Motivo'] || acc['Detalle'] || ""}>
-                                                                                    {acc['Motivo'] || acc['Detalle'] || "Sin motivo registrado formalmente en el sistema."}
-                                                                                </p>
-                                                                            </td>
-                                                                        </tr>
-                                                                    );
-                                                                })}
-                                                            </tbody>
-                                                        </table>
+                                    if (!licitacion.acciones_json) {
+                                        return (
+                                            <div className="text-center py-12 flex flex-col items-center justify-center">
+                                                <div className="relative mb-4">
+                                                    <div className="absolute inset-0 bg-indigo-500/20 rounded-full animate-ping" />
+                                                    <div className="w-12 h-12 bg-slate-50 dark:bg-[#152355] rounded-full flex items-center justify-center relative z-10 border border-slate-200 dark:border-white/10 shadow-sm">
+                                                        <Clock className="w-5 h-5 text-indigo-400 dark:text-indigo-500 animate-pulse" />
                                                     </div>
                                                 </div>
-                                            ))}
-                                        </div>
-                                    );
-                                } catch (e) {
-                                    return (
-                                        <div className="text-center p-6 bg-red-50 dark:bg-red-900/10 rounded-xl border border-red-100 dark:border-red-900/30">
-                                            <p className="text-sm font-medium text-red-600 dark:text-red-400">Error al decodificar el formato de acciones.</p>
-                                        </div>
-                                    );
-                                }
-                            })()}
+                                                <p className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-tight animate-pulse">Información<br/>en Proceso</p>
+                                            </div>
+                                        );
+                                    }
+
+                                    try {
+                                        const itemsData = JSON.parse(licitacion.acciones_json);
+                                        if (!Array.isArray(itemsData) || itemsData.length === 0) throw new Error("Empty data");
+
+                                        return (
+                                            <div className="space-y-0">
+                                                {itemsData.map((item: any, idx: number) => (
+                                                    <div key={idx} className="relative">
+                                                        {item.acciones && item.acciones.map((acc: any, aidx: number) => {
+                                                            const situacionKey = Object.keys(acc).find(k => k.toLowerCase().includes('situaci')) || '';
+                                                            const situacion = acc[situacionKey] || acc['Situación'] || acc['Situacion'] || "Registro";
+                                                            const fechaKey = Object.keys(acc).find(k => k.toLowerCase().includes('fecha')) || '';
+                                                            const fechaVal = acc[fechaKey] || "—";
+                                                            
+                                                            const isSuccess = situacion.toLowerCase().includes('adjudic') || situacion.toLowerCase().includes('publicac') || situacion.toLowerCase().includes('consent');
+                                                            const isAlert = situacion.toLowerCase().includes('suspend') || situacion.toLowerCase().includes('cancel') || situacion.toLowerCase().includes('nulid');
+                                                            const isInfo = situacion.toLowerCase().includes('post') || situacion.toLowerCase().includes('retro');
+
+                                                            return (
+                                                                <div key={aidx} className="relative pl-4 pb-2 border-l-2 border-slate-200 dark:border-slate-700 last:border-l-transparent last:pb-0 group hover:bg-slate-50/50 dark:hover:bg-white/5 transition-colors duration-300 mt-1">
+                                                                    <span className={`absolute -left-[7px] top-1.5 w-3 h-3 rounded-full ring-4 ring-[#fafafa] dark:ring-[#111c44] transition-colors shadow-sm ${
+                                                                        isSuccess ? 'bg-emerald-500' : isAlert ? 'bg-red-500' : isInfo ? 'bg-amber-500' : 'bg-indigo-400'
+                                                                    }`} />
+                                                                    <div className="flex flex-col items-start gap-1.5 w-full pb-2.5 border-b border-dashed border-slate-200 dark:border-white/10 group-last:border-b-0 group-last:pb-0">
+                                                                        <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider shadow-sm border ${
+                                                                             isSuccess ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-300' :
+                                                                             isAlert ? 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/40 dark:text-red-300' :
+                                                                             isInfo ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/40 dark:text-amber-300' :
+                                                                             'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300'
+                                                                        }`}>
+                                                                            {situacion}
+                                                                        </span>
+                                                                        <span className="text-[9px] font-black text-slate-400 tracking-wide">{formatDateInSpanish(fechaVal)}</span>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        );
+                                    } catch (e) {
+                                        return (
+                                            <div className="text-center py-6 bg-red-50 dark:bg-red-900/10 rounded-xl">
+                                                <p className="text-xs font-bold text-red-500 dark:text-red-400">Error en acciones.</p>
+                                            </div>
+                                        );
+                                    }
+                                })()}
+                            </div>
                         </div>
-                    )}
+
+                    </div>
                 </div>
 
 
@@ -1164,6 +1116,7 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                                         <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
                                             <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">Adjudicación / Ganador</th>
                                             <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">Integrantes del Consorcio</th>
+                                            <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">Datos de Contacto</th>
                                             <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">Oferta</th>
                                             <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">Contrato</th>
                                             <th className="py-3 px-4 text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">Consorcio</th>
@@ -1175,30 +1128,63 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                                             <tr key={adj.id_adjudicacion} className="group hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors">
                                                 <td className="py-4 px-4 align-top text-center">
                                                     <div className="flex flex-col items-center">
-                                                        <span className="text-xs font-bold text-slate-800 dark:text-white uppercase line-clamp-2">{adj.ganador_nombre}</span>
-                                                        <span className="text-[10px] text-slate-400 font-mono mt-0.5">RUC: {adj.ganador_ruc}</span>
+                                                        <span className="text-xs font-black text-slate-800 dark:text-white uppercase line-clamp-2">{adj.ganador_nombre}</span>
+                                                        <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold font-mono mt-0.5">RUC: {adj.ganador_ruc}</span>
                                                         <span className="text-[10px] text-indigo-500 font-bold mt-1.5 flex items-center gap-1">
                                                             <Tag className="w-3 h-3" />
                                                             {formatCurrency(adj.monto_adjudicado, licitacion.moneda)}
                                                         </span>
                                                     </div>
                                                 </td>
-                                                <td className="py-4 px-4 align-top text-center">
+                                                <td colSpan={2} className="p-0 align-top">
                                                     {adj.consorcios && adj.consorcios.length > 0 ? (
-                                                        <div className="flex flex-col gap-2 items-center">
+                                                        <div className="flex flex-col">
                                                             {adj.consorcios.map((miembro, idx) => (
-                                                                <div key={idx} className="flex flex-col items-center text-center">
-                                                                    <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 uppercase leading-snug">
-                                                                        {miembro.nombre_miembro}
-                                                                    </span>
-                                                                    <span className="text-[9px] text-slate-400">
-                                                                        RUC: {miembro.ruc_miembro} {miembro.porcentaje_participacion ? `(${Number(miembro.porcentaje_participacion)}%)` : ''}
-                                                                    </span>
+                                                                <div key={idx} className={`grid grid-cols-2 w-full transition-colors hover:bg-slate-50/50 dark:hover:bg-white/5 ${idx !== adj.consorcios!.length - 1 ? 'border-b border-slate-100 dark:border-white/5' : ''}`}>
+                                                                    {/* Panel Izquierdo: Integrante */}
+                                                                    <div className="py-5 px-6 flex flex-col items-center justify-center">
+                                                                        <span className="text-[11px] font-black text-slate-800 dark:text-white uppercase leading-tight mb-1.5 text-center">
+                                                                            {miembro.nombre_miembro}
+                                                                        </span>
+                                                                        <div className="flex items-center justify-center gap-2.5">
+                                                                            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold font-mono">
+                                                                                RUC: {miembro.ruc_miembro}
+                                                                            </span>
+                                                                            {miembro.porcentaje_participacion && (
+                                                                                <span className="px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-[8px] font-black border border-indigo-100/50 dark:border-indigo-500/20">
+                                                                                    {Number(miembro.porcentaje_participacion)}%
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                    {/* Panel Derecho: Datos de Contacto */}
+                                                                    <div className="py-5 px-6 flex flex-col items-center justify-center gap-2">
+                                                                        {miembro.telefono_miembro ? (
+                                                                            <a href={`tel:${miembro.telefono_miembro}`} className="flex items-center gap-2 text-[10px] font-bold text-slate-600 dark:text-slate-300 hover:text-indigo-600 transition-colors group/tel">
+                                                                                <Phone className="w-3.5 h-3.5 text-slate-400 group-hover/tel:text-indigo-500" />
+                                                                                {miembro.telefono_miembro}
+                                                                            </a>
+                                                                        ) : null}
+                                                                        {miembro.email_miembro ? (
+                                                                            <a href={`mailto:${miembro.email_miembro}`} className="flex items-center gap-2 text-[10px] font-medium text-slate-500 dark:text-slate-400 hover:text-indigo-600 transition-colors group/mail lowercase">
+                                                                                <Mail className="w-3.5 h-3.5 text-slate-400 group-hover/mail:text-indigo-500" />
+                                                                                {miembro.email_miembro}
+                                                                            </a>
+                                                                        ) : null}
+                                                                        {!miembro.telefono_miembro && !miembro.email_miembro && (
+                                                                            <span className="text-[9px] text-slate-300 italic">—</span>
+                                                                        )}
+                                                                    </div>
                                                                 </div>
                                                             ))}
                                                         </div>
                                                     ) : (
-                                                        <span className="text-[10px] text-slate-400 italic">No es consorcio</span>
+                                                        <div className="py-14 px-4 text-center">
+                                                            <div className="inline-flex items-center gap-2 text-[10px] font-bold text-slate-400/70 border border-slate-100 dark:border-white/5 rounded-full px-4 py-1.5 uppercase tracking-widest bg-slate-50/30 dark:bg-transparent">
+                                                                <Users className="w-3 h-3" />
+                                                                No es consorcio
+                                                            </div>
+                                                        </div>
                                                     )}
                                                 </td>
                                                 <td className="py-4 px-4 align-middle text-center w-[120px] relative">
@@ -1604,7 +1590,7 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                                                     <td className="py-4 px-4 align-top text-center">
                                                         <div className="flex flex-col items-center">
                                                             <span className="text-xs font-bold text-slate-800 dark:text-white uppercase line-clamp-2">{adj.ganador_nombre}</span>
-                                                            <span className="text-[10px] text-slate-400 font-mono mt-0.5">RUC: {adj.ganador_ruc}</span>
+                                                            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold font-mono mt-0.5">RUC: {adj.ganador_ruc}</span>
                                                             <span className="text-[10px] text-indigo-500 font-bold mt-1.5 flex items-center gap-1">
                                                                 <Tag className="w-3 h-3" />
                                                                 {formatCurrency(adj.monto_adjudicado, licitacion.moneda)}

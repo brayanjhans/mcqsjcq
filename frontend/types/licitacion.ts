@@ -42,6 +42,10 @@ export interface MiembroConsorcio {
     ruc_miembro: string;
     porcentaje_participacion: number;
     monto_participacion?: number;
+    fecha_firma_contrato?: string | null;
+    fecha_prevista_fin?: string | null;
+    telefono_miembro?: string | null;
+    email_miembro?: string | null;
 }
 
 export interface Adjudicacion {
@@ -54,6 +58,7 @@ export interface Adjudicacion {
     tipo_garantia?: string;
     estado?: string;
     moneda?: string;
+    id_contrato?: string;
     consorcios?: MiembroConsorcio[];
     url_pdf_contrato?: string;
     url_pdf_consorcio?: string;

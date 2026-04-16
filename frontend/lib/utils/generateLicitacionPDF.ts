@@ -130,38 +130,37 @@ export function generateLicitacionPDF(
     // ═══════════════════════════════════════════════
     //  1. HEADER WITH LOGOS
     // ═══════════════════════════════════════════════
+    // Blue Banner Background for white logos
+    doc.setFillColor(...COLORS.primary);
+    doc.rect(0, 0, pageW, 32, 'F');
+
     const logoSize = 18;
 
     // Left logo (MQS)
-    try { doc.addImage(LOGO_MQS_B64, 'PNG', margin, 8, logoSize, logoSize); } catch (_) { }
+    try { doc.addImage(LOGO_MQS_B64, 'PNG', margin, 7, logoSize, logoSize); } catch (_) { }
 
     // Right logo (JCQ)
-    try { doc.addImage(LOGO_JCQ_B64, 'PNG', pageW - margin - logoSize, 8, logoSize, logoSize); } catch (_) { }
+    try { doc.addImage(LOGO_JCQ_B64, 'PNG', pageW - margin - logoSize, 7, logoSize, logoSize); } catch (_) { }
 
     // Centered title
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...COLORS.dark);
-    doc.text(`INFORME DE PROCESO N° ${licitacion.id_convocatoria}`, pageW / 2, 16, { align: 'center' });
+    doc.setTextColor(...COLORS.white);
+    doc.text(`INFORME DE PROCESO N° ${licitacion.id_convocatoria}`, pageW / 2, 14, { align: 'center' });
 
     // Subtitle
     doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
-    doc.setTextColor(...COLORS.medium);
-    doc.text('MQS JCQ — Sistema de Inteligencia SEACE', pageW / 2, 22, { align: 'center' });
+    doc.setTextColor(220, 230, 255);
+    doc.text('MQS JCQ — Sistema de Inteligencia SEACE', pageW / 2, 20, { align: 'center' });
 
     // Date
     const today = new Date().toLocaleDateString('es-PE', { day: '2-digit', month: 'long', year: 'numeric' });
     doc.setFontSize(7);
-    doc.setTextColor(...COLORS.medium);
-    doc.text(`Fecha de emisión: ${today}`, pageW / 2, 27, { align: 'center' });
+    doc.setTextColor(200, 215, 255);
+    doc.text(`Fecha de emisión: ${today}`, pageW / 2, 25, { align: 'center' });
 
-    // Separator line under header
-    doc.setDrawColor(...COLORS.primary);
-    doc.setLineWidth(0.7);
-    doc.line(margin, 30, pageW - margin, 30);
-
-    y = 36;
+    y = 38;
 
     // ═══════════════════════════════════════════════════
     //  2. INFORMACIÓN DEL PROCESO

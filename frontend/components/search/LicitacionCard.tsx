@@ -42,28 +42,30 @@ export const LicitacionCard: React.FC<Props> = ({
     searchTerm
 }) => {
     // FORMATTERS
-    const formatDate = (dateString?: string) => {
+    const MESES_ES = [
+        '', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+    ];
+
+    const formatDate = (dateString?: string | null) => {
         if (!dateString) return "N/A";
-        // Fix: Use simple string split to avoid timezone conversion issues
-        if (dateString.includes('T')) {
-            // If it has time, we might still want to be careful, but these are usually YYYY-MM-DD
-            const dateOnly = dateString.split('T')[0];
-            const [year, month, day] = dateOnly.split('-');
-            return `${day}/${month}/${year}`;
+
+        // Normalize: strip time portion if present (e.g. 2025-02-17T00:00:00)
+        const cleanDate = dateString.includes('T') ? dateString.split('T')[0] : dateString;
+
+        // Parse YYYY-MM-DD  →  "17 de Febrero de 2025"
+        const parts = cleanDate.split('-');
+        if (parts.length === 3) {
+            const year  = parts[0];
+            const month = parseInt(parts[1], 10);
+            const day   = parseInt(parts[2], 10);
+            if (!isNaN(month) && !isNaN(day) && MESES_ES[month]) {
+                return `${day} de ${MESES_ES[month]} de ${year}`;
+            }
         }
 
-        // Assume YYYY-MM-DD
-        const [year, month, day] = dateString.split('-');
-        if (year && month && day) {
-            return `${day}/${month}/${year}`;
-        }
-
-        // Fallback for other formats
-        return new Date(dateString).toLocaleDateString("es-PE", {
-            day: "2-digit",
-            month: "2-digit",
-            year: "numeric"
-        });
+        // Fallback – already a text date or unknown format
+        return dateString;
     };
 
     const formatCurrency = (amount?: number, currency: string = "PEN") => {
@@ -400,15 +402,39 @@ export const LicitacionCard: React.FC<Props> = ({
                     </div>
                 </div>
 
-                {/* 8. Tipo de Garantia */}
+                {/* 8. Datos del Contrato (reemplaza Tipo de Garantía) */}
                 <div className="flex gap-3">
                     <div className="w-4 flex justify-center pt-0.5 shrink-0">
-                        {/* SHIELD Check Icon  */}
                         <ShieldCheck className="w-4 h-4 text-slate-400" />
                     </div>
                     <div className="flex-1 min-w-0">
-                        <p className="text-[10px] text-slate-500 font-medium uppercase mb-0.5">Tipo de Garantía</p>
-                        {renderGuaranteeBadges() || <p className="text-[10px] text-slate-400 italic">No especificada</p>}
+                        <p className="text-[10px] text-slate-500 font-medium uppercase mb-1">Datos del Contrato</p>
+                        {(() => {
+                            const primerMiembro = licitacion.miembros_consorcio?.find(m => m.fecha_firma_contrato || m.fecha_prevista_fin);
+                            if (!primerMiembro) {
+                                return <p className="text-[10px] text-slate-400 italic">No especificada</p>;
+                            }
+                            return (
+                                <div className="flex flex-col gap-1">
+                                    {primerMiembro.fecha_firma_contrato && (
+                                        <div>
+                                            <p className="text-[9px] text-slate-400 font-medium uppercase">Fecha de firma de contrato</p>
+                                            <p className="text-[11px] font-bold text-slate-700 dark:text-slate-200">
+                                                {formatDate(primerMiembro.fecha_firma_contrato)}
+                                            </p>
+                                        </div>
+                                    )}
+                                    {primerMiembro.fecha_prevista_fin && (
+                                        <div>
+                                            <p className="text-[9px] text-slate-400 font-medium uppercase">Fecha prevista de fin de contrato</p>
+                                            <p className="text-[11px] font-bold text-slate-700 dark:text-slate-200">
+                                                {formatDate(primerMiembro.fecha_prevista_fin)}
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })()}
                     </div>
                 </div>
 
@@ -439,11 +465,18 @@ export const LicitacionCard: React.FC<Props> = ({
                                     </div>
                                     <div className="flex flex-col gap-0.5">
                                         {licitacion.miembros_consorcio && licitacion.miembros_consorcio.length > 0 ? (
-                                            // Render from Objects (Preferred - shows clean names)
+                                            // Render from Objects (Preferred - shows clean names + porcentaje)
                                             licitacion.miembros_consorcio.map((miembro, idx) => (
-                                                <span key={idx} className="text-[9px] text-slate-500 leading-tight font-medium uppercase truncate">
-                                                    • {miembro.nombre_miembro}
-                                                </span>
+                                                <div key={idx} className="flex items-start justify-between gap-1">
+                                                    <span className="text-[9px] text-slate-500 leading-tight font-medium uppercase truncate flex-1">
+                                                        • {miembro.nombre_miembro}
+                                                    </span>
+                                                    {miembro.porcentaje_participacion > 0 && (
+                                                        <span className="text-[9px] font-bold text-indigo-600 shrink-0 bg-indigo-50 px-1 rounded">
+                                                            {miembro.porcentaje_participacion.toFixed(1)}%
+                                                        </span>
+                                                    )}
+                                                </div>
                                             ))
                                         ) : (
                                             // Fallback to text string

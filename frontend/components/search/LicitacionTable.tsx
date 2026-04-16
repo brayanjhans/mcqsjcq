@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { Eye, Search, FileDown, Loader2 } from "lucide-react";
 import type { Licitacion } from "@/types/licitacion";
+import { LOGO_MQS_B64, LOGO_JCQ_B64 } from "@/lib/utils/pdfAssets";
 
 interface Props {
     licitaciones: Licitacion[];
@@ -26,16 +27,30 @@ export const LicitacionTable: React.FC<Props> = ({
     const [exporting, setExporting] = useState(false);
 
     // FORMATTERS
-    const formatDate = (dateString?: string) => {
+    const MESES_ES = [
+        '', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+    ];
+
+    const formatDate = (dateString?: string | null) => {
         if (!dateString) return "N/A";
-        if (dateString.includes('T')) {
-            const dateOnly = dateString.split('T')[0];
-            const [year, month, day] = dateOnly.split('-');
-            return `${day}/${month}/${year}`;
+
+        // Normalize: strip time portion if present
+        const cleanDate = dateString.includes('T') ? dateString.split('T')[0] : dateString;
+
+        // Parse YYYY-MM-DD  →  "17 de Febrero de 2025"
+        const parts = cleanDate.split('-');
+        if (parts.length === 3) {
+            const year  = parts[0];
+            const month = parseInt(parts[1], 10);
+            const day   = parseInt(parts[2], 10);
+            if (!isNaN(month) && !isNaN(day) && MESES_ES[month]) {
+                return `${day} de ${MESES_ES[month]} de ${year}`;
+            }
         }
-        const [year, month, day] = dateString.split('-');
-        if (year && month && day) return `${day}/${month}/${year}`;
-        return new Date(dateString).toLocaleDateString("es-PE", { day: "2-digit", month: "2-digit", year: "numeric" });
+
+        // Fallback – already text or unknown format
+        return dateString;
     };
 
     const formatCurrency = (amount?: number, currency: string = "PEN") => {
@@ -78,6 +93,13 @@ export const LicitacionTable: React.FC<Props> = ({
         const pageW = doc.internal.pageSize.getWidth();
         doc.setFillColor(...primaryColor);
         doc.rect(0, 0, pageW, 18, "F");
+
+        try {
+            doc.addImage(LOGO_MQS_B64, 'PNG', 6, 2, 24, 14);
+            doc.addImage(LOGO_JCQ_B64, 'PNG', pageW - 30, 2, 24, 14);
+        } catch (e) {
+            console.warn("Could not load logos into PDF", e);
+        }
 
         let titleText = entityName || (searchTerm ? searchTerm.toUpperCase() : "BÚSQUEDA DE PROCEDIMIENTOS");
         
@@ -248,6 +270,7 @@ export const LicitacionTable: React.FC<Props> = ({
                             <th className="px-2.5 py-2.5 min-w-[100px] whitespace-nowrap text-right border-b-2 border-[#1e3a8a] dark:border-indigo-700 text-[10px]">Monto Est.</th>
                             <th className="px-2.5 py-2.5 min-w-[100px] whitespace-nowrap text-right border-b-2 border-[#1e3a8a] dark:border-indigo-700 text-[10px]">Monto Adj.</th>
                             <th className="px-2.5 py-2.5 min-w-[150px] max-w-[200px] whitespace-normal border-b-2 border-[#1e3a8a] dark:border-indigo-700 text-[10px]">Consorcio y Consorciado</th>
+                            <th className="px-2.5 py-2.5 min-w-[160px] whitespace-normal border-b-2 border-[#1e3a8a] dark:border-indigo-700 text-[10px]">Datos del Contrato</th>
                             <th className="px-2.5 py-2.5 min-w-[90px] border-b-2 border-[#1e3a8a] dark:border-indigo-700 text-[10px]">Fecha</th>
                             <th className="px-2.5 py-2.5 min-w-[90px] border-b-2 border-[#1e3a8a] dark:border-indigo-700 text-[10px]">Aseguradora</th>
                             <th className="px-2.5 py-2.5 text-center sticky right-0 bg-[#1e3a8a] dark:bg-indigo-600 z-10 shadow-[-4px_0_10px_-4px_rgba(0,0,0,0.1)] rounded-tr-xl border-b-2 border-[#1e3a8a] dark:border-indigo-700 text-[10px]">Acciones</th>
@@ -293,8 +316,15 @@ export const LicitacionTable: React.FC<Props> = ({
                                                 <span className="font-bold text-indigo-600 font-xs">Miembros:</span>
                                                 {lic.miembros_consorcio && lic.miembros_consorcio.length > 0 ? (
                                                     lic.miembros_consorcio.map((m, i) => (
-                                                        <div key={i} className="text-slate-500 truncate" title={m.nombre_miembro}>
-                                                            - {m.nombre_miembro} {m.ruc_miembro ? `(${m.ruc_miembro})` : ''}
+                                                        <div key={i} className="flex items-center justify-between gap-1">
+                                                            <span className="text-slate-500 truncate flex-1" title={m.nombre_miembro}>
+                                                                - {m.nombre_miembro} {m.ruc_miembro ? `(${m.ruc_miembro})` : ''}
+                                                            </span>
+                                                            {m.porcentaje_participacion > 0 && (
+                                                                <span className="text-[9px] font-bold text-indigo-600 shrink-0 bg-indigo-50 px-1 rounded">
+                                                                    {m.porcentaje_participacion.toFixed(1)}%
+                                                                </span>
+                                                            )}
                                                         </div>
                                                     ))
                                                 ) : (
@@ -307,6 +337,29 @@ export const LicitacionTable: React.FC<Props> = ({
                                             </div>
                                         )}
                                     </div>
+                                </td>
+                                {/* Nueva columna: Datos del Contrato */}
+                                <td className="px-2.5 py-2.5 text-[10px]">
+                                    {(() => {
+                                        const primerMiembro = lic.miembros_consorcio?.find(m => m.fecha_firma_contrato || m.fecha_prevista_fin);
+                                        if (!primerMiembro) return <span className="text-slate-400 italic">N/A</span>;
+                                        return (
+                                            <div className="flex flex-col gap-1.5">
+                                                {primerMiembro.fecha_firma_contrato && (
+                                                    <div>
+                                                        <p className="text-[9px] text-slate-400 font-medium uppercase leading-none mb-0.5">Fecha de firma de contrato</p>
+                                                        <p className="font-bold text-slate-700 dark:text-slate-200">{formatDate(primerMiembro.fecha_firma_contrato)}</p>
+                                                    </div>
+                                                )}
+                                                {primerMiembro.fecha_prevista_fin && (
+                                                    <div>
+                                                        <p className="text-[9px] text-slate-400 font-medium uppercase leading-none mb-0.5">Fecha prevista de fin de contrato</p>
+                                                        <p className="font-bold text-slate-700 dark:text-slate-200">{formatDate(primerMiembro.fecha_prevista_fin)}</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })()}
                                 </td>
                                 <td className="px-2.5 py-2.5 text-[10px]">
                                     <div className="flex flex-col gap-1">
@@ -345,7 +398,7 @@ export const LicitacionTable: React.FC<Props> = ({
 
                         {licitaciones.length === 0 && (
                             <tr>
-                                <td colSpan={10} className="px-4 py-12 text-center text-slate-500 dark:text-slate-400">
+                                <td colSpan={11} className="px-4 py-12 text-center text-slate-500 dark:text-slate-400">
                                     <div className="flex flex-col items-center justify-center gap-2">
                                         <Search className="w-8 h-8 text-slate-300" />
                                         <span>No se encontraron resultados para mostrar en la tabla.</span>

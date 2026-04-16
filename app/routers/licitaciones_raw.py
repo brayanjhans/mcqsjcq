@@ -618,14 +618,16 @@ def get_licitaciones(
             
             batch_cons_sql = text(f"""
                 (
-                    SELECT la.id_convocatoria, dc.nombre_miembro, dc.ruc_miembro, dc.porcentaje_participacion
+                    SELECT la.id_convocatoria, dc.nombre_miembro, dc.ruc_miembro, dc.porcentaje_participacion,
+                           dc.fecha_firma_contrato, dc.fecha_prevista_fin, dc.telefono_miembro, dc.email_miembro
                     FROM licitaciones_adjudicaciones la
                     JOIN detalle_consorcios dc ON dc.id_contrato = la.id_contrato
                     WHERE la.id_convocatoria IN ({','.join(cons_in_params)})
                 )
                 UNION
                 (
-                    SELECT la.id_convocatoria, dc.nombre_miembro, dc.ruc_miembro, dc.porcentaje_participacion
+                    SELECT la.id_convocatoria, dc.nombre_miembro, dc.ruc_miembro, dc.porcentaje_participacion,
+                           dc.fecha_firma_contrato, dc.fecha_prevista_fin, dc.telefono_miembro, dc.email_miembro
                     FROM licitaciones_adjudicaciones la
                     JOIN detalle_consorcios dc ON dc.id_contrato = la.id_adjudicacion
                     WHERE la.id_convocatoria IN ({','.join(cons_in_params)})
@@ -641,7 +643,11 @@ def get_licitaciones(
                 cons_map[cid].append({
                     "nombre_miembro": r[1],
                     "ruc_miembro": r[2],
-                    "porcentaje_participacion": float(r[3]) if r[3] else 0
+                    "porcentaje_participacion": float(r[3]) if r[3] else 0,
+                    "fecha_firma_contrato": str(r[4]) if r[4] else None,
+                    "fecha_prevista_fin": str(r[5]) if r[5] else None,
+                    "telefono_miembro": r[6],
+                    "email_miembro": r[7]
                 })
             
             for item in items:
@@ -1056,7 +1062,9 @@ def get_licitacion_detail(
                 SELECT 
                     TRIM(CAST(id_contrato AS CHAR)) as id_link,
                     ruc_miembro, nombre_miembro, 
-                    porcentaje_participacion 
+                    porcentaje_participacion,
+                    fecha_firma_contrato, fecha_prevista_fin,
+                    telefono_miembro, email_miembro
                 FROM detalle_consorcios
                 WHERE TRIM(CAST(id_contrato AS CHAR)) IN :ids
             """)
@@ -1074,7 +1082,11 @@ def get_licitacion_detail(
                 consorcios_map[c_id].append({
                     "ruc_miembro": row[1],
                     "nombre_miembro": row[2],
-                    "porcentaje_participacion": float(row[3]) if row[3] else 0
+                    "porcentaje_participacion": float(row[3]) if row[3] else 0,
+                    "fecha_firma_contrato": str(row[4]) if row[4] else None,
+                    "fecha_prevista_fin": str(row[5]) if row[5] else None,
+                    "telefono_miembro": row[6],
+                    "email_miembro": row[7]
                 })
             
             # Attach to adjudicaciones checking BOTH keys
