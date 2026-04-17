@@ -471,9 +471,9 @@ export const LicitacionCard: React.FC<Props> = ({
                                                     <span className="text-[9px] text-slate-500 leading-tight font-medium uppercase truncate flex-1">
                                                         • {miembro.nombre_miembro}
                                                     </span>
-                                                    {miembro.porcentaje_participacion > 0 && (
-                                                        <span className="text-[9px] font-bold text-indigo-600 shrink-0 bg-indigo-50 px-1 rounded">
-                                                            {miembro.porcentaje_participacion.toFixed(1)}%
+                                                    {Number(miembro.porcentaje_participacion) > 0 && (
+                                                        <span className="text-[9px] font-bold text-indigo-600 shrink-0 bg-indigo-50 px-1 rounded ml-1">
+                                                            {Number(miembro.porcentaje_participacion).toFixed(1)}%
                                                         </span>
                                                     )}
                                                 </div>

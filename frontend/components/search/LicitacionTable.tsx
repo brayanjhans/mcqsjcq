@@ -132,7 +132,7 @@ export const LicitacionTable: React.FC<Props> = ({
             let ganador = lic.ganador_nombre || "";
             if (lic.miembros_consorcio && lic.miembros_consorcio.length > 0) {
                 const miembros = lic.miembros_consorcio
-                    .map((m: any) => `  - ${m.nombre_miembro}${m.ruc_miembro ? ` (${m.ruc_miembro})` : ""}`)
+                    .map((m: any) => `  - ${m.nombre_miembro}${m.ruc_miembro ? ` (${m.ruc_miembro})` : ""}${Number(m.porcentaje_participacion) > 0 ? `   [ ${Number(m.porcentaje_participacion).toFixed(1)}% ]` : ""}`)
                     .join("\n");
                 ganador += (ganador ? "\nMiembros:\n" : "Miembros:\n") + miembros;
             } else if (lic.nombres_consorciados) {
@@ -199,6 +199,46 @@ export const LicitacionTable: React.FC<Props> = ({
             margin: { left: 6, right: 6 },
             tableLineColor: borderColor,
             tableLineWidth: 0.2,
+            didDrawCell: (data: any) => {
+                if (data.section === 'body' && data.column.index === 6 && data.cell.text) {
+                    let cursorY = data.cell.textPos.y; 
+                    const fontSizePt = data.cell.styles.fontSize;
+                    const scaleFactor = doc.internal.scaleFactor || 2.8346;
+                    
+                    data.cell.text.forEach((line: string) => {
+                        // Check if line contains our percentage marker like [ 50.0% ]
+                        const match = line.match(/\[\s*(\d+(\.\d+)?)%\s*\]/);
+                        if (match) {
+                            const tagText = match[0];
+                            const matchIndex = line.indexOf(tagText);
+                            const preText = line.substring(0, matchIndex);
+                            
+                            const preWidth = doc.getTextWidth(preText);
+                            const tagWidth = doc.getTextWidth(tagText);
+                            
+                            const xStart = data.cell.textPos.x + preWidth;
+                            
+                            // Draw Golden Tag Background (Amber 500) over the original text
+                            doc.setFillColor(245, 158, 11);
+                            const padX = 0.5;
+                            const height = (fontSizePt / scaleFactor) * 1.35;
+                            const offsetY = (fontSizePt / scaleFactor) * 0.95;
+                            doc.rect(xStart - padX, cursorY - offsetY, tagWidth + (padX * 2), height, 'F');
+                            
+                            // Redraw the tag text in White & Bold
+                            doc.setTextColor(255, 255, 255);
+                            doc.setFont("helvetica", "bold");
+                            doc.text(tagText, xStart, cursorY);
+                            
+                            // Revert styles for safety
+                            doc.setTextColor(30, 30, 50);
+                            doc.setFont("helvetica", "normal");
+                        }
+                        // Advance line height (standard factor 1.15)
+                        cursorY += (fontSizePt / scaleFactor) * 1.15; 
+                    });
+                }
+            }
         });
 
         // Números de página
@@ -320,9 +360,9 @@ export const LicitacionTable: React.FC<Props> = ({
                                                             <span className="text-slate-500 truncate flex-1" title={m.nombre_miembro}>
                                                                 - {m.nombre_miembro} {m.ruc_miembro ? `(${m.ruc_miembro})` : ''}
                                                             </span>
-                                                            {m.porcentaje_participacion > 0 && (
-                                                                <span className="text-[9px] font-bold text-indigo-600 shrink-0 bg-indigo-50 px-1 rounded">
-                                                                    {m.porcentaje_participacion.toFixed(1)}%
+                                                            {Number(m.porcentaje_participacion) > 0 && (
+                                                                <span className="text-[9px] font-bold text-indigo-600 shrink-0 bg-indigo-50 px-1 rounded ml-1">
+                                                                    {Number(m.porcentaje_participacion).toFixed(1)}%
                                                                 </span>
                                                             )}
                                                         </div>
