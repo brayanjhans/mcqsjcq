@@ -126,7 +126,7 @@ export const LicitacionTable: React.FC<Props> = ({
         );
 
         // ── Columnas con nombres completos ──
-        const head = [["N°", "Entidad", "Nomenclatura", "Descripción", "Monto Estimado", "Monto Adjudicado", "Consorcio y Consorciado", "Fecha Convocatoria", "Fecha Adjudicación", "Aseguradora"]];
+        const head = [["N°", "Entidad", "Nomenclatura", "Descripción", "Monto Estimado", "Monto Adjudicado", "Consorcio y Consorciado", "Datos del Contrato", "Fechas", "Aseguradora"]];
 
         const body = data.map((lic, idx) => {
             let ganador = lic.ganador_nombre || "";
@@ -148,6 +148,15 @@ export const LicitacionTable: React.FC<Props> = ({
                 ? formatCurrency(lic.monto_total_adjudicado || 0, lic.moneda)
                 : "N/A";
 
+            const primerMiembro = lic.miembros_consorcio?.find(m => m.fecha_firma_contrato || m.fecha_prevista_fin);
+            let datosContrato = "N/A";
+            if (primerMiembro) {
+                const lines = [];
+                if (primerMiembro.fecha_firma_contrato) lines.push(`Fecha de firma de contrato\n\n${formatDate(primerMiembro.fecha_firma_contrato)}`);
+                if (primerMiembro.fecha_prevista_fin) lines.push(`Fecha prevista de fin de contrato\n\n${formatDate(primerMiembro.fecha_prevista_fin)}`);
+                if (lines.length > 0) datosContrato = lines.join("\n\n");
+            }
+
             return [
                 idx + 1,
                 lic.comprador || "",
@@ -156,8 +165,8 @@ export const LicitacionTable: React.FC<Props> = ({
                 formatCurrency(lic.monto_estimado, lic.moneda),
                 montoAdj,
                 ganador,
-                formatDate(lic.fecha_publicacion),
-                formatDate(lic.fecha_adjudicacion),
+                datosContrato,
+                `Conv: ${formatDate(lic.fecha_publicacion)}\nAdj: ${formatDate(lic.fecha_adjudicacion)}`,
                 lic.entidades_financieras || "N/A",
             ];
         });
@@ -186,15 +195,15 @@ export const LicitacionTable: React.FC<Props> = ({
             alternateRowStyles: { fillColor: altRow },
             columnStyles: {
                 0: { halign: "center", cellWidth: 7 },
-                1: { cellWidth: 35, fontStyle: "bold" },
-                2: { cellWidth: 26, fontStyle: "bold", textColor: [30, 58, 138] },
-                3: { cellWidth: 36 },
-                4: { halign: "right", cellWidth: 22 },
-                5: { halign: "right", cellWidth: 22, textColor: [5, 150, 105] },
+                1: { cellWidth: 32, fontStyle: "bold" },
+                2: { cellWidth: 23, fontStyle: "bold", textColor: [30, 58, 138] },
+                3: { cellWidth: 32 },
+                4: { halign: "right", cellWidth: 19 },
+                5: { halign: "right", cellWidth: 19, textColor: [5, 150, 105] },
                 6: { cellWidth: "auto" },
-                7: { halign: "center", cellWidth: 19 },
-                8: { halign: "center", cellWidth: 19 },
-                9: { cellWidth: 22 },
+                7: { cellWidth: 28 },
+                8: { halign: "left", cellWidth: 25 },
+                9: { cellWidth: 16 },
             },
             margin: { left: 6, right: 6 },
             tableLineColor: borderColor,
