@@ -17,7 +17,8 @@ import {
     Building2,
     Loader2,
     LayoutGrid,
-    List
+    List,
+    DollarSign
 } from "lucide-react";
 
 const DEFAULT_TIPOS_PROCEDIMIENTO = [
@@ -89,7 +90,7 @@ function BusquedaContent() {
     const [licitaciones, setLicitaciones] = useState<Licitacion[]>([]);
     const [loading, setLoading] = useState(false);
     const [currentPage, setCurrentPage] = useState(Number(searchParams.get('page')) || 1);
-    const [itemsPerPage, setItemsPerPage] = useState(12);
+    const [itemsPerPage, setItemsPerPage] = useState(20);
     const [totalPages, setTotalPages] = useState(0);
     const [totalItems, setTotalItems] = useState(0);
 
@@ -347,21 +348,25 @@ function BusquedaContent() {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 dark:bg-[#0b122b] p-4 sm:p-6 lg:p-8 transition-colors duration-300">
-            <div className="mx-auto max-w-7xl space-y-8">
+        <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#020617] p-4 sm:p-6 lg:p-8 transition-colors duration-500 relative overflow-hidden">
+            {/* Ambient Background Elements */}
+            <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-500/10 rounded-full blur-[120px] animate-pulse"></div>
+            <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-500/10 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '2s' }}></div>
+            
+            <div className="mx-auto max-w-[1700px] space-y-10 relative z-10">
 
                 {/* Main Filter Card */}
-                <div className="rounded-3xl bg-white shadow-sm border border-slate-200 dark:bg-[#111c44] dark:border-white/5">
-                    <div className="p-6 md:p-8">
+                <div className="rounded-[2.5rem] glass-luxury border-white/40 mb-10 overflow-hidden">
+                    <div className="p-8 md:p-10">
 
                         {/* Header */}
                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
                             <div>
-                                <h1 className="text-2xl font-extrabold text-[#0F172A] dark:text-white tracking-tight">
-                                    Búsqueda de Procedimientos
+                                <h1 className="text-4xl font-black text-slate-900 dark:text-white tracking-tighter">
+                                    Búsqueda Inteligente
                                 </h1>
-                                <p className="mt-1 text-sm font-medium text-slate-500 dark:text-slate-400">
-                                    Encuentra oportunidades de negocio en el estado
+                                <p className="mt-2 text-sm font-medium text-slate-500 dark:text-slate-400">
+                                    Explora el ecosistema de contrataciones del estado en tiempo real
                                 </p>
                             </div>
 
@@ -552,59 +557,125 @@ function BusquedaContent() {
                         </button>
                     </div>
                 )}
+                {/* Results Header with Integrated Stats & Enhanced Animations */}
+                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-8 px-2">
+                    <div className="flex flex-col gap-3 group">
+                        <div className="flex items-center gap-3">
+                            <div className="w-2.5 h-10 bg-gradient-to-b from-indigo-600 to-blue-600 rounded-full shadow-lg shadow-indigo-500/20 group-hover:scale-y-110 transition-transform duration-500"></div>
+                            <h2 className="text-3xl font-black text-[#0A192F] dark:text-white uppercase tracking-tighter transition-all duration-300 group-hover:translate-x-1">
+                                Resultados de búsqueda
+                            </h2>
+                        </div>
+                        {!loading && totalItems > 0 && (
+                            <div className="flex flex-wrap items-center gap-4 ml-5 animate-in fade-in slide-in-from-left-4 duration-700">
+                                <div className="flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-blue-500/5 border border-blue-500/10 dark:bg-blue-500/10 hover:bg-blue-500/10 hover:border-blue-500/20 transition-all duration-300 group/badge cursor-default">
+                                    <div className="relative">
+                                        <Search className="w-4 h-4 text-blue-600 relative z-10" />
+                                        <div className="absolute inset-0 bg-blue-400 rounded-full blur-md opacity-0 group-hover/badge:opacity-50 animate-pulse transition-opacity"></div>
+                                    </div>
+                                    <span className="text-[11px] font-black uppercase tracking-widest text-slate-400 mr-1">Total:</span>
+                                    <span className="text-base font-black text-blue-700 dark:text-blue-400 tabular-nums">
+                                        {totalItems.toLocaleString()}
+                                    </span>
+                                </div>
+                            </div>
+                        )}
+                    </div>
 
-                {/* Results Header */}
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    <h2 className="text-lg font-semibold text-slate-900 dark:text-white shrink-0">
-                        {loading ? 'Cargando...' : `${totalItems} resultados`}
-                    </h2>
-                        
                     {!loading && totalItems > 0 && (
-                        <div className="flex flex-1 justify-center sm:justify-center w-full sm:w-auto mt-2 sm:mt-0">
-                            <div className="flex items-center gap-1.5 bg-slate-100/80 p-1.5 rounded-xl dark:bg-slate-800/80 shadow-inner border border-slate-200/50 dark:border-slate-700/50">
+                        <div className="flex flex-col sm:flex-row items-center gap-6 w-full lg:w-auto animate-in fade-in slide-in-from-right-4 duration-700">
+                            {/* Enhanced View Switcher */}
+                            <div className="relative flex items-center glass-luxury p-1.5 rounded-[1.5rem] border-white/50 shadow-2xl overflow-hidden min-w-[300px]">
+                                {/* Sliding Indicator Background with Deep Navy Gradient */}
+                                <div 
+                                    className="absolute top-1.5 bottom-1.5 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] rounded-2xl bg-gradient-to-r from-[#1e3a8a] to-[#172554] shadow-xl"
+                                    style={{
+                                        left: viewMode === 'table' ? '6px' : 'calc(50% + 3px)',
+                                        width: 'calc(50% - 9px)',
+                                    }}
+                                />
+                                
                                 <button
                                     onClick={() => setViewMode('table')}
-                                    className={`flex items-center gap-2.5 px-8 py-2.5 rounded-lg text-xs font-extrabold transition-all duration-200 ${
+                                    className={`relative z-10 flex-1 flex items-center justify-center gap-3 py-3.5 text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-500 ${
                                         viewMode === 'table' 
-                                            ? 'bg-white text-blue-600 shadow-sm ring-1 ring-slate-900/5 dark:bg-slate-700 dark:text-blue-400 dark:ring-white/10' 
-                                            : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-700/50'
+                                            ? 'text-white dark:text-[#0A192F] scale-105' 
+                                            : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100'
                                     }`}
                                 >
-                                    <List className="w-4 h-4" />
-                                    Vista tabla
+                                    <List className={`w-4 h-4 transition-all duration-500 ${viewMode === 'table' ? 'rotate-0' : 'rotate-[-10deg] opacity-60'}`} />
+                                    Tabla
                                 </button>
+                                
                                 <button
                                     onClick={() => setViewMode('card')}
-                                    className={`flex items-center gap-2.5 px-8 py-2.5 rounded-lg text-xs font-extrabold transition-all duration-200 ${
+                                    className={`relative z-10 flex-1 flex items-center justify-center gap-3 py-3.5 text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-500 ${
                                         viewMode === 'card' 
-                                            ? 'bg-white text-blue-600 shadow-sm ring-1 ring-slate-900/5 dark:bg-slate-700 dark:text-blue-400 dark:ring-white/10' 
-                                            : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-700/50'
+                                            ? 'text-white dark:text-[#0A192F] scale-105' 
+                                            : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100'
                                     }`}
                                 >
-                                    <LayoutGrid className="w-4 h-4" />
-                                    Vista card
+                                    <LayoutGrid className={`w-4 h-4 transition-all duration-500 ${viewMode === 'card' ? 'scale-110' : 'scale-90 opacity-60 rotate-[10deg]'}`} />
+                                    Cards
                                 </button>
+                            </div>
+
+                            {/* Refined Page Indicator */}
+                            <div className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-white dark:bg-[#111c44] border border-slate-200 dark:border-white/10 shadow-sm group/page cursor-default">
+                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Página</span>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-base font-black text-indigo-600 dark:text-indigo-400 animate-in zoom-in duration-300">
+                                        {currentPage}
+                                    </span>
+                                    <span className="text-slate-300 dark:text-slate-700 font-light text-xl">/</span>
+                                    <span className="text-base font-black text-slate-900 dark:text-white">
+                                        {totalPages || 1}
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     )}
-
-                    <div className="flex items-center gap-2 text-sm font-medium text-slate-600 dark:text-slate-400 whitespace-nowrap">
-                        Página <span className="text-slate-900 dark:text-white font-bold">{currentPage}</span> de <span className="text-slate-900 dark:text-white font-bold">{totalPages || 1}</span>
-                    </div>
                 </div>
 
-                {/* Grid */}
+
                 {loading ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
-                        {[...Array(6)].map((_, i) => (
-                            <div key={i} className="h-64 rounded-2xl bg-slate-200/50 animate-pulse dark:bg-slate-800/50"></div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                        {[...Array(8)].map((_, i) => (
+                            <div key={i} className="rounded-[2.5rem] bg-white/50 dark:bg-white/5 p-8 border border-white/20 space-y-6 overflow-hidden relative">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 rounded-2xl skeleton-box shrink-0"></div>
+                                    <div className="flex-1 space-y-2">
+                                        <div className="h-4 w-3/4 skeleton-box rounded"></div>
+                                        <div className="h-3 w-1/2 skeleton-box rounded opacity-50"></div>
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <div className="h-3 w-full skeleton-box rounded"></div>
+                                    <div className="h-3 w-5/6 skeleton-box rounded"></div>
+                                </div>
+                                <div className="space-y-4 pt-2">
+                                    {[...Array(3)].map((_, j) => (
+                                        <div key={j} className="flex gap-3">
+                                            <div className="w-4 h-4 skeleton-box rounded shrink-0"></div>
+                                            <div className="h-3 w-1/2 skeleton-box rounded"></div>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className="h-10 w-full skeleton-box rounded-xl mt-4"></div>
+                            </div>
                         ))}
                     </div>
                 ) : licitaciones.length > 0 ? (
                     viewMode === 'card' ? (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
-                            {licitaciones.map((lic) => (
-                                <LicitacionCard key={lic.id_convocatoria} licitacion={lic} searchTerm={searchTerm} />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                            {licitaciones.map((lic, index) => (
+                                <div 
+                                    key={lic.id_convocatoria}
+                                    className="animate-in fade-in slide-in-from-bottom-8 duration-700 fill-mode-both"
+                                    style={{ animationDelay: `${index * 80}ms` }}
+                                >
+                                    <LicitacionCard licitacion={lic} searchTerm={searchTerm} />
+                                </div>
                             ))}
                         </div>
                     ) : (

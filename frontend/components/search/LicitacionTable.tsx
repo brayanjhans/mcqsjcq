@@ -238,168 +238,164 @@ export const LicitacionTable: React.FC<Props> = ({
             console.error("Error al exportar PDF:", err);
             // Fallback: exportar solo los de la página actual
             await buildPDF(licitaciones);
-        } finally {
-            setExporting(false);
         }
     };
 
     return (
-        <div className="flex flex-col gap-3">
-            {/* Export Bar */}
-            <div className="flex items-center justify-between">
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Mostrando <span className="font-bold text-slate-700 dark:text-slate-200">{licitaciones.length}</span>
-                    {totalItems && totalItems > licitaciones.length
-                        ? <> de <span className="font-bold text-slate-700 dark:text-slate-200">{totalItems}</span> resultado(s)</>
-                        : <> resultado(s)</>
-                    }
-                    {searchTerm && <> para <span className="font-bold text-indigo-600 dark:text-indigo-400">"{searchTerm}"</span></>}
-                </p>
+                <div className="flex flex-col gap-4 animate-in fade-in duration-700">
+            {/* Professional Export & Info Bar */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white/50 dark:bg-white/[0.02] p-4 rounded-2xl border border-slate-200/60 dark:border-white/5 backdrop-blur-sm shadow-sm">
+                <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 dark:bg-indigo-500/10">
+                        <Search className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+                    </div>
+                    <div className="flex flex-col">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 leading-none mb-1">Resultados en tabla</p>
+                        <p className="text-sm text-slate-600 dark:text-slate-300">
+                            Mostrando <span className="font-black text-slate-900 dark:text-white tabular-nums">{licitaciones.length}</span>
+                            {totalItems && totalItems > licitaciones.length
+                                ? <> de <span className="font-black text-slate-900 dark:text-white tabular-nums">{totalItems.toLocaleString()}</span> encontrados</>
+                                : <> registros en total</>
+                            }
+                        </p>
+                    </div>
+                </div>
+                
                 <button
                     onClick={handleExportPDF}
                     disabled={licitaciones.length === 0 || exporting}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white text-xs font-bold rounded-xl shadow-md shadow-rose-500/20 transition-all disabled:opacity-50 disabled:pointer-events-none"
+                    className="group relative inline-flex items-center gap-2.5 px-6 py-3 bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white text-xs font-black uppercase tracking-widest rounded-xl shadow-lg shadow-rose-500/20 transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:pointer-events-none overflow-hidden"
                 >
+                    <div className="absolute inset-0 w-1/2 h-full skew-x-[-20deg] bg-white/10 -translate-x-full group-hover:translate-x-[250%] transition-transform duration-1000"></div>
                     {exporting
-                        ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Generando PDF...</>
-                        : <><FileDown className="w-3.5 h-3.5" /> Exportar PDF {totalItems && totalItems > licitaciones.length ? `(${totalItems} registros)` : ""}</>
+                        ? <><Loader2 className="w-4 h-4 animate-spin" /> Generando...</>
+                        : <><FileDown className="w-4 h-4" /> Exportar PDF {totalItems && totalItems > licitaciones.length ? `(${totalItems})` : ""}</>
                     }
                 </button>
             </div>
 
-            {/* Table */}
-            <div className="w-full overflow-x-auto rounded-xl border border-slate-200 shadow-sm dark:border-white/10 dark:bg-[#111c44]">
+            {/* Table Container with Glass Effect */}
+            <div className="w-full overflow-x-auto rounded-[2rem] border border-slate-200/60 dark:border-white/10 shadow-2xl bg-white dark:bg-[#0A192F] relative group/table">
                 <table className="w-full text-left text-sm text-slate-600 dark:text-slate-300 border-separate border-spacing-0">
-                    <thead className="bg-[#1e3a8a] text-white uppercase font-extrabold text-[11px] tracking-wider sticky top-0 dark:bg-indigo-600 relative">
+                    <thead className="bg-gradient-to-r from-[#1e3a8a] via-[#1e40af] to-[#172554] text-white uppercase font-black text-[10px] tracking-[0.15em] sticky top-0 z-20">
                         <tr>
-                            <th className="px-2.5 py-2.5 whitespace-nowrap text-center rounded-tl-xl border-b-2 border-[#1e3a8a] dark:border-indigo-700 text-[10px]">N°</th>
-                            <th className="px-2.5 py-2.5 min-w-[120px] max-w-[160px] whitespace-normal border-b-2 border-[#1e3a8a] dark:border-indigo-700 text-[10px]">Entidad</th>
-                            <th className="px-2.5 py-2.5 min-w-[110px] max-w-[150px] whitespace-normal border-b-2 border-[#1e3a8a] dark:border-indigo-700 text-[10px]">Nomenclatura</th>
-                            <th className="px-2.5 py-2.5 min-w-[160px] border-b-2 border-[#1e3a8a] dark:border-indigo-700 text-[10px]">Descripción</th>
-                            <th className="px-2.5 py-2.5 min-w-[100px] whitespace-nowrap text-right border-b-2 border-[#1e3a8a] dark:border-indigo-700 text-[10px]">Monto Est.</th>
-                            <th className="px-2.5 py-2.5 min-w-[100px] whitespace-nowrap text-right border-b-2 border-[#1e3a8a] dark:border-indigo-700 text-[10px]">Monto Adj.</th>
-                            <th className="px-2.5 py-2.5 min-w-[150px] max-w-[200px] whitespace-normal border-b-2 border-[#1e3a8a] dark:border-indigo-700 text-[10px]">Consorcio y Consorciado</th>
-                            <th className="px-2.5 py-2.5 min-w-[160px] whitespace-normal border-b-2 border-[#1e3a8a] dark:border-indigo-700 text-[10px]">Datos del Contrato</th>
-                            <th className="px-2.5 py-2.5 min-w-[90px] border-b-2 border-[#1e3a8a] dark:border-indigo-700 text-[10px]">Fecha</th>
-                            <th className="px-2.5 py-2.5 min-w-[90px] border-b-2 border-[#1e3a8a] dark:border-indigo-700 text-[10px]">Aseguradora</th>
-                            <th className="px-2.5 py-2.5 text-center sticky right-0 bg-[#1e3a8a] dark:bg-indigo-600 z-10 shadow-[-4px_0_10px_-4px_rgba(0,0,0,0.1)] rounded-tr-xl border-b-2 border-[#1e3a8a] dark:border-indigo-700 text-[10px]">Acciones</th>
+                            <th className="px-5 py-6 text-center border-b border-white/10 first:rounded-tl-[2rem]">N°</th>
+                            <th className="px-5 py-6 min-w-[150px] border-b border-white/10">Entidad</th>
+                            <th className="px-5 py-6 min-w-[140px] border-b border-white/10">Nomenclatura</th>
+                            <th className="px-5 py-6 min-w-[200px] border-b border-white/10">Descripción</th>
+                            <th className="px-5 py-6 min-w-[120px] text-right border-b border-white/10">Monto Est.</th>
+                            <th className="px-5 py-6 min-w-[120px] text-right border-b border-white/10">Monto Adj.</th>
+                            <th className="px-5 py-6 min-w-[200px] border-b border-white/10">Adjudicatario</th>
+                            <th className="px-5 py-6 min-w-[180px] border-b border-white/10">Cronograma</th>
+                            <th className="px-5 py-6 min-w-[120px] border-b border-white/10">Fechas</th>
+                            <th className="px-5 py-6 min-w-[120px] border-b border-white/10">Aseguradora</th>
+                            <th className="px-5 py-6 text-center sticky right-0 bg-[#172554] border-b border-white/10 shadow-[-10px_0_20px_-10px_rgba(0,0,0,0.3)] last:rounded-tr-[2rem]">Acciones</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-200 bg-white dark:divide-white/5 dark:bg-[#111c44]">
+                    <tbody className="divide-y divide-slate-100 dark:divide-white/5 bg-white dark:bg-transparent">
                         {licitaciones.map((lic, index) => (
-                            <tr key={lic.id_convocatoria} className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
-                                <td className="px-2.5 py-2.5 text-center font-medium text-slate-900 dark:text-white border-r border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.02]">
-                                    {index + 1}
+                            <tr 
+                                key={lic.id_convocatoria} 
+                                className="group/row hover:bg-blue-50/40 dark:hover:bg-white/[0.03] transition-all duration-300 animate-in fade-in slide-in-from-bottom-2"
+                                style={{ animationDelay: `${index * 50}ms` }}
+                            >
+                                <td className="px-5 py-6 text-center font-black text-slate-400 dark:text-slate-500 tabular-nums border-r border-slate-100/50 dark:border-white/5 group-hover/row:text-blue-700 transition-colors">
+                                    {String(index + 1).padStart(2, '0')}
                                 </td>
-                                <td className="px-2.5 py-2.5 text-[11px] font-bold text-slate-800 uppercase leading-snug dark:text-slate-200">
-                                    {getHighlightedText(lic.comprador, searchTerm)}
+                                <td className="px-5 py-6">
+                                    <div className="text-[11px] font-black text-slate-800 dark:text-white uppercase leading-tight tracking-tight group-hover/row:translate-x-1 transition-transform">
+                                        {getHighlightedText(lic.comprador, searchTerm)}
+                                    </div>
                                 </td>
-                                <td className="px-2.5 py-2.5 text-[11px] font-bold text-[#1e3a8a] uppercase leading-tight dark:text-indigo-400">
-                                    {lic.nomenclatura ? getHighlightedText(lic.nomenclatura, searchTerm) : "SIN NOMENCLATURA"}
+                                <td className="px-5 py-6">
+                                    <div className="inline-flex px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-500/10 text-[10px] font-black text-blue-800 dark:text-blue-400 uppercase tracking-tighter">
+                                        {lic.nomenclatura ? getHighlightedText(lic.nomenclatura, searchTerm) : "SIN NOM."}
+                                    </div>
                                 </td>
-                                <td className="px-2.5 py-2.5 text-[10px] text-slate-600 dark:text-slate-400">
-                                    <span className="line-clamp-3" title={lic.descripcion}>
+                                <td className="px-5 py-6">
+                                    <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 line-clamp-3 leading-relaxed" title={lic.descripcion}>
                                         {getHighlightedText(lic.descripcion, searchTerm)}
                                     </span>
                                 </td>
-                                <td className="px-2.5 py-2.5 text-right">
-                                    <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                                <td className="px-5 py-6 text-right">
+                                    <span className="text-[11px] font-black text-slate-700 dark:text-slate-300 tabular-nums">
                                         {formatCurrency(lic.monto_estimado, lic.moneda)}
                                     </span>
                                 </td>
-                                <td className="px-2.5 py-2.5 text-right">
-                                    <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                                <td className="px-5 py-6 text-right">
+                                    <span className={`text-[11px] font-black tabular-nums ${
+                                        (lic.estado_proceso?.toUpperCase().includes("CONTRATADO") || lic.estado_proceso?.toUpperCase().includes("ADJUDICADO") || lic.monto_total_adjudicado)
+                                            ? 'text-emerald-600 dark:text-emerald-400'
+                                            : 'text-slate-400 dark:text-slate-600'
+                                    }`}>
                                         {(lic.estado_proceso?.toUpperCase().includes("CONTRATADO") || lic.estado_proceso?.toUpperCase().includes("ADJUDICADO") || lic.monto_total_adjudicado)
                                             ? formatCurrency(lic.monto_total_adjudicado || 0, lic.moneda)
                                             : "N/A"
                                         }
                                     </span>
                                 </td>
-                                <td className="px-2.5 py-2.5">
-                                    <div className="flex flex-col gap-1 text-[10px]">
-                                        <div className="font-bold text-slate-800 uppercase dark:text-slate-200">
-                                            {lic.ganador_nombre || "N/A"}
+                                <td className="px-5 py-6">
+                                    <div className="flex flex-col gap-1.5">
+                                        <div className="text-[10px] font-black text-slate-800 dark:text-white uppercase leading-tight">
+                                            {lic.ganador_nombre || <span className="text-slate-400 italic font-normal">No adjudicado</span>}
                                         </div>
                                         {((lic.miembros_consorcio && lic.miembros_consorcio.length > 0) || lic.nombres_consorciados) && (
-                                            <div className="mt-0.5 border-l-2 border-indigo-200 pl-2">
-                                                <span className="font-bold text-indigo-600 font-xs">Miembros:</span>
-                                                {lic.miembros_consorcio && lic.miembros_consorcio.length > 0 ? (
-                                                    lic.miembros_consorcio.map((m, i) => (
-                                                        <div key={i} className="flex items-center justify-between gap-1">
-                                                            <span className="text-slate-500 truncate flex-1" title={m.nombre_miembro}>
-                                                                - {m.nombre_miembro} {m.ruc_miembro ? `(${m.ruc_miembro})` : ''}
-                                                            </span>
-                                                            {Number(m.porcentaje_participacion) > 0 && (
-                                                                <span className="text-[9px] font-bold text-indigo-600 shrink-0 bg-indigo-50 px-1 rounded ml-1">
-                                                                    {Number(m.porcentaje_participacion).toFixed(1)}%
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    ))
-                                                ) : (
-                                                    lic.nombres_consorciados?.split('|').map((n, i) => (
-                                                        <div key={i} className="text-slate-500 truncate" title={n}>
-                                                            - {n}
-                                                        </div>
-                                                    ))
-                                                )}
+                                            <div className="flex flex-wrap gap-1">
+                                                <span className="text-[9px] font-black text-blue-600 uppercase tracking-widest bg-blue-600/5 px-1.5 rounded">Consorcio</span>
                                             </div>
                                         )}
                                     </div>
                                 </td>
-                                {/* Nueva columna: Datos del Contrato */}
-                                <td className="px-2.5 py-2.5 text-[10px]">
+                                <td className="px-5 py-6">
                                     {(() => {
                                         const primerMiembro = lic.miembros_consorcio?.find(m => m.fecha_firma_contrato || m.fecha_prevista_fin);
-                                        if (!primerMiembro) return <span className="text-slate-400 italic">N/A</span>;
+                                        if (!primerMiembro) return <span className="text-slate-400 italic text-[10px]">Sin datos</span>;
                                         return (
-                                            <div className="flex flex-col gap-1.5">
+                                            <div className="flex flex-col gap-2">
                                                 {primerMiembro.fecha_firma_contrato && (
-                                                    <div>
-                                                        <p className="text-[9px] text-slate-400 font-medium uppercase leading-none mb-0.5">Fecha de firma de contrato</p>
-                                                        <p className="font-bold text-slate-700 dark:text-slate-200">{formatDate(primerMiembro.fecha_firma_contrato)}</p>
+                                                    <div className="flex flex-col">
+                                                        <span className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">Firma</span>
+                                                        <span className="text-[10px] font-black text-slate-700 dark:text-slate-300">{formatDate(primerMiembro.fecha_firma_contrato)}</span>
                                                     </div>
                                                 )}
                                                 {primerMiembro.fecha_prevista_fin && (
-                                                    <div>
-                                                        <p className="text-[9px] text-slate-400 font-medium uppercase leading-none mb-0.5">Fecha prevista de fin de contrato</p>
-                                                        <p className="font-bold text-slate-700 dark:text-slate-200">{formatDate(primerMiembro.fecha_prevista_fin)}</p>
+                                                    <div className="flex flex-col">
+                                                        <span className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">Fin</span>
+                                                        <span className="text-[10px] font-black text-slate-700 dark:text-slate-300">{formatDate(primerMiembro.fecha_prevista_fin)}</span>
                                                     </div>
                                                 )}
                                             </div>
                                         );
                                     })()}
                                 </td>
-                                <td className="px-2.5 py-2.5 text-[10px]">
-                                    <div className="flex flex-col gap-1">
-                                        <div>
-                                            <span className="font-medium text-slate-500">Conv: </span>
-                                            <span className="font-bold text-slate-800 dark:text-slate-200">{formatDate(lic.fecha_publicacion)}</span>
+                                <td className="px-5 py-6">
+                                    <div className="flex flex-col gap-1.5">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-blue-600"></div>
+                                            <span className="text-[10px] font-black text-slate-700 dark:text-slate-300">{formatDate(lic.fecha_publicacion)}</span>
                                         </div>
                                         {lic.fecha_adjudicacion && (
-                                            <div>
-                                                <span className="font-medium text-emerald-600">Adj: </span>
-                                                <span className="font-bold text-emerald-700 dark:text-emerald-400">{formatDate(lic.fecha_adjudicacion)}</span>
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                                                <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400">{formatDate(lic.fecha_adjudicacion)}</span>
                                             </div>
                                         )}
                                     </div>
                                 </td>
-                                <td className="px-2.5 py-2.5 text-[10px] uppercase">
-                                    {lic.entidades_financieras ? (
-                                        <span className="font-bold text-slate-700 dark:text-slate-300">
-                                            {getHighlightedText(lic.entidades_financieras, searchTerm)}
-                                        </span>
-                                    ) : (
-                                        <span className="text-slate-400 italic">N/A</span>
-                                    )}
+                                <td className="px-5 py-6">
+                                    <div className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-tight">
+                                        {lic.entidades_financieras ? getHighlightedText(lic.entidades_financieras, searchTerm) : <span className="text-slate-300 font-normal">N/A</span>}
+                                    </div>
                                 </td>
-                                <td className="px-2.5 py-2.5 text-center sticky right-0 bg-white shadow-[-4px_0_10px_-4px_rgba(0,0,0,0.05)] text-[10px] dark:bg-[#111c44] border-l border-slate-100 dark:border-white/5">
+                                <td className="px-5 py-6 text-center sticky right-0 bg-white dark:bg-[#0A192F] shadow-[-10px_0_20px_-10px_rgba(0,0,0,0.05)] border-l border-slate-100 dark:border-white/5 transition-colors group-hover/row:bg-blue-50/50 dark:group-hover/row:bg-white/[0.05]">
                                     <Link
                                         href={`${basePath}/${lic.id_convocatoria}`}
-                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#1e3a8a] hover:bg-[#1e40af] text-white rounded-lg font-bold transition-all shadow-sm"
+                                        className="inline-flex items-center justify-center w-10 h-10 bg-gradient-to-br from-[#1e3a8a] to-[#172554] hover:from-[#1e40af] hover:to-[#1e3a8a] text-white rounded-xl transition-all duration-300 hover:rotate-12 shadow-lg hover:shadow-blue-900/40"
+                                        title="Ver detalles"
                                     >
-                                        <Eye className="w-3 h-3" />
-                                        <span>Detalles</span>
+
+
+                                        <Eye className="w-5 h-5" />
                                     </Link>
                                 </td>
                             </tr>
@@ -407,10 +403,15 @@ export const LicitacionTable: React.FC<Props> = ({
 
                         {licitaciones.length === 0 && (
                             <tr>
-                                <td colSpan={11} className="px-4 py-12 text-center text-slate-500 dark:text-slate-400">
-                                    <div className="flex flex-col items-center justify-center gap-2">
-                                        <Search className="w-8 h-8 text-slate-300" />
-                                        <span>No se encontraron resultados para mostrar en la tabla.</span>
+                                <td colSpan={11} className="px-5 py-32 text-center bg-slate-50/50 dark:bg-white/[0.01] rounded-b-[2rem]">
+                                    <div className="flex flex-col items-center justify-center gap-4 max-w-md mx-auto">
+                                        <div className="w-20 h-20 rounded-full bg-white dark:bg-white/5 shadow-xl flex items-center justify-center">
+                                            <Search className="w-10 h-10 text-slate-300 dark:text-slate-700" />
+                                        </div>
+                                        <div>
+                                            <p className="text-lg font-black text-slate-800 dark:text-white uppercase tracking-tighter">Sin resultados</p>
+                                            <p className="text-sm text-slate-400">No hemos encontrado licitaciones que coincidan con tu búsqueda actual.</p>
+                                        </div>
                                     </div>
                                 </td>
                             </tr>

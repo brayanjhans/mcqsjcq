@@ -137,6 +137,46 @@ export const LicitacionCard: React.FC<Props> = ({
     const hiddenMatch = getHiddenMatch();
 
     // LOGIC
+    const getStatusTheme = (status: string) => {
+        const s = status?.toUpperCase() || "";
+        if (s.includes('CONTRATADO')) return { 
+            border: 'bg-emerald-500', 
+            gradient: 'from-emerald-50/50 dark:from-emerald-500/10',
+            badge: 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/30'
+        };
+        if (s.includes('ADJUDICADO')) return { 
+            border: 'bg-blue-500', 
+            gradient: 'from-blue-50/50 dark:from-blue-500/10',
+            badge: 'bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-500/20 dark:text-blue-300 dark:border-blue-500/30'
+        };
+        if (s.includes('CONSENTIDO')) return { 
+            border: 'bg-orange-500', 
+            gradient: 'from-orange-50/50 dark:from-orange-500/10',
+            badge: 'bg-orange-100 text-orange-800 border-orange-300 dark:bg-orange-500/20 dark:text-orange-300 dark:border-orange-500/30'
+        };
+        if (s.includes('CONVOCADO')) return { 
+            border: 'bg-amber-500', 
+            gradient: 'from-amber-50/50 dark:from-amber-400/10',
+            badge: 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/30'
+        };
+        if (s.includes('APELADO')) return { 
+            border: 'bg-indigo-500', 
+            gradient: 'from-indigo-50/50 dark:from-indigo-500/10',
+            badge: 'bg-indigo-100 text-indigo-800 border-indigo-300 dark:bg-indigo-500/20 dark:text-indigo-300 dark:border-indigo-500/30'
+        };
+        if (s.includes('CANCELADO') || s.includes('DESIERTO') || s.includes('NULIDAD') || s.includes('NULO')) return { 
+            border: 'bg-rose-500', 
+            gradient: 'from-rose-50/50 dark:from-rose-500/10',
+            badge: 'bg-rose-100 text-rose-800 border-rose-300 dark:bg-rose-500/20 dark:text-rose-300 dark:border-rose-500/30'
+        };
+        return { 
+            border: 'bg-slate-400', 
+            gradient: 'from-slate-50/50 dark:from-slate-400/10',
+            badge: 'bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-700/50 dark:text-slate-300 dark:border-slate-600'
+        };
+    };
+
+    const statusTheme = getStatusTheme(licitacion.estado_proceso);
     const statusUpper = licitacion.estado_proceso?.toUpperCase() || "SIN ESTADO";
     const isContratado = statusUpper.includes("CONTRATADO") || statusUpper.includes("ADJUDICADO") || statusUpper.includes("CONSENTIDO");
     const isConvocado = statusUpper.includes("CONVOCADO");
@@ -148,15 +188,10 @@ export const LicitacionCard: React.FC<Props> = ({
 
     // BADGES
     const getStatusBadge = () => {
-        let styles = "bg-slate-100 text-slate-700 border-slate-200";
-        if (isConvocado) styles = "bg-[#FFF9C4] text-[#8D6E1F] border-[#FDE047]"; // Yellow
-        else if (statusUpper === "ACTIVO") styles = "bg-blue-50 text-blue-700 border-blue-200"; // Blue for Active
-        else if (statusUpper.includes("CONSENTIDO")) styles = "bg-emerald-100 text-emerald-800 border-emerald-300"; // Emerald stronger
-        else if (isContratado) styles = "bg-slate-100 text-slate-600 border-slate-200"; // Light Gray
-        else if (isCancelado) styles = "bg-red-50 text-red-700 border-red-200"; // Red
-
+        const isSpecial = isConvocado || statusUpper.includes("CONSENTIDO") || statusUpper.includes("CONTRATADO");
+        
         return (
-            <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide border ${styles}`}>
+            <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide border transition-all duration-500 ${statusTheme.badge} ${isSpecial ? 'shimmer-badge shadow-sm' : ''}`}>
                 {licitacion.estado_proceso || "SIN ESTADO"}
             </span>
         );
@@ -206,11 +241,14 @@ export const LicitacionCard: React.FC<Props> = ({
     };
 
     return (
-        <div
-            className={`group relative flex flex-col overflow-hidden rounded-2xl bg-white shadow-sm transition-all duration-300 hover:shadow-xl dark:bg-[#111c44] dark:border-white/5 
-                ${isSelected ? 'border-2 border-blue-600' : 'border border-slate-200 hover:border-indigo-300'}
-            `}
-        >
+        <div className="perspective-container h-full">
+            <div
+                className={`group tilt-element relative flex flex-col h-full overflow-hidden rounded-[2.5rem] glass-luxury transition-all duration-500
+                    ${isSelected ? 'ring-4 ring-indigo-500/30 border-indigo-400/50' : 'border-white/20'}
+                `}
+            >
+            {/* Status Accent Border - Dynamic Theme */}
+            <div className={`absolute left-0 top-0 bottom-0 w-1.5 z-10 transition-colors duration-500 ${statusTheme.border}`}></div>
             {/* Hidden Match Badge - Shows why this card appeared if term is hidden */}
             {hiddenMatch && (
                 <div className="mb-3 -mt-2 -mx-2 bg-indigo-50 border border-indigo-100 rounded-lg px-3 py-2 flex items-center gap-2 animate-pulse dark:bg-indigo-900/20 dark:border-indigo-500/30">
@@ -246,11 +284,11 @@ export const LicitacionCard: React.FC<Props> = ({
             )}
 
             {/* Header / ID / Status */}
-            <div className="relative p-5 pb-2">
+            <div className={`relative p-7 pb-4 transition-all duration-500`}>
                 <div className="flex items-center justify-between gap-4">
-                    <div className={`flex items-start gap-3 flex-1 ${selectable ? 'pr-8' : ''}`}>
-                        <div className="w-10 h-10 rounded-xl bg-[#E0E7FF] flex items-center justify-center text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-300 shrink-0">
-                            <FileText className="w-5 h-5" />
+                    <div className={`flex items-start gap-4 flex-1 ${selectable ? 'pr-10' : ''}`}>
+                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/20 shrink-0 transition-transform duration-500 group-hover:scale-110 group-hover:rotate-6">
+                            <FileText className="w-6 h-6" />
                         </div>
                         <div className="min-w-0">
                             <h4 className="font-bold text-slate-900 text-sm dark:text-white line-clamp-2 leading-tight">
@@ -274,8 +312,8 @@ export const LicitacionCard: React.FC<Props> = ({
             </div>
 
             {/* Description */}
-            <div className="relative px-5 pb-3">
-                <h3 className="text-xs font-bold text-slate-900 uppercase leading-relaxed line-clamp-3 dark:text-slate-100">
+            <div className="relative px-7 pb-4">
+                <h3 className="text-sm font-extrabold text-slate-800 uppercase leading-tight dark:text-slate-100 transition-colors duration-300">
                     {getHighlightedText(licitacion.descripcion, searchTerm)}
                 </h3>
             </div>
@@ -289,11 +327,11 @@ export const LicitacionCard: React.FC<Props> = ({
                         <Building2 className="w-4 h-4 text-slate-400" />
                     </div>
                     <div className="flex-1 min-w-0">
-                        <p className="text-[10px] text-slate-500 font-medium uppercase mb-0.5">Comprador</p>
-                        <p className="text-[11px] font-bold text-slate-800 uppercase leading-tight line-clamp-2 dark:text-slate-200">
+                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Comprador</p>
+                        <p className="text-xs font-bold text-slate-800 uppercase leading-tight line-clamp-2 dark:text-slate-100 transition-colors">
                             {getHighlightedText(licitacion.comprador, searchTerm)}
                             {licitacion.entidad_ruc && (
-                                <span className="ml-1.5 text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded border border-slate-200 font-mono">
+                                <span className="ml-1.5 text-[9px] bg-slate-50 text-slate-400 px-1.5 py-0.5 rounded-md border border-slate-100 font-mono dark:bg-slate-800 dark:border-slate-700">
                                     RUC: {getHighlightedText(licitacion.entidad_ruc, searchTerm)}
                                 </span>
                             )}
@@ -307,8 +345,8 @@ export const LicitacionCard: React.FC<Props> = ({
                         <MapPin className="w-4 h-4 text-slate-400" />
                     </div>
                     <div className="flex-1 min-w-0">
-                        <p className="text-[10px] text-slate-500 font-medium uppercase mb-0.5">Ubicación</p>
-                        <p className="text-[11px] font-bold text-slate-800 uppercase dark:text-slate-200">
+                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Ubicación</p>
+                        <p className="text-xs font-semibold text-slate-700 uppercase dark:text-slate-300">
                             {licitacion.departamento || "N/A"} - {licitacion.provincia || "N/A"} - {licitacion.distrito || "N/A"}
                         </p>
                     </div>
@@ -320,28 +358,30 @@ export const LicitacionCard: React.FC<Props> = ({
                         <Tag className="w-4 h-4 text-slate-400" />
                     </div>
                     <div className="flex-1 min-w-0">
-                        <p className="text-[10px] text-slate-500 font-medium uppercase mb-1">Categoría</p>
+                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-1">Categoría</p>
                         {renderCategoryBadge()}
                     </div>
                 </div>
 
                 {/* 4. Monto */}
-                <div className="flex gap-3">
-                    <div className="w-4 flex justify-center pt-0.5 shrink-0">
-                        <DollarSign className="w-4 h-4 text-slate-400" />
+                <div className="flex gap-4">
+                    <div className="w-5 flex justify-center pt-1 shrink-0">
+                        <DollarSign className="w-5 h-5 text-indigo-500" />
                     </div>
                     <div className="flex-1 min-w-0">
-                        <p className="text-[10px] text-slate-500 font-medium uppercase mb-0.5">
+                        <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mb-2">
                             {showExtendedDetails ? "Monto Adjudicado" : "Monto Estimado"}
                         </p>
-                        <p className={`text-base font-extrabold ${showExtendedDetails ? 'text-emerald-600' : 'text-[#4F46E5]'} dark:text-indigo-400`}>
-                            {formatCurrency(showExtendedDetails && licitacion.monto_total_adjudicado ? licitacion.monto_total_adjudicado : licitacion.monto_estimado, licitacion.moneda)}
-                        </p>
-                        {showExtendedDetails && (
-                            <p className="text-[10px] text-slate-400 mt-0.5">
-                                Estimado: {formatCurrency(licitacion.monto_estimado, licitacion.moneda)}
+                        <div className="relative group/amount">
+                            <p className="text-4xl font-black tracking-tighter text-gradient-metallic leading-none py-1">
+                                {formatCurrency(showExtendedDetails && licitacion.monto_total_adjudicado ? licitacion.monto_total_adjudicado : licitacion.monto_estimado, licitacion.moneda)}
                             </p>
-                        )}
+                            {showExtendedDetails && (
+                                <p className="mt-2 text-[11px] font-black text-slate-500 dark:text-slate-400">
+                                    <span className="opacity-50">MONTO ESTIMADO:</span> {formatCurrency(licitacion.monto_estimado, licitacion.moneda)}
+                                </p>
+                            )}
+                        </div>
                     </div>
                 </div>
 
@@ -351,35 +391,24 @@ export const LicitacionCard: React.FC<Props> = ({
                         <Calendar className="w-4 h-4 text-slate-400" />
                     </div>
                     <div className="flex-1 min-w-0">
-                        {/* LOGIC: If Contract exists, show Adjudication (Main) AND Publication (Sub). Else, only Publication. */}
                         {licitacion.id_contrato && licitacion.fecha_adjudicacion ? (
-                            <>
-                                {/* PRIMARY: Adjudication Date */}
-                                <div className="mb-1">
-                                    <p className="text-[10px] text-emerald-600 font-bold uppercase mb-0.5">
-                                        Fecha de Adjudicación
-                                    </p>
-                                    <p className="text-[11px] font-extrabold text-emerald-600 dark:text-emerald-400">
-                                        {formatDate(licitacion.fecha_adjudicacion)}
-                                    </p>
-                                </div>
-                                {/* SECONDARY: Publication Date */}
-                                <div>
-                                    <p className="text-[9px] text-slate-400 font-medium uppercase">
-                                        Fecha de Publicación: {formatDate(licitacion.fecha_publicacion)}
-                                    </p>
-                                </div>
-                            </>
+                            <div className="inline-flex flex-col px-4 py-2 rounded-2xl bg-emerald-50/30 shadow-inner border border-white/40 dark:bg-emerald-500/5 dark:border-white/5">
+                                <p className="text-[8px] text-emerald-600 font-bold uppercase tracking-widest mb-0.5">
+                                    Fecha de Adjudicación
+                                </p>
+                                <p className="text-xs font-black text-emerald-600 dark:text-emerald-400">
+                                    {formatDate(licitacion.fecha_adjudicacion)}
+                                </p>
+                            </div>
                         ) : (
-                            <>
-                                {/* ONLY Publication Date */}
-                                <p className="text-[10px] text-slate-500 font-medium uppercase mb-0.5">
+                            <div className="inline-flex flex-col px-4 py-2 rounded-2xl bg-slate-50/50 shadow-inner border border-white/40 dark:bg-white/5 dark:border-white/5">
+                                <p className="text-[8px] text-slate-400 font-bold uppercase tracking-widest mb-0.5">
                                     Fecha de Publicación
                                 </p>
-                                <p className="text-[11px] font-bold text-slate-800 dark:text-slate-200">
+                                <p className="text-xs font-bold text-slate-800 dark:text-slate-100">
                                     {formatDate(licitacion.fecha_publicacion)}
                                 </p>
-                            </>
+                            </div>
                         )}
                     </div>
                 </div>
@@ -390,12 +419,12 @@ export const LicitacionCard: React.FC<Props> = ({
                         <StickyNote className="w-4 h-4 text-slate-400" />
                     </div>
                     <div className="flex-1 min-w-0">
-                        <p className="text-[10px] text-slate-500 font-medium uppercase mb-0.5">Identificadores</p>
-                        <div className="flex flex-col gap-0.5">
-                            <span className="text-[11px] font-bold text-[#4F46E5] dark:text-indigo-400">
+                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Identificadores</p>
+                        <div className="flex flex-col gap-1">
+                            <span className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 px-2 py-0.5 rounded-md inline-block w-fit">
                                 ID Contrato: {licitacion.id_contrato || "N/A"}
                             </span>
-                            <span className={`text-[11px] ${!licitacion.id_contrato ? 'text-[#4F46E5] font-bold' : 'text-slate-600'}`}>
+                            <span className={`text-[10px] px-2 ${!licitacion.id_contrato ? 'text-indigo-600 font-black bg-indigo-50 dark:bg-indigo-500/10 w-fit rounded-md' : 'text-slate-500 font-bold'}`}>
                                 ID Convocatoria: {licitacion.id_convocatoria}
                             </span>
                         </div>
@@ -408,26 +437,26 @@ export const LicitacionCard: React.FC<Props> = ({
                         <ShieldCheck className="w-4 h-4 text-slate-400" />
                     </div>
                     <div className="flex-1 min-w-0">
-                        <p className="text-[10px] text-slate-500 font-medium uppercase mb-1">Datos del Contrato</p>
+                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-1">Datos del Contrato</p>
                         {(() => {
                             const primerMiembro = licitacion.miembros_consorcio?.find(m => m.fecha_firma_contrato || m.fecha_prevista_fin);
                             if (!primerMiembro) {
-                                return <p className="text-[10px] text-slate-400 italic">No especificada</p>;
+                                return <p className="text-[9px] text-slate-300 italic font-medium">No especificada</p>;
                             }
                             return (
-                                <div className="flex flex-col gap-1">
+                                <div className="flex flex-col gap-1.5">
                                     {primerMiembro.fecha_firma_contrato && (
                                         <div>
-                                            <p className="text-[9px] text-slate-400 font-medium uppercase">Fecha de firma de contrato</p>
-                                            <p className="text-[11px] font-bold text-slate-700 dark:text-slate-200">
+                                            <p className="text-[8px] text-slate-400 font-bold uppercase tracking-widest">Firma</p>
+                                            <p className="text-[10px] font-black text-slate-700 dark:text-slate-200">
                                                 {formatDate(primerMiembro.fecha_firma_contrato)}
                                             </p>
                                         </div>
                                     )}
                                     {primerMiembro.fecha_prevista_fin && (
                                         <div>
-                                            <p className="text-[9px] text-slate-400 font-medium uppercase">Fecha prevista de fin de contrato</p>
-                                            <p className="text-[11px] font-bold text-slate-700 dark:text-slate-200">
+                                            <p className="text-[8px] text-slate-400 font-bold uppercase tracking-widest">Fin Previsto</p>
+                                            <p className="text-[10px] font-black text-slate-700 dark:text-slate-200">
                                                 {formatDate(primerMiembro.fecha_prevista_fin)}
                                             </p>
                                         </div>
@@ -446,12 +475,11 @@ export const LicitacionCard: React.FC<Props> = ({
                             <User className="w-4 h-4 text-slate-400" />
                         </div>
                         <div className="flex-1 min-w-0">
-                            <p className="text-[10px] text-slate-500 font-medium uppercase mb-0.5">Ganador</p>
-                            <p className="text-[11px] font-bold text-slate-800 uppercase leading-tight line-clamp-2 dark:text-slate-200">
+                            <p className="text-xs font-black text-slate-800 uppercase leading-tight line-clamp-2 dark:text-slate-100">
                                 {licitacion.ganador_nombre || "NO INFORMADO"}
                             </p>
-                            <p className="text-[10px] text-slate-500">
-                                RUC Ganador: {licitacion.ganador_ruc || "N/A"}
+                            <p className="text-[9px] text-slate-400 font-bold tracking-wider mt-1">
+                                RUC: {licitacion.ganador_ruc || "N/A"}
                             </p>
 
                             {/* CONSORCIO VISIBLE (Updated Logic) */}
@@ -524,13 +552,11 @@ export const LicitacionCard: React.FC<Props> = ({
 
 
 
-            {/* FOOTER BUTTON - Full Width Block */}
-            <div className="mt-4">
+            <div className="p-6 pt-2">
                 {!showManualActions ? (
                     <Link
                         href={`${basePath}/${licitacion.id_convocatoria}`}
-                        // Updated button color to match reference image (more vivid blue/purple)
-                        className="w-full flex items-center justify-center gap-2 bg-[#4F46E5] py-3.5 text-xs font-bold text-white hover:bg-[#4338ca] transition-colors rounded-b-xl"
+                        className="w-full flex items-center justify-center gap-3 bg-[#0A192F] dark:bg-white text-white dark:text-[#0A192F] py-4 rounded-2xl text-xs font-black uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 shadow-xl shadow-indigo-900/10 dark:shadow-white/5"
                     >
                         <Eye className="w-4 h-4" />
                         Ver Detalles
@@ -562,5 +588,6 @@ export const LicitacionCard: React.FC<Props> = ({
                 )}
             </div>
         </div>
+    </div>
     );
 };
