@@ -1,15 +1,11 @@
 import { Search, Loader2, Building2, FileText, User, CreditCard, Clock, X } from "lucide-react";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { licitacionService } from "@/lib/services/licitacionService";
-// Filter removed
-
-// If useDebounce doesn't exist, I'll inline it or create it. 
-// For safety, I'll implement a simple internal logic or assume we can create the file if needed.
-// Given strict instructions, I'll implement debouncing inside the component to avoid dependency hell if the hook is missing.
 
 interface Suggestion {
     value: string;
-    type: string; // 'Entidad', 'Proveedor', 'Proceso', 'RUC Ganador', etc.
+    type: string;
     id?: string;
 }
 
@@ -34,25 +30,54 @@ export const AutocompleteSearch: React.FC<AutocompleteSearchProps> = ({
     initialValue = ""
 }) => {
     const [query, setQuery] = useState(initialValue);
-
-    // ONLY reset query to empty when the parent explicitly clears search.
-    // NEVER sync when initialValue is non-empty (avoids wiping user's keystrokes).
-    const didMountRef = React.useRef(false);
-    useEffect(() => {
-        if (!didMountRef.current) {
-            // On first mount, initialise from URL if present
-            if (initialValue) setQuery(initialValue);
-            didMountRef.current = true;
-            return;
-        }
-        // After mount: only react to a parent-initiated clear (empty string)
-        if (initialValue === "") setQuery("");
-    }, [initialValue]);
     const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
     const [history, setHistory] = useState<HistoryItem[]>([]);
     const [loading, setLoading] = useState(false);
     const [isOpen, setIsOpen] = useState(false);
+
+    // For portal positioning
     const wrapperRef = useRef<HTMLDivElement>(null);
+    const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
+    const [isMounted, setIsMounted] = useState(false);
+
+    // ONLY reset query to empty when parent explicitly clears search.
+    const didMountRef = useRef(false);
+    useEffect(() => {
+        if (!didMountRef.current) {
+            if (initialValue) setQuery(initialValue);
+            didMountRef.current = true;
+            return;
+        }
+        if (initialValue === "") setQuery("");
+    }, [initialValue]);
+
+    // Client-only mount (required for createPortal)
+    useEffect(() => { setIsMounted(true); }, []);
+
+    // Update dropdown position whenever it opens or window resizes
+    const updateDropdownPosition = useCallback(() => {
+        if (!wrapperRef.current) return;
+        const rect = wrapperRef.current.getBoundingClientRect();
+        setDropdownStyle({
+            position: "fixed",
+            top: rect.bottom + 6,
+            left: rect.left,
+            width: rect.width,
+            zIndex: 99999,
+        });
+    }, []);
+
+    useEffect(() => {
+        if (isOpen) {
+            updateDropdownPosition();
+            window.addEventListener("scroll", updateDropdownPosition, true);
+            window.addEventListener("resize", updateDropdownPosition);
+        }
+        return () => {
+            window.removeEventListener("scroll", updateDropdownPosition, true);
+            window.removeEventListener("resize", updateDropdownPosition);
+        };
+    }, [isOpen, updateDropdownPosition]);
 
     // ── Debounce 1: Autocomplete suggestions (250ms, fast)
     useEffect(() => {
@@ -62,7 +87,10 @@ export const AutocompleteSearch: React.FC<AutocompleteSearchProps> = ({
                 try {
                     const results = await licitacionService.getAutocomplete(query);
                     setSuggestions(results);
-                    setIsOpen(results.length > 0);
+                    if (results.length > 0) {
+                        updateDropdownPosition();
+                        setIsOpen(true);
+                    }
                 } catch (error) {
                     console.error("Autocomplete error:", error);
                     setSuggestions([]);
@@ -71,33 +99,30 @@ export const AutocompleteSearch: React.FC<AutocompleteSearchProps> = ({
                 }
             } else {
                 setSuggestions([]);
-                setIsOpen(history.length > 0 && query.length === 0);
+                setIsOpen(query.length === 0 && history.length > 0);
             }
         }, 250);
-
         return () => clearTimeout(timer);
-    }, [query]); // ← Only depends on query, NOT on history (avoids re-trigger loops)
+    }, [query]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    // ── Debounce 2: Trigger main search (600ms, gives time to type)
+    // ── Debounce 2: Trigger main search (600ms)
     useEffect(() => {
         const timer = setTimeout(() => {
             if (query.length >= 3 || query.length === 0) {
                 onSearch(query);
             }
         }, 600);
-
         return () => clearTimeout(timer);
-    }, [query]); // ← Separate timer so autocomplete isn't cancelled by parent re-render
+    }, [query]); // eslint-disable-line react-hooks/exhaustive-deps
 
+    // Load history on mount
     useEffect(() => {
-        // Load history and prune expired items on mount
         const stored = localStorage.getItem(HISTORY_KEY);
         if (stored) {
             try {
                 const parsed: HistoryItem[] = JSON.parse(stored);
                 const now = Date.now();
                 const filtered = parsed.filter(item => (now - item.timestamp) < HISTORY_TTL_MS);
-                
                 if (filtered.length !== parsed.length) {
                     localStorage.setItem(HISTORY_KEY, JSON.stringify(filtered));
                 }
@@ -108,13 +133,26 @@ export const AutocompleteSearch: React.FC<AutocompleteSearchProps> = ({
         }
     }, []);
 
+    // Click outside — only close if click is outside BOTH the input and the dropdown
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            const target = event.target as Node;
+            // Check if click is inside the wrapper input
+            if (wrapperRef.current && wrapperRef.current.contains(target)) return;
+            // Check if click is inside the portal dropdown
+            const dropdown = document.getElementById("autocomplete-dropdown-portal");
+            if (dropdown && dropdown.contains(target)) return;
+            setIsOpen(false);
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
     const saveToHistory = (term: string) => {
         if (!term || term.trim().length < 3) return;
         const cleanTerm = term.trim();
         const now = Date.now();
-
         setHistory(prev => {
-            // Remove existing match (case-insensitive)
             const filtered = prev.filter(h => h.term.toLowerCase() !== cleanTerm.toLowerCase());
             const newHistory = [{ term: cleanTerm, timestamp: now }, ...filtered].slice(0, MAX_HISTORY);
             localStorage.setItem(HISTORY_KEY, JSON.stringify(newHistory));
@@ -130,17 +168,6 @@ export const AutocompleteSearch: React.FC<AutocompleteSearchProps> = ({
         });
     };
 
-    // Click outside to close
-    useEffect(() => {
-        function handleClickOutside(event: MouseEvent) {
-            if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
-                setIsOpen(false);
-            }
-        }
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, [wrapperRef]);
-
     const handleSelect = (suggestion: Suggestion) => {
         setQuery(suggestion.value);
         setIsOpen(false);
@@ -154,7 +181,8 @@ export const AutocompleteSearch: React.FC<AutocompleteSearchProps> = ({
             saveToHistory(query);
             setIsOpen(false);
         }
-    }
+        if (e.key === 'Escape') setIsOpen(false);
+    };
 
     const getIcon = (type: string) => {
         switch (type) {
@@ -168,20 +196,115 @@ export const AutocompleteSearch: React.FC<AutocompleteSearchProps> = ({
 
     const highlightMatch = (text: string, term: string) => {
         if (!term) return text;
-        const parts = text.split(new RegExp(`(${term})`, 'gi'));
-        return (
-            <>
-                {parts.map((part, i) => 
-                    part.toLowerCase() === term.toLowerCase() ? 
-                    <span key={i} className="text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-0.5 rounded">{part}</span> : 
-                    part
-                )}
-            </>
-        );
+        try {
+            const parts = text.split(new RegExp(`(${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'));
+            return (
+                <>
+                    {parts.map((part, i) =>
+                        part.toLowerCase() === term.toLowerCase() ?
+                            <span key={i} className="text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-0.5 rounded font-bold">{part}</span> :
+                            part
+                    )}
+                </>
+            );
+        } catch {
+            return text;
+        }
     };
 
+    const showDropdown = isOpen && (suggestions.length > 0 || (query.length < 3 && history.length > 0));
+
+    // The portal dropdown
+    const dropdown = showDropdown && isMounted ? createPortal(
+        <div
+            id="autocomplete-dropdown-portal"
+            style={dropdownStyle}
+            className="bg-white dark:bg-[#111c44] border border-slate-100 dark:border-slate-700 rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200"
+        >
+            {query.length < 3 && history.length > 0 ? (
+                <>
+                    <div className="text-[10px] uppercase font-bold text-slate-400 px-4 py-2 bg-slate-50 dark:bg-slate-800/50 tracking-wider">
+                        Búsquedas Recientes
+                    </div>
+                    <ul className="max-h-[320px] overflow-y-auto">
+                        {history.map((item, idx) => (
+                            <li
+                                key={idx}
+                                onMouseDown={(e) => {
+                                    e.preventDefault(); // prevent blur
+                                    setQuery(item.term);
+                                    onSearch(item.term);
+                                    saveToHistory(item.term);
+                                    setIsOpen(false);
+                                }}
+                                className="px-4 py-3 hover:bg-slate-50 dark:hover:bg-white/5 cursor-pointer flex items-center justify-between group/item transition-colors border-b border-slate-50 last:border-0 dark:border-slate-800"
+                            >
+                                <div className="flex items-center gap-3 min-w-0">
+                                    <div className="p-2 bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0">
+                                        <Clock className="w-4 h-4 text-slate-400" />
+                                    </div>
+                                    <div className="flex flex-col min-w-0">
+                                        <span className="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate">
+                                            {item.term}
+                                        </span>
+                                        <span className="text-[10px] text-slate-400">
+                                            Hace {Math.round((Date.now() - item.timestamp) / (1000 * 60 * 60)) || 1}h
+                                        </span>
+                                    </div>
+                                </div>
+                                <button
+                                    onMouseDown={(e) => {
+                                        e.stopPropagation();
+                                        e.preventDefault();
+                                        removeFromHistory(item.term);
+                                    }}
+                                    className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 transition-all opacity-0 group-hover/item:opacity-100"
+                                    title="Quitar sugerencia"
+                                >
+                                    <X className="w-3.5 h-3.5" />
+                                </button>
+                            </li>
+                        ))}
+                    </ul>
+                </>
+            ) : suggestions.length > 0 ? (
+                <>
+                    <div className="text-[10px] uppercase font-bold text-slate-400 px-4 py-2 bg-slate-50 dark:bg-slate-800/50 tracking-wider">
+                        Sugerencias
+                    </div>
+                    <ul className="max-h-[320px] overflow-y-auto">
+                        {suggestions.map((item, idx) => (
+                            <li
+                                key={idx}
+                                onMouseDown={(e) => {
+                                    e.preventDefault(); // prevent blur
+                                    handleSelect(item);
+                                }}
+                                className="px-4 py-3 hover:bg-slate-50 dark:hover:bg-white/5 cursor-pointer flex items-center gap-3 transition-colors border-b border-slate-50 last:border-0 dark:border-slate-800"
+                            >
+                                <div className="p-2 bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0">
+                                    {getIcon(item.type)}
+                                </div>
+                                <div className="flex flex-col min-w-0">
+                                    <span className="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate">
+                                        {highlightMatch(item.value, query)}
+                                    </span>
+                                    <span className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                                        {item.type}
+                                        {item.id && <span className="opacity-70 font-mono">• {item.id}</span>}
+                                    </span>
+                                </div>
+                            </li>
+                        ))}
+                    </ul>
+                </>
+            ) : null}
+        </div>,
+        document.body
+    ) : null;
+
     return (
-        <div ref={wrapperRef} className="relative w-full group z-50">
+        <div ref={wrapperRef} className="relative w-full group">
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                 {loading ? (
                     <Loader2 className="h-5 w-5 text-indigo-500 animate-spin" />
@@ -197,88 +320,12 @@ export const AutocompleteSearch: React.FC<AutocompleteSearchProps> = ({
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={handleKeyDown}
                 onFocus={() => {
-                    if (history.length > 0) setIsOpen(true);
+                    updateDropdownPosition();
+                    if (history.length > 0 && query.length < 3) setIsOpen(true);
+                    if (suggestions.length > 0) setIsOpen(true);
                 }}
             />
-
-            {(isOpen && (suggestions.length > 0 || (query.length < 3 && history.length > 0))) && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-[#111c44] border border-slate-100 dark:border-slate-700 rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-                    {query.length < 3 && history.length > 0 ? (
-                        <>
-                            <div className="text-[10px] uppercase font-bold text-slate-400 px-4 py-2 bg-slate-50 dark:bg-slate-800/50 tracking-wider">
-                                Búsquedas Recientes
-                            </div>
-                            <ul className="max-h-[320px] overflow-y-auto">
-                                {history.map((item, idx) => (
-                                    <li
-                                        key={idx}
-                                        onClick={() => {
-                                            setQuery(item.term);
-                                            onSearch(item.term);
-                                            saveToHistory(item.term);
-                                            setIsOpen(false);
-                                        }}
-                                        className="px-4 py-3 hover:bg-slate-50 dark:hover:bg-white/5 cursor-pointer flex items-center justify-between group/item transition-colors border-b border-slate-50 last:border-0 dark:border-slate-800"
-                                    >
-                                        <div className="flex items-center gap-3 min-w-0">
-                                            <div className="p-2 bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0">
-                                                <Clock className="w-4 h-4 text-slate-400" />
-                                            </div>
-                                            <div className="flex flex-col min-w-0">
-                                                <span className="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate">
-                                                    {item.term}
-                                                </span>
-                                                <span className="text-[10px] text-slate-400">
-                                                    Hace {Math.round((Date.now() - item.timestamp) / (1000 * 60 * 60)) || 1}h
-                                                </span>
-                                            </div>
-                                        </div>
-                                        
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                removeFromHistory(item.term);
-                                            }}
-                                            className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-all opacity-0 group-hover/item:opacity-100"
-                                            title="Quitar sugerencia"
-                                        >
-                                            <X className="w-3.5 h-3.5" />
-                                        </button>
-                                    </li>
-                                ))}
-                            </ul>
-                        </>
-                    ) : suggestions.length > 0 ? (
-                        <>
-                            <div className="text-[10px] uppercase font-bold text-slate-400 px-4 py-2 bg-slate-50 dark:bg-slate-800/50 tracking-wider">
-                                Sugerencias
-                            </div>
-                            <ul className="max-h-[320px] overflow-y-auto">
-                                {suggestions.map((item, idx) => (
-                                    <li
-                                        key={idx}
-                                        onClick={() => handleSelect(item)}
-                                        className="px-4 py-3 hover:bg-slate-50 dark:hover:bg-white/5 cursor-pointer flex items-center gap-3 transition-colors border-b border-slate-50 last:border-0 dark:border-slate-800"
-                                    >
-                                        <div className="p-2 bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0">
-                                            {getIcon(item.type)}
-                                        </div>
-                                        <div className="flex flex-col min-w-0">
-                                            <span className="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate">
-                                                {highlightMatch(item.value, query)}
-                                            </span>
-                                            <span className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                                                {item.type}
-                                                {item.id && <span className="opacity-70 font-mono">• {item.id}</span>}
-                                            </span>
-                                        </div>
-                                    </li>
-                                ))}
-                            </ul>
-                        </>
-                    ) : null}
-                </div>
-            )}
+            {dropdown}
         </div>
     );
 };
