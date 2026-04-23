@@ -35,13 +35,18 @@ export const AutocompleteSearch: React.FC<AutocompleteSearchProps> = ({
 }) => {
     const [query, setQuery] = useState(initialValue);
 
-    // Sync con el padre SOLO cuando se limpia (initialValue = "")
-    // Si sincronizamos en cada cambio, el usuario pierde caracteres
-    // porque onSearch dispara actualización del padre que sobrescribe lo escrito
+    // ONLY reset query to empty when the parent explicitly clears search.
+    // NEVER sync when initialValue is non-empty (avoids wiping user's keystrokes).
+    const didMountRef = React.useRef(false);
     useEffect(() => {
-        if (initialValue === "") {
-            setQuery("");
+        if (!didMountRef.current) {
+            // On first mount, initialise from URL if present
+            if (initialValue) setQuery(initialValue);
+            didMountRef.current = true;
+            return;
         }
+        // After mount: only react to a parent-initiated clear (empty string)
+        if (initialValue === "") setQuery("");
     }, [initialValue]);
     const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
     const [history, setHistory] = useState<HistoryItem[]>([]);
