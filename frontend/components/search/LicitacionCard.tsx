@@ -243,8 +243,8 @@ export const LicitacionCard: React.FC<Props> = ({
     return (
         <div className="perspective-container h-full">
             <div
-                className={`group tilt-element relative flex flex-col h-full overflow-hidden rounded-[2.5rem] glass-luxury transition-all duration-500
-                    ${isSelected ? 'ring-4 ring-indigo-500/30 border-indigo-400/50' : 'border-white/20'}
+                className={`group tilt-element relative flex flex-col h-full overflow-hidden rounded-[2.5rem] bg-white border border-slate-200 shadow-xl transition-all duration-500 hover:shadow-2xl hover:border-slate-300 dark:bg-[#0A192F] dark:border-white/10
+                    ${isSelected ? 'ring-4 ring-indigo-500/30 border-indigo-400/50' : ''}
                 `}
             >
             {/* Status Accent Border - Dynamic Theme */}
@@ -373,7 +373,7 @@ export const LicitacionCard: React.FC<Props> = ({
                             {showExtendedDetails ? "Monto Adjudicado" : "Monto Estimado"}
                         </p>
                         <div className="relative group/amount">
-                            <p className="text-4xl font-black tracking-tighter text-gradient-metallic leading-none py-1">
+                            <p className="text-2xl font-black tracking-tighter text-gradient-metallic leading-none py-1">
                                 {formatCurrency(showExtendedDetails && licitacion.monto_total_adjudicado ? licitacion.monto_total_adjudicado : licitacion.monto_estimado, licitacion.moneda)}
                             </p>
                             {showExtendedDetails && (
