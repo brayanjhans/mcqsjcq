@@ -1,302 +1,17 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { UserCog, LineChart, ChevronRight, User, ShieldCheck, ArrowLeft, ArrowRight, Lock } from 'lucide-react';
 
 import { useAuthProtection } from '@/hooks/use-auth-protection';
-import '../login_new.css';
-
-const CircuitEffect = () => {
-    const canvasRef = useRef<HTMLCanvasElement>(null);
-
-    useEffect(() => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
-
-        let width = window.innerWidth;
-        let height = window.innerHeight;
-        canvas.width = width;
-        canvas.height = height;
-
-        const handleResize = () => {
-            width = window.innerWidth;
-            height = window.innerHeight;
-            canvas.width = width;
-            canvas.height = height;
-        };
-        window.addEventListener('resize', handleResize);
-
-        const lines: any[] = [];
-        const maxLines = 70;
-        const gridSize = 60;
-        const nodes: {x: number, y: number, opacity: number}[] = [];
-        const sparks: any[] = [];
-
-        // Create nodes at intersections
-        for (let x = 0; x < width; x += gridSize) {
-            for (let y = 0; y < height; y += gridSize) {
-                if (Math.random() > 0.95) {
-                    nodes.push({x, y, opacity: 0});
-                }
-            }
-        }
-
-        class Spark {
-            x: number;
-            y: number;
-            size: number;
-            maxSize: number;
-            opacity: number;
-            color: string;
-
-            constructor(x: number, y: number, color: string) {
-                this.x = x;
-                this.y = y;
-                this.size = 0;
-                this.maxSize = Math.random() * 20 + 15;
-                this.opacity = 1;
-                this.color = color;
-            }
-
-            draw() {
-                ctx!.beginPath();
-                ctx!.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                ctx!.fillStyle = '#fff';
-                ctx!.shadowBlur = 30;
-                ctx!.shadowColor = this.color;
-                ctx!.globalAlpha = this.opacity * 0.9;
-                ctx!.fill();
-                
-                // Draw more rays
-                for (let i = 0; i < 8; i++) {
-                    const angle = (i * Math.PI) / 4;
-                    ctx!.beginPath();
-                    ctx!.moveTo(this.x, this.y);
-                    ctx!.lineTo(this.x + Math.cos(angle) * this.size * 2.5, this.y + Math.sin(angle) * this.size * 2.5);
-                    ctx!.strokeStyle = '#fff';
-                    ctx!.lineWidth = 1.5;
-                    ctx!.stroke();
-                }
-
-                this.size += 2;
-                this.opacity -= 0.03;
-                ctx!.shadowBlur = 0;
-                return this.opacity > 0;
-            }
-        }
-
-        class CircuitLine {
-            x: number;
-            y: number;
-            path: {x: number, y: number}[];
-            maxLength: number;
-            speed: number;
-            color: string;
-            opacity: number;
-            life: number;
-            direction: 'up' | 'down' | 'left' | 'right';
-            packetPos: number;
-
-            constructor() {
-                this.x = Math.floor(Math.random() * (width / gridSize)) * gridSize;
-                this.y = Math.floor(Math.random() * (height / gridSize)) * gridSize;
-                this.path = [{x: this.x, y: this.y}];
-                this.maxLength = Math.random() * 12 + 8;
-                this.speed = Math.random() * 3 + 2;
-                this.opacity = Math.random() * 0.4 + 0.3;
-                this.life = 0;
-                this.packetPos = 0;
-                this.color = getComputedStyle(document.documentElement).getPropertyValue('--season-accent').trim() || '#38BDF8';
-                
-                const dirs: ('up' | 'down' | 'left' | 'right')[] = ['up', 'down', 'left', 'right'];
-                this.direction = dirs[Math.floor(Math.random() * dirs.length)];
-            }
-
-            update() {
-                this.life++;
-                this.packetPos += 0.05;
-                if (this.packetPos > 1) this.packetPos = 0;
-
-                const head = this.path[this.path.length - 1];
-                let nextX = head.x;
-                let nextY = head.y;
-
-                if (this.direction === 'up') nextY -= this.speed;
-                else if (this.direction === 'down') nextY += this.speed;
-                else if (this.direction === 'left') nextX -= this.speed;
-                else if (this.direction === 'right') nextX += this.speed;
-
-                if (this.life % gridSize === 0 && Math.random() > 0.5) {
-                    const turns: Record<string, ('up' | 'down' | 'left' | 'right')[]> = {
-                        up: ['left', 'right'],
-                        down: ['left', 'right'],
-                        left: ['up', 'down'],
-                        right: ['up', 'down']
-                    };
-                    const possible = turns[this.direction];
-                    this.direction = possible[Math.floor(Math.random() * possible.length)];
-                    
-                    nodes.forEach(n => {
-                        if (Math.hypot(n.x - head.x, n.y - head.y) < gridSize) {
-                            n.opacity = 1;
-                        }
-                    });
-                }
-
-                this.path.push({x: nextX, y: nextY});
-                if (this.path.length > this.maxLength * 5) {
-                    this.path.shift();
-                }
-
-                // Random Collision Check (Balanced frequency)
-                if (this.life % 3 === 0) { // Check every 3 frames
-                    lines.forEach(other => {
-                        if (other !== this && other.path.length > 0) {
-                            const otherHead = other.path[other.path.length - 1];
-                            const dist = Math.hypot(head.x - otherHead.x, head.y - otherHead.y);
-                            if (dist < 40) { // Balanced distance threshold
-                                if (Math.random() > 0.6) { // 40% chance if close
-                                    sparks.push(new Spark(head.x, head.y, this.color));
-                                }
-                            }
-                        }
-                    });
-                }
-
-                return !(nextX < -100 || nextX > width + 100 || nextY < -100 || nextY > height + 100);
-            }
-
-            draw() {
-                if (this.path.length < 2) return;
-                
-                ctx!.shadowBlur = 10;
-                ctx!.shadowColor = this.color;
-                ctx!.strokeStyle = this.color;
-                ctx!.lineWidth = 1.5;
-                ctx!.globalAlpha = this.opacity;
-                
-                ctx!.beginPath();
-                ctx!.moveTo(this.path[0].x, this.path[0].y);
-                for (let i = 1; i < this.path.length; i++) {
-                    ctx!.lineTo(this.path[i].x, this.path[i].y);
-                }
-                ctx!.stroke();
-
-                // Draw Packet
-                const packetIdx = Math.floor(this.packetPos * (this.path.length - 1));
-                const packet = this.path[packetIdx];
-                ctx!.fillStyle = '#fff';
-                ctx!.shadowBlur = 15;
-                ctx!.globalAlpha = this.opacity * 2;
-                ctx!.beginPath();
-                ctx!.arc(packet.x, packet.y, 2, 0, Math.PI * 2);
-                ctx!.fill();
-                
-                ctx!.shadowBlur = 0;
-            }
-        }
-
-        const animate = () => {
-            ctx.clearRect(0, 0, width, height);
-            
-            // Draw Nodes
-            nodes.forEach(n => {
-                if (n.opacity > 0) {
-                    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--season-accent');
-                    ctx.globalAlpha = n.opacity * 0.3;
-                    ctx.beginPath();
-                    ctx.arc(n.x, n.y, 3, 0, Math.PI * 2);
-                    ctx.fill();
-                    n.opacity -= 0.01;
-                }
-            });
-
-            // Draw Sparks
-            for (let i = sparks.length - 1; i >= 0; i--) {
-                if (!sparks[i].draw()) {
-                    sparks.splice(i, 1);
-                }
-            }
-
-            if (lines.length < maxLines && Math.random() > 0.95) {
-                lines.push(new CircuitLine());
-            }
-
-            for (let i = lines.length - 1; i >= 0; i--) {
-                if (!lines[i].update()) lines.splice(i, 1);
-                else lines[i].draw();
-            }
-
-            requestAnimationFrame(animate);
-        };
-
-        animate();
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
-
-    return <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none z-[5]" style={{ opacity: 0.8 }} />;
-};
-
-const FuturisticOverlay = () => (
-    <div className="absolute inset-0 pointer-events-none z-[6] overflow-hidden opacity-30">
-        <div className="absolute top-10 left-10 w-20 h-20 border-t-2 border-l-2 border-blue-400/50 rounded-tl-3xl"></div>
-        <div className="absolute top-10 right-10 w-20 h-20 border-t-2 border-r-2 border-blue-400/50 rounded-tr-3xl"></div>
-        <div className="absolute bottom-10 left-10 w-20 h-20 border-b-2 border-l-2 border-blue-400/50 rounded-bl-3xl"></div>
-        <div className="absolute bottom-10 right-10 w-20 h-20 border-b-2 border-r-2 border-blue-400/50 rounded-br-3xl"></div>
-        
-        <div className="absolute top-1/2 left-4 -translate-y-1/2 flex flex-col gap-4 text-[10px] font-mono text-blue-300/40 tracking-widest vertical-text">
-            <span>CORE_STABILITY: 98.4%</span>
-            <span>DATA_SYNC: ACTIVE</span>
-            <span>SECURE_PORT: 443</span>
-        </div>
-        
-        <div className="absolute bottom-10 right-20 text-[10px] font-mono text-blue-300/40 tracking-widest">
-            LAT: -12.0464 | LON: -77.0428
-        </div>
-        
-        <div className="scanline"></div>
-    </div>
-);
-
-type Season = 'winter' | 'autumn' | 'summer' | 'spring';
 
 export default function ModulesPage() {
     const router = useRouter();
     const [showRoleModal, setShowRoleModal] = useState(false);
     const [visible, setVisible] = useState(false);
-    const [season, setSeason] = useState<Season>('summer');
 
     const { isAuthenticated, loading } = useAuthProtection();
-
-    // PRELOAD IMAGES
-    useEffect(() => {
-        const imagesToPreload = ['/mar.jpg', '/otonooo.jpg', '/fondo_seace.jpg', '/bg-building7.jpg'];
-        imagesToPreload.forEach((src) => {
-            const img = new Image();
-            img.src = src;
-        });
-    }, []);
-
-    // SEASON SWITCHER
-    useEffect(() => {
-        const seasons: Season[] = ['summer', 'autumn', 'winter', 'spring'];
-        const randomStartIdx = Math.floor(Math.random() * seasons.length);
-        
-        setSeason(seasons[randomStartIdx]);
-        
-        const interval = setInterval(() => {
-            setSeason(prevSeason => {
-                const otherSeasons = seasons.filter(s => s !== prevSeason);
-                const nextSeason = otherSeasons[Math.floor(Math.random() * otherSeasons.length)];
-                return nextSeason;
-            });
-        }, 15000); // Switch every 15 seconds
-        
-        return () => clearInterval(interval);
-    }, []);
 
     useEffect(() => {
         setTimeout(() => setVisible(true), 50);
@@ -313,25 +28,23 @@ export default function ModulesPage() {
     if (loading || !isAuthenticated) return null;
 
     return (
-        <div className={`login-container season-${season} min-h-screen w-full flex flex-col justify-center items-center relative overflow-hidden transition-all duration-1000 ${visible ? 'opacity-100' : 'opacity-0'}`}>
-            {/* BACKGROUNDS */}
-            <div className={`bg-blur-overlay bg-summer ${season === 'summer' ? 'active' : ''}`}></div>
-            <div className={`bg-blur-overlay bg-autumn ${season === 'autumn' ? 'active' : ''}`}></div>
-            <div className={`bg-blur-overlay bg-winter ${season === 'winter' ? 'active' : ''}`}></div>
-            <div className={`bg-blur-overlay bg-spring ${season === 'spring' ? 'active' : ''}`}></div>
-            
-            {/* DYNAMIC CIRCUIT EFFECT (PREMIUM TECH AESTHETIC) */}
-            <CircuitEffect />
-            
-            {/* FUTURISTIC HUD OVERLAY */}
-            <FuturisticOverlay />
+        <div className={`min-h-screen w-full flex flex-col justify-center items-center relative overflow-hidden transition-all duration-1000 ${visible ? 'opacity-100' : 'opacity-0'}`}>
+
+
+            {/* Background Image with Overlay */}
+            <div
+                className="absolute inset-0 z-0 bg-cover bg-center bg-fixed"
+                style={{
+                    backgroundImage: 'linear-gradient(to bottom, rgba(15, 44, 74, 0.5), rgba(15, 44, 74, 0.3)), url(/bg-building7.jpg)'
+                }}
+            />
 
             <div className="z-10 w-full max-w-6xl px-6">
                 <div className="text-center mb-16 animate-in slide-in-from-top-10 duration-700 fade-in fill-mode-backwards delay-100">
                     <h1 className="text-white font-black text-6xl md:text-7xl mb-4 tracking-tight drop-shadow-2xl">
-                        SISTEMA <span className="text-transparent bg-clip-text" style={{ backgroundImage: 'linear-gradient(to right, #fff, var(--season-accent))' }}>MCQS</span>
+                        SISTEMA <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">MCQS</span>
                     </h1>
-                    <div className="h-1.5 w-32 rounded-full mx-auto shadow-[0_0_20px_rgba(59,130,246,0.6)]" style={{ background: 'linear-gradient(to right, var(--season-accent), var(--season-secondary))' }}></div>
+                    <div className="h-1.5 w-32 bg-gradient-to-r from-blue-500 to-cyan-400 rounded-full mx-auto shadow-[0_0_20px_rgba(59,130,246,0.6)]"></div>
                     <p className="mt-6 text-xl text-blue-100/80 font-light tracking-wide max-w-2xl mx-auto">
                         Seleccione el módulo operativo para comenzar su gestión
                     </p>
@@ -343,25 +56,18 @@ export default function ModulesPage() {
                         className="group relative w-full md:w-[380px] h-[420px] bg-white/5 backdrop-blur-xl rounded-[2rem] border border-white/10 shadow-[0_8px_40px_rgba(0,0,0,0.2)] flex flex-col justify-between p-8 hover:-translate-y-4 hover:bg-white/10 hover:border-white/20 transition-all duration-500 cursor-pointer animate-in slide-in-from-bottom-10 fade-in fill-mode-backwards delay-200"
                         onClick={handleMQSClick}
                     >
-                        <div className="absolute inset-0 rounded-[2rem] opacity-0 group-hover:opacity-100 transition-opacity duration-500" style={{ background: 'linear-gradient(to bottom, transparent, var(--season-hex))' }}></div>
+                        <div className="absolute inset-0 rounded-[2rem] bg-gradient-to-b from-blue-500/0 to-blue-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
 
                         <div className="relative z-10 flex flex-col items-center flex-1 justify-center">
-                            <div className="w-32 h-32 rounded-full flex items-center justify-center mb-8 shadow-2xl group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 ring-4 ring-white/10 bg-white/10 backdrop-blur-md border border-white/20" style={{ boxShadow: '0 0 30px var(--season-hex)' }}>
-                                <UserCog className="w-14 h-14 transition-colors duration-500" style={{ color: 'var(--season-accent)', filter: 'drop-shadow(0 0 8px var(--season-accent))' }} />
+                            <div className="w-32 h-32 rounded-full bg-gradient-to-tr from-blue-600 to-cyan-500 flex items-center justify-center mb-8 shadow-2xl group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 ring-4 ring-white/10">
+                                <UserCog className="text-white w-14 h-14" />
                             </div>
-                            <h2 className="text-3xl font-bold text-white mb-2 group-hover:transition-colors" style={{ color: 'white' }}>Operaciones MQS</h2>
+                            <h2 className="text-3xl font-bold text-white mb-2 group-hover:text-cyan-300 transition-colors">Operaciones MQS</h2>
                             <p className="text-blue-200/70 text-center text-sm px-4">Gestión de obras, clientes y trámites administrativos.</p>
                         </div>
 
                         <div className="relative z-10">
-                            <button className="w-full bg-white/5 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-3 border transition-all duration-300 group-hover:shadow-lg group-active:scale-[0.98]" style={{ borderColor: 'var(--season-accent)', color: 'white' }}>
-                                <style jsx>{`
-                                    button:hover {
-                                        background-color: var(--season-btn);
-                                        border-color: var(--season-accent);
-                                        box-shadow: 0 0 25px var(--season-hex);
-                                    }
-                                `}</style>
+                            <button className="w-full bg-white/10 hover:bg-blue-600 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-3 transition-all duration-300 group-hover:shadow-lg group-hover:shadow-blue-500/30 group-active:scale-[0.98]">
                                 Acceder al Módulo
                                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                             </button>
@@ -373,25 +79,18 @@ export default function ModulesPage() {
                         className="group relative w-full md:w-[380px] h-[420px] bg-white/5 backdrop-blur-xl rounded-[2rem] border border-white/10 shadow-[0_8px_40px_rgba(0,0,0,0.2)] flex flex-col justify-between p-8 hover:-translate-y-4 hover:bg-white/10 hover:border-white/20 transition-all duration-500 cursor-pointer animate-in slide-in-from-bottom-10 fade-in fill-mode-backwards delay-300"
                         onClick={handleSEACEClick}
                     >
-                        <div className="absolute inset-0 rounded-[2rem] opacity-0 group-hover:opacity-100 transition-opacity duration-500" style={{ background: 'linear-gradient(to bottom, transparent, var(--season-hex))' }}></div>
+                        <div className="absolute inset-0 rounded-[2rem] bg-gradient-to-b from-cyan-500/0 to-cyan-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
 
                         <div className="relative z-10 flex flex-col items-center flex-1 justify-center">
-                            <div className="w-32 h-32 rounded-full flex items-center justify-center mb-8 shadow-2xl group-hover:scale-110 group-hover:-rotate-3 transition-all duration-500 ring-4 ring-white/10 bg-white/10 backdrop-blur-md border border-white/20" style={{ boxShadow: '0 0 30px var(--season-hex)' }}>
-                                <LineChart className="w-14 h-14 transition-colors duration-500" style={{ color: 'var(--season-accent)', filter: 'drop-shadow(0 0 8px var(--season-accent))' }} />
+                            <div className="w-32 h-32 rounded-full bg-gradient-to-tr from-[#0F2C4A] to-blue-800 flex items-center justify-center mb-8 shadow-2xl group-hover:scale-110 group-hover:-rotate-3 transition-all duration-500 ring-4 ring-white/10">
+                                <LineChart className="text-white w-14 h-14" />
                             </div>
-                            <h2 className="text-3xl font-bold text-white mb-2 group-hover:transition-colors">Dashboard SEACE</h2>
+                            <h2 className="text-3xl font-bold text-white mb-2 group-hover:text-blue-300 transition-colors">Dashboard SEACE</h2>
                             <p className="text-blue-200/70 text-center text-sm px-4">Análisis de datos, tendencias y métricas de licitaciones.</p>
                         </div>
 
                         <div className="relative z-10">
-                            <button className="w-full bg-white/5 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-3 border transition-all duration-300 group-hover:shadow-lg group-active:scale-[0.98]" style={{ borderColor: 'var(--season-accent)', color: 'white' }}>
-                                <style jsx>{`
-                                    button:hover {
-                                        background-color: var(--season-btn);
-                                        border-color: var(--season-accent);
-                                        box-shadow: 0 0 25px var(--season-hex);
-                                    }
-                                `}</style>
+                            <button className="w-full bg-white/10 hover:bg-cyan-600 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-3 transition-all duration-300 group-hover:shadow-lg group-hover:shadow-cyan-500/30 group-active:scale-[0.98]">
                                 Acceder al Dashboard
                                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                             </button>
@@ -401,7 +100,7 @@ export default function ModulesPage() {
             </div>
 
             <div className="absolute bottom-6 text-blue-200/40 text-xs font-light tracking-wide">
-                © 2026 MCQS System v3.0 | Secure Enterprise Port
+                © 2024 MCQS System v3.0 | Secure Enterprise Portal
             </div>
 
             {/* Role Selection Modal */}

@@ -1,277 +1,109 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import './login_new.css';
+import Image from 'next/image';
+import { User, Lock, Eye, EyeOff, X, ArrowRight, ShieldCheck } from 'lucide-react';
 
-const SnowEffect = () => {
-    const snowBgRef = useRef<HTMLDivElement>(null);
-    const snowFgRef = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        const snowBg = snowBgRef.current;
-        const snowFg = snowFgRef.current;
-
-        const createSnowflake = () => {
-            const isForeground = Math.random() > 0.75;
-            const container = isForeground ? snowFg : snowBg;
-            if (!container) return;
-
-            const snowflake = document.createElement('div');
-            snowflake.classList.add('snowflake');
-
-            const sizeValue = isForeground ? (Math.random() * 10 + 10) : (Math.random() * 5 + 3);
-            const size = sizeValue + 'px';
-            const left = (Math.random() * 100) + '%';
-
-            const duration = isForeground ? (Math.random() * 3 + 4) : (Math.random() * 6 + 10);
-            const drift = (Math.random() * 200 - 100) + 'px';
-            const swayDuration = (Math.random() * 2 + 2) + 's';
-            const opacity = isForeground ? (Math.random() * 0.3 + 0.3) : (Math.random() * 0.4 + 0.2);
-
-            snowflake.style.width = size;
-            snowflake.style.height = size;
-            snowflake.style.left = left;
-            snowflake.style.opacity = opacity.toString();
-
-            snowflake.style.setProperty('--duration', duration + 's');
-            snowflake.style.setProperty('--drift', drift);
-            snowflake.style.setProperty('--sway-duration', swayDuration);
-
-            container.appendChild(snowflake);
-
-            setTimeout(() => {
-                snowflake.remove();
-            }, duration * 1000);
-        };
-
-        const interval = setInterval(createSnowflake, 50);
-        return () => clearInterval(interval);
-    }, []);
-
-    return (
-        <>
-            <div ref={snowBgRef} className="snow-bg"></div>
-            <div ref={snowFgRef} className="snow-fg"></div>
-        </>
-    );
-};
-
-const LeafEffect = () => {
-    const bgRef = useRef<HTMLDivElement>(null);
-    const fgRef = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        const bg = bgRef.current;
-        const fg = fgRef.current;
-        if (!bg || !fg) return;
-
-        const leafColors = ['#D4612A', '#F29F05', '#8C2E14', '#591C0B', '#A64B29'];
-        const leafSvg = `data:image/svg+xml;base64,${btoa('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M17,8C8,10 5.9,16.17 3.82,21.34L5.71,22L6.66,19.7C7.14,19.87 7.64,20 8.13,20C11,20 14.85,15.62 15,14C15.15,12.38 17,8 17,8M17,8C17,8 20,12 22,15C21,15 20,13 17,8M12,5C10,3 6,2 2,2C2,6 3,10 5,12C7,14 10,14 12,14V5Z"/></svg>')}`;
-
-        const createLeaf = () => {
-            const isForeground = Math.random() > 0.7;
-            const container = isForeground ? fg : bg;
-            if (!container) return;
-
-            const leaf = document.createElement('div');
-            leaf.classList.add('leaf');
-            
-            const sizeValue = isForeground ? (Math.random() * 15 + 20) : (Math.random() * 10 + 12);
-            const size = sizeValue + 'px';
-            const blur = isForeground ? '0px' : (Math.random() * 2 + 1) + 'px';
-            const duration = isForeground ? (Math.random() * 3 + 4) : (Math.random() * 5 + 8);
-            const opacity = isForeground ? (Math.random() * 0.2 + 0.8) : (Math.random() * 0.3 + 0.4);
-
-            const left = (Math.random() * 100) + '%';
-            const drift = (Math.random() * 600 - 300) + 'px';
-            const rotateDuration = (Math.random() * 3 + 2) + 's';
-            const color = leafColors[Math.floor(Math.random() * leafColors.length)];
-
-            leaf.style.width = size;
-            leaf.style.height = size;
-            leaf.style.left = left;
-            leaf.style.opacity = opacity.toString();
-            leaf.style.backgroundImage = `url('${leafSvg.replace('currentColor', encodeURIComponent(color))}')`;
-            
-            leaf.style.setProperty('--duration', (parseFloat(duration.toString()) * (Math.random() * 0.5 + 0.75)) + 's');
-            leaf.style.setProperty('--drift', drift);
-            leaf.style.setProperty('--rotate-duration', rotateDuration);
-            leaf.style.setProperty('--blur', blur);
-
-            container.appendChild(leaf);
-
-            setTimeout(() => {
-                leaf.remove();
-            }, parseFloat(duration.toString()) * 1000);
-        };
-
-        const interval = setInterval(createLeaf, 200);
-        return () => clearInterval(interval);
-    }, []);
-
-    return (
-        <>
-            <div ref={bgRef} className="leaf-bg"></div>
-            <div ref={fgRef} className="leaf-fg"></div>
-        </>
-    );
-};
-
-const SummerEffect = () => {
-    const bgRef = useRef<HTMLDivElement>(null);
-    const fgRef = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        const bg = bgRef.current;
-        const fg = fgRef.current;
-        if (!bg || !fg) return;
-
-        const seagullSvg = `data:image/svg+xml;base64,${btoa('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#000000"><path d="M12,12C12,12 10,11 6,11C2,11 0,13 0,13C0,13 2,12 6,12C10,12 12,13 12,13C12,13 14,12 18,12C22,12 24,13 24,13C24,13 22,11 18,11C14,11 12,12 12,12Z"/></svg>')}`;
-        const pelicanSvg = `data:image/svg+xml;base64,${btoa('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#000000"><path d="M24,12C24,12 20,10 14,10C8,10 4,12 4,12L0,11L4,13C4,13 8,15 14,15C20,15 24,13 24,13Z"/></svg>')}`;
-        const dolphinSvg = `data:image/svg+xml;base64,${btoa('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#000000"><path d="M2,12C2,12 5,8 12,8C19,8 22,12 22,12C22,12 19,11 12,11C5,11 2,12 2,12ZM12,12C12,12 10,14 6,14C2,14 0,16 0,16C0,16 2,15 6,15C10,15 12,16 12,16Z"/></svg>')}`;
-
-        const createParticle = () => {
-            const rand = Math.random();
-            let type = 'mist';
-            if (rand > 0.8) type = 'pelican';
-            else if (rand > 0.6) type = 'dolphin';
-            else if (rand > 0.3) type = 'seagull';
-
-            const isForeground = Math.random() > 0.8 && type !== 'mist';
-            const container = isForeground ? fg : bg;
-            if (!container) return;
-
-            const p = document.createElement('div');
-            p.classList.add(type);
-            if (isForeground) p.classList.add('is-foreground');
-
-            if (type === 'seagull' || type === 'pelican') {
-                const isPelican = type === 'pelican';
-                const baseWidth = isPelican ? 45 : 30;
-                const sizeWidth = isForeground ? (baseWidth * 2.5) + 'px' : (Math.random() * 20 + baseWidth) + 'px';
-                const sizeHeight = isForeground ? (baseWidth * 0.8) + 'px' : (Math.random() * 5 + 12) + 'px';
-                const startY = isForeground ? (Math.random() * 60 + 20) + '%' : (Math.random() * 40 + 5) + '%';
-                const duration = isForeground ? (Math.random() * 4 + 4) + 's' : (Math.random() * 10 + 15) + 's';
-                
-                p.style.width = sizeWidth;
-                p.style.height = sizeHeight;
-                p.style.top = startY;
-                p.style.setProperty('--duration', duration);
-                p.style.opacity = isForeground ? '1' : (Math.random() * 0.5 + 0.4).toString();
-                if (!isForeground) p.style.filter = 'blur(1px)';
-
-                // Bird Body for Flapping
-                const body = document.createElement('div');
-                body.classList.add('bird-body');
-                body.style.width = '100%';
-                body.style.height = '100%';
-                body.style.backgroundImage = `url('${isPelican ? pelicanSvg : seagullSvg}')`;
-                body.style.backgroundSize = 'contain';
-                body.style.backgroundRepeat = 'no-repeat';
-                body.style.setProperty('--flap-duration', (Math.random() * 0.2 + 0.2) + 's');
-                p.appendChild(body);
-            } else if (type === 'dolphin') {
-                const left = (Math.random() * 70 + 15) + '%';
-                const top = (Math.random() * 10 + 68) + '%';
-                p.style.left = left;
-                p.style.top = top;
-                p.style.width = '50px';
-                p.style.height = '25px';
-                p.style.backgroundImage = `url('${dolphinSvg}')`;
-                p.style.opacity = '0.8';
-                p.style.filter = 'blur(0.5px)';
-            } else {
-                const size = (Math.random() * 100 + 100) + 'px';
-                const left = (Math.random() * 100) + '%';
-                const duration = (Math.random() * 5 + 5) + 's';
-                p.style.width = size;
-                p.style.height = size;
-                p.style.left = left;
-                p.style.setProperty('--duration', duration);
-                p.style.setProperty('--drift', (Math.random() * 100 - 50) + 'px');
-            }
-
-            container.appendChild(p);
-            setTimeout(() => p.remove(), type === 'dolphin' ? 3000 : 25000);
-        };
-
-        const interval = setInterval(createParticle, 600);
-        return () => clearInterval(interval);
-    }, []);
-
-    return (
-        <>
-            <div ref={bgRef} className="summer-bg-fx"></div>
-            <div ref={fgRef} className="summer-fg-fx"></div>
-        </>
-    );
-};
-
-type Season = 'winter' | 'autumn' | 'summer';
-
-export default function LoginPage() {
+export default function HomePage() {
     const router = useRouter();
-    const [credentials, setCredentials] = useState({ username: '', password: '' });
+    const [showLogin, setShowLogin] = useState(false);
+    const [imagesLoaded, setImagesLoaded] = useState(false);
+
+    useEffect(() => {
+        // Trigger animations after mount
+        setTimeout(() => setImagesLoaded(true), 100);
+    }, []);
+
+    return (
+        <div className="relative min-h-screen w-full flex flex-col justify-center items-center text-center px-5 overflow-hidden">
+            {/* Background Image with Ken Burns Effect */}
+            <div className="absolute inset-0 z-0">
+                <div
+                    className="absolute inset-0 bg-cover bg-center animate-ken-burns"
+                    style={{ backgroundImage: 'url(/lobo.jpg)' }}
+                ></div>
+            </div>
+
+            {/* Fog/Mist Animation Layers */}
+            <div className="absolute inset-0 z-0 opacity-50 pointer-events-none mix-blend-screen">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.1),transparent_70%)] animate-fog-slow"></div>
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_80%,rgba(200,220,255,0.15),transparent_50%)] animate-fog-fast"></div>
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(200,220,255,0.1),transparent_60%)] animate-fog-slow" style={{ animationDelay: '-5s' }}></div>
+            </div>
+
+            {/* Overlay Cinematográfico */}
+            <div className="absolute inset-0 bg-gradient-to-b from-blue-50/80 via-white/40 to-blue-100/60 transition-opacity"></div>
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(15,44,74,0.1)_100%)]"></div>
+
+            {/* Decorative Images (Logos Premium) */}
+            <div className={`absolute top-10 left-8 md:left-12 transition-all duration-1000 ease-out z-20 ${imagesLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-10'}`}>
+                <div className="w-24 h-24 md:w-28 md:h-28 bg-white/40 backdrop-blur-xl rounded-full flex items-center justify-center border border-white/60 shadow-[0_8px_30px_rgba(0,0,0,0.12)] hover:scale-110 transition-transform duration-500 cursor-pointer group overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-tr from-white/0 to-white/80 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                    <img src="/logo-mqs.png" alt="MQS Logo" className="w-full h-full object-cover relative z-10" />
+                </div>
+            </div>
+
+            <div className={`absolute top-10 right-8 md:right-12 transition-all duration-1000 ease-out z-20 delay-100 ${imagesLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-10'}`}>
+                <div className="w-24 h-24 md:w-28 md:h-28 bg-white/40 backdrop-blur-xl rounded-full flex items-center justify-center border border-white/60 shadow-[0_8px_30px_rgba(0,0,0,0.12)] hover:scale-110 transition-transform duration-500 cursor-pointer group overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-tr from-white/0 to-white/80 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                    <img src="/logo-jcq.png" alt="JCQ Logo" className="w-full h-full object-cover relative z-10" />
+                </div>
+            </div>
+
+            {/* Hero Content */}
+            <div className="max-w-5xl z-10 relative">
+                {/* Etiqueta Superior */}
+                <div className={`mb-8 overflow-hidden`}>
+                    <span className={`inline-block py-2 px-6 rounded-full bg-[#0F2C4A]/5 backdrop-blur-sm border border-[#0F2C4A]/10 text-sm md:text-base tracking-[4px] font-bold text-[#0F2C4A] uppercase shadow-sm transition-all duration-1000 delay-200 ${imagesLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-20'}`}>
+                        JCQ  <span className="text-blue-500 mx-2">/</span> MCQS MICHAEL CESAR QUISPE SEBASTIAN
+                    </span>
+                </div>
+
+                {/* Título Principal Impactante */}
+                <h1 className={`text-6xl md:text-8xl leading-tight font-black mb-4 text-[#0F2C4A] tracking-tighter transition-all duration-1000 delay-300 drop-shadow-2xl ${imagesLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
+                    ANTICIPAR ES <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0F2C4A] to-[#2563EB]">GANAR</span>
+                </h1>
+
+                {/* Subtítulo Elegante */}
+                <h2 className={`text-3xl md:text-5xl font-light mb-12 text-[#133657] transition-all duration-1000 delay-500 ${imagesLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+                    CUMPLIR ES <span className="font-semibold italic">CRECER</span>
+                </h2>
+
+                {/* Botón de Acción Principal Modificado */}
+                <button
+                    onClick={() => setShowLogin(true)}
+                    className={`
+                        group relative overflow-hidden inline-flex items-center gap-3
+                        bg-[#0F2C4A] text-white px-12 py-5 
+                        text-lg font-bold tracking-wide rounded-full 
+                        shadow-[0_20px_50px_-12px_rgba(15,44,74,0.5)] 
+                        hover:shadow-[0_30px_60px_-15px_rgba(15,44,74,0.6)]
+                        hover:-translate-y-1 active:scale-95
+                        transition-all duration-300 delay-700
+                        ${imagesLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}
+                    `}
+                >
+                    <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-[#0F2C4A] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <span className="relative z-10">ACCEDER A MQS</span>
+                    <i className="fas fa-arrow-right relative z-10 group-hover:translate-x-1 transition-transform"></i>
+                </button>
+            </div>
+
+            {/* Login Modal */}
+            {showLogin && <LoginModal onClose={() => setShowLogin(false)} />}
+        </div>
+    );
+}
+
+function LoginModal({ onClose }: { onClose: () => void }) {
+    const router = useRouter();
+    const [credentials, setCredentials] = useState({ id_corporativo: '', password: '' });
     const [showPassword, setShowPassword] = useState(false);
+    const [showForgotPassword, setShowForgotPassword] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
-    
-    // Random initial season
-    const [season, setSeason] = useState<Season>('summer');
-    
-    const submitBtnRef = useRef<HTMLButtonElement>(null);
-
-    // PRELOAD IMAGES
-    useEffect(() => {
-        const imagesToPreload = ['/mar.jpg', '/otonooo.jpg', '/fondo_seace.jpg'];
-        imagesToPreload.forEach((src) => {
-            const img = new Image();
-            img.src = src;
-        });
-    }, []);
-
-    // SEASON SWITCHER
-    useEffect(() => {
-        const seasons: Season[] = ['summer', 'autumn', 'winter'];
-        const randomStartIdx = Math.floor(Math.random() * seasons.length);
-        
-        setSeason(seasons[randomStartIdx]);
-        let currentIdx = randomStartIdx;
-        
-        const interval = setInterval(() => {
-            currentIdx = (currentIdx + 1) % seasons.length;
-            setSeason(seasons[currentIdx]);
-        }, 15000); // Switch every 15 seconds
-        
-        return () => clearInterval(interval);
-    }, []);
-
-    const handleMouseMove = (e: React.MouseEvent) => {
-        const submitBtn = submitBtnRef.current;
-        if (submitBtn) {
-            const rect = submitBtn.getBoundingClientRect();
-            const btnX = rect.left + rect.width / 2;
-            const btnY = rect.top + rect.height / 2;
-
-            const distance = Math.hypot(e.clientX - btnX, e.clientY - btnY);
-            const radius = 100;
-
-            if (distance < radius) {
-                const moveX = (e.clientX - btnX) * 0.3;
-                const moveY = (e.clientY - btnY) * 0.3;
-                submitBtn.style.transform = `translate(${moveX}px, ${moveY}px)`;
-            } else {
-                submitBtn.style.transform = `translate(0px, 0px)`;
-            }
-        }
-    };
-
-    const handleMouseLeave = () => {
-        if (submitBtnRef.current) {
-            submitBtnRef.current.style.transform = `translate(0px, 0px)`;
-        }
-    };
+    const [focusedField, setFocusedField] = useState<string | null>(null);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -279,6 +111,7 @@ export default function LoginPage() {
         setLoading(true);
 
         try {
+            // Real authentication with backend
             const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
             const response = await fetch(`${apiUrl}/api/auth/login`, {
                 method: 'POST',
@@ -286,7 +119,7 @@ export default function LoginPage() {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    id_corporativo: credentials.username,
+                    id_corporativo: credentials.id_corporativo,
                     password: credentials.password
                 })
             });
@@ -295,22 +128,27 @@ export default function LoginPage() {
                 const errorData = await response.json();
                 setError(errorData.detail || 'Credenciales inválidas');
                 setLoading(false);
+                // Shake animation trigger could go here
                 return;
             }
 
             const data = await response.json();
+
+            // Store token and user data
             localStorage.setItem('access_token', data.access_token);
             localStorage.setItem('user', JSON.stringify({
                 id: data.user.id,
                 username: data.user.id_corporativo,
                 email: data.user.email,
                 role: data.user.perfil.toLowerCase(),
-                perfil: data.user.perfil,
+                perfil: data.user.perfil, // Guardar también perfil original para compatibilidad
                 nombre: data.user.nombre,
-                job_title: data.user.job_title
+                job_title: data.user.job_title // ✅ AGREGADO: Cargo del usuario
             }));
 
+            // Close modal and redirect
             setLoading(false);
+            onClose();
             router.push('/modules');
         } catch (error) {
             console.error('Error en login:', error);
@@ -320,165 +158,191 @@ export default function LoginPage() {
     };
 
     return (
-        <div className={`login-container season-${season}`} onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave}>
-            {/* BACKGROUNDS */}
-            <div className={`bg-blur-overlay bg-summer ${season === 'summer' ? 'active' : ''}`}></div>
-            <div className={`bg-blur-overlay bg-autumn ${season === 'autumn' ? 'active' : ''}`}></div>
-            <div className={`bg-blur-overlay bg-winter ${season === 'winter' ? 'active' : ''}`}></div>
-            
-            {/* BACKGROUND WEATHER LAYER */}
-            {season === 'winter' && <div className="snow-bg"></div>}
-            {season === 'autumn' && <div className="leaf-bg"></div>}
-            {season === 'summer' && <div className="summer-bg-fx"></div>}
-            
-            {/* WEATHER EFFECTS */}
-            {season === 'winter' && <SnowEffect />}
-            {season === 'autumn' && <LeafEffect />}
-            {season === 'summer' && <SummerEffect />}
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+            <div
+                className="relative w-full max-w-md overflow-hidden bg-white/90 backdrop-blur-2xl rounded-[2.5rem] shadow-[0_20px_70px_rgba(0,0,0,0.15)] border border-white/60 transform transition-all animate-in zoom-in-95 slide-in-from-bottom-5 duration-500 group"
+                onClick={(e) => e.stopPropagation()}
+            >
+                {/* Decorative gradients matching modules page */}
+                <div className="absolute inset-0 bg-gradient-to-b from-blue-50/50 to-white/80 opacity-100 pointer-events-none"></div>
+                <div className="absolute top-0 right-0 w-48 h-48 bg-blue-400/10 rounded-full blur-[60px] -z-0"></div>
+                <div className="absolute bottom-0 left-0 w-48 h-48 bg-purple-400/10 rounded-full blur-[60px] -z-0"></div>
 
-            <header className="top-header">
-                <div className="logo header-logo-left">
-                    <img src="/logo-mqs.png" alt="MQS Logo" className="brand-image" />
-                </div>
-                <div className="logo header-logo-right">
-                    <img src="/logo-jcq.png" alt="JCQ Logo" className="brand-image" />
-                </div>
-            </header>
+                <button
+                    onClick={onClose}
+                    className="absolute top-5 right-5 p-2 rounded-full text-white/60 hover:text-white hover:bg-white/10 transition-all z-20"
+                >
+                    <X size={22} />
+                </button>
 
-            <main className="login-card">
-                <div className="shine-overlay"></div>
-
-                <div className="left-panel">
-                    {[...Array(24)].map((_, i) => (
-                        <div key={i} className={`decor-circle shape-${i + 1}`}></div>
-                    ))}
-
-                    <div className="left-content">
-                        <div className="branding-group">
-                            <h1 className="reveal-text">MCQS</h1>
-                            <div className="main-names animate-stagger" style={{ animationDelay: '0.2s' }}>
-                                <span>MICHAEL</span>
-                                <span>CESAR</span>
-                                <span>QUISPE</span>
-                                <span>SEBASTIAN</span>
-                            </div>
+                <div className="p-10 pb-8 relative z-10">
+                    <div className="text-center mb-10 relative">
+                        <div className="w-20 h-20 bg-gradient-to-tr from-blue-600 to-cyan-500 rounded-3xl mx-auto mb-6 flex items-center justify-center shadow-2xl shadow-blue-500/30 transform hover:rotate-6 hover:scale-110 transition-all duration-500 ring-4 ring-white/10">
+                            <ShieldCheck className="text-white w-10 h-10 drop-shadow-md" />
                         </div>
-                        <div className="slogan-group">
-                            <h3 className="animate-stagger" style={{ animationDelay: '0.4s' }}>ANTICIPAR ES GANAR</h3>
-                            <p className="animate-stagger" style={{ animationDelay: '0.6s' }}>CUMPLIR ES CRECER</p>
-                        </div>
+                        <h3 className="text-4xl font-black text-[#0F2C4A] tracking-tight mb-2 drop-shadow-sm">
+                            Bienvenido
+                        </h3>
+                        <p className="text-blue-900/60 text-sm font-bold tracking-wide">Portales Corporativos MQS & SEACE</p>
                     </div>
-                </div>
 
-                <div className="right-panel">
-                    <div className="form-wrapper">
-                        <h2 className="form-title animate-stagger" style={{ animationDelay: '0.6s' }}>Iniciar sesión</h2>
-                        <p className="form-subtitle animate-stagger" style={{ animationDelay: '0.7s' }}>
-                            Bienvenido de nuevo, por favor ingrese sus credenciales de acceso.
-                        </p>
-
-                        <form id="loginForm" onSubmit={handleSubmit} className={error ? 'shake' : ''}>
-                            <div className="input-group animate-stagger" style={{ animationDelay: '0.8s' }}>
-                                <div className="icon-wrapper">
-                                    <svg fill="currentColor" viewBox="0 0 20 20">
-                                        <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
-                                    </svg>
+                    <form onSubmit={handleSubmit} className="space-y-6">
+                        <div className="space-y-5">
+                            {/* User Input */}
+                            <div className={`relative group transition-all duration-300 ${focusedField === 'user' ? 'scale-[1.02]' : ''}`}>
+                                <div className={`absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors duration-300 ${focusedField === 'user' ? 'text-blue-600' : 'text-gray-400'}`}>
+                                    <User size={20} />
                                 </div>
                                 <input
                                     type="text"
-                                    id="username"
-                                    placeholder=" "
+                                    placeholder="ID Corporativo"
+                                    value={credentials.id_corporativo}
+                                    onChange={(e) => setCredentials({ ...credentials, id_corporativo: e.target.value })}
+                                    onFocus={() => setFocusedField('user')}
+                                    onBlur={() => setFocusedField(null)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            handleSubmit(e as any);
+                                        }
+                                    }}
+                                    className={`w-full pl-12 pr-4 py-4 rounded-xl border-2 outline-none transition-all duration-300 bg-gray-50/50 text-gray-800 placeholder-gray-400 backdrop-blur-sm
+                                        ${focusedField === 'user'
+                                            ? 'border-blue-500/30 shadow-[0_0_20px_rgba(37,99,235,0.1)] bg-white'
+                                            : 'border-gray-100 hover:border-blue-200 hover:bg-white'}`}
                                     required
-                                    value={credentials.username}
-                                    onChange={(e) => setCredentials({ ...credentials, username: e.target.value })}
                                 />
-                                <label htmlFor="username">Usuario</label>
                             </div>
 
-                            <div className="input-group animate-stagger" style={{ animationDelay: '0.9s' }}>
-                                <div className="icon-wrapper">
-                                    <svg fill="currentColor" viewBox="0 0 20 20">
-                                        <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path>
-                                    </svg>
+                            {/* Password Input */}
+                            <div className={`relative group transition-all duration-300 ${focusedField === 'pass' ? 'scale-[1.02]' : ''}`}>
+                                <div className={`absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors duration-300 ${focusedField === 'pass' ? 'text-blue-600' : 'text-gray-400'}`}>
+                                    <Lock size={20} />
                                 </div>
                                 <input
                                     type={showPassword ? "text" : "password"}
-                                    id="password"
-                                    placeholder=" "
-                                    required
+                                    placeholder="Contraseña"
                                     value={credentials.password}
-                                    onChange={(e) => setCredentials({ ...credentials, username: credentials.username, password: e.target.value })}
+                                    onChange={(e) => setCredentials({ ...credentials, password: e.target.value })}
+                                    onFocus={() => setFocusedField('pass')}
+                                    onBlur={() => setFocusedField(null)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            handleSubmit(e as any);
+                                        }
+                                    }}
+                                    className={`w-full pl-12 pr-12 py-4 rounded-xl border-2 outline-none transition-all duration-300 bg-gray-50/50 text-gray-800 placeholder-gray-400 backdrop-blur-sm
+                                        ${focusedField === 'pass'
+                                            ? 'border-blue-500/30 shadow-[0_0_20px_rgba(37,99,235,0.1)] bg-white'
+                                            : 'border-gray-100 hover:border-blue-200 hover:bg-white'}`}
+                                    required
                                 />
-                                <label htmlFor="password">Contraseña</label>
                                 <button
                                     type="button"
-                                    className="btn-show"
-                                    onClick={() => setShowPassword(!showPassword)}
+                                    onMouseEnter={() => setShowPassword(true)}
+                                    onMouseLeave={() => setShowPassword(false)}
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-600 transition-colors p-1"
                                 >
-                                    {showPassword ? (
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                          <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
-                                          <circle cx="12" cy="12" r="3" />
-                                        </svg>
-                                    ) : (
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                          <path d="M17.5 19L19 21" />
-                                          <path d="M12 20V23" />
-                                          <path d="M6.5 19L5 21" />
-                                          <path d="M2 12S5 17 12 17S22 12 22 12" />
-                                        </svg>
-                                    )}
+                                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                                 </button>
                             </div>
 
-                            {error && (
-                                <p style={{ color: '#ef4444', fontSize: '0.85rem', marginBottom: '1rem', textAlign: 'center', fontWeight: '600' }}>
-                                    {error}
-                                </p>
-                            )}
-
-                            <div className="form-options animate-stagger" style={{ animationDelay: '1.0s' }}>
-                                <label className="remember-me">
-                                    <input type="checkbox" />
-                                    <span className="custom-checkbox"></span>
-                                    <span className="label-text">Recordarme</span>
+                            <div className="flex items-center justify-between text-sm pt-1 px-1">
+                                <label className="flex items-center gap-2 cursor-pointer group">
+                                    <div className="relative flex items-center">
+                                        <input type="checkbox" className="peer sr-only" />
+                                        <div className="w-5 h-5 border-2 border-gray-300 rounded-md peer-checked:bg-blue-600 peer-checked:border-blue-600 transition-all bg-white"></div>
+                                        <div className="absolute inset-0 text-white opacity-0 peer-checked:opacity-100 flex items-center justify-center transition-opacity pointer-events-none">
+                                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
+                                        </div>
+                                    </div>
+                                    <span className="text-gray-500 group-hover:text-blue-700 transition-colors font-medium">Recordar sesión</span>
                                 </label>
-                                <a href="#" className="forgot-pwd underline-anim">¿Olvidó su contraseña?</a>
-                            </div>
-
-                            <div className="button-magnetic-area">
                                 <button
-                                    type="submit"
-                                    className="btn-primary animate-stagger btn-magnetic"
-                                    id="submitBtn"
-                                    ref={submitBtnRef}
-                                    disabled={loading}
-                                    style={{ animationDelay: '1.1s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
+                                    type="button"
+                                    onClick={() => setShowForgotPassword(true)}
+                                    className="text-blue-600 hover:text-blue-800 font-bold hover:underline transition-all"
                                 >
-                                    {loading ? (
-                                        <div className="snowflake-loader"></div>
-                                    ) : (
-                                        'Ingresar'
-                                    )}
+                                    ¿Olvidaste tu contraseña?
                                 </button>
                             </div>
+                        </div>
 
-                            <div className="security-notice animate-stagger" style={{ animationDelay: '1.2s' }}>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: '-3px', marginRight: '6px' }}>
-                                  <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
-                                  <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                                </svg>
-                                Sistema de uso exclusivo para personal autorizado de MCQS
+                        {error && (
+                            <div className="bg-red-100 border border-red-200 text-red-800 px-4 py-3 rounded-xl text-sm flex items-center gap-3 animate-in slide-in-from-top-2 shadow-sm font-medium">
+                                <div className="w-2 h-2 rounded-full bg-red-600 shrink-0 animate-pulse"></div>
+                                {error}
                             </div>
-                        </form>
+                        )}
+
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="w-full bg-[#0F2C4A] text-white py-4 rounded-xl font-bold text-lg 
+                            hover:shadow-[0_10px_40px_-10px_rgba(15,44,74,0.5)] hover:bg-[#163A5F] hover:scale-[1.02] active:scale-[0.98]
+                            disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none
+                            transition-all duration-300 group relative overflow-hidden shadow-lg"
+                        >
+                            <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+                            <span className="relative flex items-center justify-center gap-2 drop-shadow-sm">
+                                {loading ? (
+                                    <>
+                                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                        <span>Procesando...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        INICIAR SESIÓN
+                                        <ArrowRight size={22} className="group-hover:translate-x-1 transition-transform" />
+                                    </>
+                                )}
+                            </span>
+                        </button>
+                    </form>
+                </div>
+
+                {/* Footer Gradient Line */}
+                <div className="h-1.5 w-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 opacity-80"></div>
+            </div>
+
+            {/* Forgot Password Modal Overlay */}
+            {showForgotPassword && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-[#0F2C4A]/60 backdrop-blur-md animate-in fade-in duration-300">
+                    <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-300 border border-white/20">
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="text-2xl font-bold text-[#0F2C4A]">Recuperar Contraseña</h3>
+                            <button
+                                onClick={() => setShowForgotPassword(false)}
+                                className="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-100 rounded-full transition-colors"
+                            >
+                                <X size={24} />
+                            </button>
+                        </div>
+
+                        <div className="space-y-4">
+                            <p className="text-gray-600 leading-relaxed">
+                                Por razones de seguridad, las contraseñas corporativas deben ser restablecidas por el departamento de IT.
+                            </p>
+
+                            <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl flex items-start gap-4">
+                                <div className="mt-1 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center shrink-0 text-blue-600">
+                                    <ShieldCheck size={16} />
+                                </div>
+                                <div>
+                                    <p className="text-xs font-bold text-blue-800 uppercase tracking-wide mb-1">Contacto Soporte</p>
+                                    <p className="text-sm text-blue-900 font-medium">soporte@mqs-garantias.com</p>
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={() => setShowForgotPassword(false)}
+                                className="w-full bg-[#0F2C4A] text-white py-3.5 rounded-xl font-bold hover:bg-[#163A5F] transition-all hover:shadow-lg mt-2 active:scale-95"
+                            >
+                                Entendido, gracias
+                            </button>
+                        </div>
                     </div>
                 </div>
-            </main>
-
-            {/* FOREGROUND WEATHER LAYER */}
-            {season === 'winter' && <div className="snow-fg"></div>}
-            {season === 'autumn' && <div className="leaf-fg"></div>}
-            {season === 'summer' && <div className="summer-fg-fx"></div>}
+            )}
         </div>
     );
 }
