@@ -238,7 +238,7 @@ def get_licitaciones(
             # This avoids MySQL optimizer issues with complex UNION joins
             
             found_ids = set()
-            limit_subquery = 5000 
+            limit_subquery = 500  # Capped to prevent building huge IN clauses
             
             # A. Fulltext Search
             terms = [f"+{t.replace('*', '')}*" for t in search.strip().split() if len(t) > 1]
@@ -313,12 +313,13 @@ def get_licitaciones(
             except Exception as e:
                 print(f"Cabecera Search Error: {e}")
             
-            # C. Apply Filter
+            # C. Apply Filter — cap to 200 IDs max to keep SQL fast
             if found_ids:
-                # Manually expand IN clause for raw SQL text()
-                in_params = [f":id{i}" for i in range(len(found_ids))]
+                # Limit to 200 most recent IDs to keep the IN clause manageable
+                id_list = list(found_ids)[:200]
+                in_params = [f":id{i}" for i in range(len(id_list))]
                 where_clauses.append(f"licitaciones_cabecera.id_convocatoria IN ({','.join(in_params)})")
-                for i, id_val in enumerate(found_ids):
+                for i, id_val in enumerate(id_list):
                     params[f"id{i}"] = id_val
             else:
                 # Force no result if search yields nothing

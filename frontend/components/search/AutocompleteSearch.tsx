@@ -49,14 +49,9 @@ export const AutocompleteSearch: React.FC<AutocompleteSearchProps> = ({
     const [isOpen, setIsOpen] = useState(false);
     const wrapperRef = useRef<HTMLDivElement>(null);
 
-    // Debounce logic
+    // ── Debounce 1: Autocomplete suggestions (250ms, fast)
     useEffect(() => {
         const timer = setTimeout(async () => {
-            // Trigger main search if 3+ chars or empty (to clear)
-            if (query.length >= 3 || query.length === 0) {
-                onSearch(query);
-            }
-
             if (query.length >= 3) {
                 setLoading(true);
                 try {
@@ -65,18 +60,29 @@ export const AutocompleteSearch: React.FC<AutocompleteSearchProps> = ({
                     setIsOpen(results.length > 0);
                 } catch (error) {
                     console.error("Autocomplete error:", error);
+                    setSuggestions([]);
                 } finally {
                     setLoading(false);
                 }
             } else {
                 setSuggestions([]);
-                // Show history if query is empty or short
-                setIsOpen(history.length > 0);
+                setIsOpen(history.length > 0 && query.length === 0);
             }
-        }, 250); // 250ms debounce
+        }, 250);
 
         return () => clearTimeout(timer);
-    }, [query]);
+    }, [query]); // ← Only depends on query, NOT on history (avoids re-trigger loops)
+
+    // ── Debounce 2: Trigger main search (600ms, gives time to type)
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (query.length >= 3 || query.length === 0) {
+                onSearch(query);
+            }
+        }, 600);
+
+        return () => clearTimeout(timer);
+    }, [query]); // ← Separate timer so autocomplete isn't cancelled by parent re-render
 
     useEffect(() => {
         // Load history and prune expired items on mount
