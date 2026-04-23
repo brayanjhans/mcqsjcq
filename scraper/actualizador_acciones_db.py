@@ -78,17 +78,12 @@ def js_click(drv, el):
 # ─── Navegación SEACE ────────────────────────────────────────────────────────
 SEACE_URL = "https://prod2.seace.gob.pe/seacebus-uiwd-pub/buscadorPublico/buscadorPublico.xhtml"
 
-def iniciar_busqueda(drv, year, fecha_inicio=None, fecha_fin=None):
-    """
-    Carga el SEACE, activa pestaña Procedimientos, selecciona año y establece
-    los filtros de fecha. SEACE devuelve 0 resultados si no se establecen fechas
-    en el buscador, por lo que es obligatorio iterar por rangos de meses.
-    """
-    logger.info(f"Cargando buscador SEACE para {year} [{fecha_inicio} - {fecha_fin}]...")
+def iniciar_busqueda(drv, year, nomenclatura):
+    logger.info(f"Cargando buscador SEACE para {nomenclatura}...")
     drv.get(SEACE_URL)
+    import time
     time.sleep(5)
 
-    # -- Activar tab Procedimientos --
     try:
         el = drv.find_element(By.XPATH, "//li[@role='tab'][2]/a")
         drv.execute_script("arguments[0].click();", el)
@@ -96,120 +91,43 @@ def iniciar_busqueda(drv, year, fecha_inicio=None, fecha_fin=None):
     except Exception as e:
         logger.error(f"Fallo activando tab: {e}")
 
-    # -- Seleccionar año --
     try:
         combo = drv.find_element(By.ID, "tbBuscador:idFormBuscarProceso:anioConvocatoria")
         drv.execute_script("arguments[0].click();", combo)
         time.sleep(1)
-        
         opcion_año = drv.find_element(By.XPATH, f"//div[@id='tbBuscador:idFormBuscarProceso:anioConvocatoria_panel']//li[text()='{year}']")
         drv.execute_script("arguments[0].click();", opcion_año)
         time.sleep(3)
     except Exception as e:
         logger.error(f"Fallo seleccionando año: {e}")
 
-    # -- Expandir Búsqueda Avanzada y fijar fechas --
-    if fecha_inicio and fecha_fin:
-        try:
-            avz = drv.find_element(By.XPATH, "//legend[contains(.,'Avanzada')]")
-            drv.execute_script("arguments[0].click();", avz)
-            time.sleep(2)
-        except Exception:
-            logger.debug("Búsqueda Avanzada ya expandida o fallo al expandir.")
-
-        def write_date(field_id, val):
-            for int_ in range(3):
-                try:
-                    el = drv.find_element(By.ID, f"{field_id}_input")
-                    el.click()
-                    time.sleep(0.5)
-                    el.send_keys(Keys.CONTROL + 'a')
-                    el.send_keys(val)
-                    el.send_keys(Keys.TAB)
-                    time.sleep(1.5)
-                    break 
-                except Exception as e:
-                    if int_ == 2:
-                        logger.error(f"Fallo escribiendo fecha en {field_id}: {e}")
-                    time.sleep(1)
-
-        base = "tbBuscador:idFormBuscarProceso"
-        write_date(f"{base}:dfechaInicio", fecha_inicio)
-        time.sleep(1)
-        write_date(f"{base}:dfechaFin", fecha_fin)
+    try:
+        avz = drv.find_element(By.XPATH, "//legend[contains(.,'Avanzada')]")
+        drv.execute_script("arguments[0].click();", avz)
         time.sleep(2)
+    except Exception:
+        pass
 
-    # -- Pulsar Buscar --
+    try:
+        el = drv.find_element(By.ID, "tbBuscador:idFormBuscarProceso:siglasEntidad")
+        drv.execute_script("arguments[0].value = '';", el)
+        time.sleep(0.5)
+        el.send_keys(nomenclatura)
+        time.sleep(1)
+        logger.info(f"Escrita nomenclatura en field: tbBuscador:idFormBuscarProceso:siglasEntidad")
+    except Exception as e:
+        logger.error(f"Fallo escribiendo nomenclatura: {e}")
+
     buscado = False
     try:
-        # AQUÍ ESTÁ LA MAGIA: Forzar a que busque específicamente el botón de ESTE tab
         btn = drv.find_element(By.XPATH, "//form[@id='tbBuscador:idFormBuscarProceso']//span[text()='Buscar' or text()=' Buscar']/parent::button")
         drv.execute_script("arguments[0].click();", btn)
-        logger.info("Buscando... esperando resultados (10s)")
-        time.sleep(10)
+        time.sleep(7)
         buscado = True
     except Exception as e:
         logger.error(f"Fallo pulsando buscar: {e}")
 
-    if buscado:
-        try:
-            total_txt = drv.execute_script(
-                "var el = document.querySelector('#tbBuscador\\\\:idFormBuscarProceso .ui-paginator-current');"
-                "return el ? el.textContent.trim() : 'n/a';")
-            logger.info(f"  [TOTAL] Paginador: {total_txt}")
-        except Exception:
-            pass
-
     return buscado
-
-
-    drv.get(SEACE_URL)
-    time.sleep(5)
-
-    # -- Activar tab Procedimientos --
-    for by, sel in [
-        (By.CSS_SELECTOR, "a[href*='tab1']"),
-        (By.XPATH, "//a[contains(., 'Procedimientos de Selecci')]"),
-        (By.XPATH, "//li[@role='tab'][2]/a"),
-    ]:
-        try:
-            el = drv.find_element(by, sel)
-            js_click(drv, el)
-            time.sleep(3)
-            logger.info("Tab Procedimientos activado.")
-            break
-        except Exception:
-            continue
-
-    # -- Seleccionar año --
-    anio_ok = False
-    for _ in range(2):
-        try:
-            sel_el = drv.find_element(
-                By.ID, "tbBuscador:idFormBuscarProceso:anioConvocatoria_input")
-            drv.execute_script(f"arguments[0].value = '{year}';", sel_el)
-            drv.execute_script(
-                "arguments[0].dispatchEvent(new Event('change', {bubbles: true}));", sel_el)
-            time.sleep(3)
-            logger.info(f"Año {year} seleccionado.")
-            anio_ok = True
-            break
-        except Exception:
-            time.sleep(2)
-
-    if not anio_ok:
-        for s in drv.find_elements(By.TAG_NAME, 'select'):
-            try:
-                opciones = [o.text.strip() for o in s.find_elements(By.TAG_NAME, 'option')]
-                if str(year) in opciones:
-                    Select(s).select_by_visible_text(str(year))
-                    drv.execute_script(
-                        'arguments[0].dispatchEvent(new Event("change",{bubbles:true}));', s)
-                    time.sleep(3)
-                    logger.info(f"Año {year} seleccionado (fallback select).")
-                    break
-            except Exception:
-                continue
 
 
 def obtener_filas_frescas(drv):
@@ -637,163 +555,55 @@ def main():
         drv = setup_driver()
         actualizados = []
 
-        for portal_year in portal_years:
-            if not pendientes:
-                logger.info("Sin pendientes restantes. Finalizando.")
-                break
+        for nom in list(pendientes):
+            parts = nom.split('-')
+            portal_year = args.year
+            for p in parts:
+                if p.isdigit() and len(p) == 4:
+                    portal_year = int(p)
+                    break
 
             logger.info(f"\n{'='*50}")
-            logger.info(f"BUSCANDO EN PORTAL SEACE - AÑO {portal_year}")
+            logger.info(f"BUSCANDO EN PORTAL SEACE - NOMENCLATURA: {nom} (AÑO {portal_year})")
             logger.info(f"{'='*50}")
 
-            from datetime import date
-            hoy = date.today()
+            if not iniciar_busqueda(drv, portal_year, nom):
+                logger.error(f"Fallo al iniciar búsqueda para {nom}")
+                continue
+
+            col_names = obtener_headers(drv)
+            filas = obtener_filas_frescas(drv)
+            num_filas = len(filas)
             
-            import calendar
-            rangos = []
-            for mes in range(1, 13):
-                ultimo_dia = calendar.monthrange(portal_year, mes)[1]
-                f_ini = f"01/{mes:02d}/{portal_year}"
-                f_fin = f"{ultimo_dia:02d}/{mes:02d}/{portal_year}"
-                rangos.append((f_ini, f_fin))
-            
-            # Si el año portal es el futuro/actual y ya pasamos la fecha, podemos ajustar,
-            # pero SEACE tolera fechas futuras en la búsqueda. Lo dejamos estricto por semestres.
-            
-            for (f_ini, f_fin) in rangos:
-                logger.info(f"\n--- SEMESTRE: {f_ini} al {f_fin} ---")
+            if num_filas == 0 or "no se encontr" in (filas[0].text or "").lower():
+                logger.info(f"Sin resultados en portal para {nom}.")
+                continue
 
-                # ── Iniciar búsqueda en el portal ──────────────────────────
-                if not iniciar_busqueda(drv, portal_year, f_ini, f_fin):
-                    logger.error(f"Fallo al iniciar búsqueda para {portal_year} [{f_ini}-{f_fin}]")
-                    continue
+            url_resultados = drv.current_url
+            acciones = procesar_fila(drv, 0, url_resultados)
 
-                col_names = obtener_headers(drv)
-                logger.info(f"Columnas: {col_names}")
-
-                pagina = 1
-                detener = False
-                matches_en_pagina = 0
-
-                while not detener:
-                    logger.info(f"--- Página {pagina} (semestre: {f_ini} al {f_fin}) ---")
-                    matches_en_pagina = 0
-
-                    filas = obtener_filas_frescas(drv)
-                    num_filas = len(filas)
-                    logger.info(f"Filas: {num_filas}")
-
-                    if num_filas == 0:
-                        logger.info("Sin filas. Siguiente semestre.")
-                        break
-
-                    if "no se encontr" in (filas[0].text or "").lower():
-                        logger.info("Sin resultados en portal.")
-                        break
-
-                    # DEBUG primera fila
-                    try:
-                        primera_tds = filas[0].find_elements(By.TAG_NAME, 'td')
-                        vals_debug = [td.text.strip()[:25] for td in primera_tds[:6]]
-                        logger.info(f"  [DEBUG] Primera fila: {vals_debug}")
-                    except Exception:
-                        pass
-
-                    url_resultados = drv.current_url
-
-                    for idx_fila in range(num_filas):
-                        # Re-obtener filas frescas (evita StaleElement)
-                        filas_fresh = obtener_filas_frescas(drv)
-                        if idx_fila >= len(filas_fresh):
-                            break
-
-                        fila = filas_fresh[idx_fila]
-
-                        # Extraer celdas y mapear a columnas
-                        try:
-                            tds = fila.find_elements(By.TAG_NAME, 'td')
-                            valores = [td.text.strip().replace("\n", " ") for td in tds]
-                        except Exception:
-                            continue
-
-                        if not valores:
-                            continue
-
-                        row_dict = {}
-                        for i, v in enumerate(valores):
-                            k = col_names[i] if i < len(col_names) else f"col_{i+1}"
-                            row_dict[k] = v
-
-                        # Nomenclatura: igual que test_seace.py línea 207
-                        nom = (row_dict.get("Nomenclatura")
-                               or row_dict.get("Nomenclatura del Procedimiento")
-                               or (valores[3] if len(valores) > 3 else ""))
-
-                        if not nom:
-                            continue
-
-                        if nom not in pendientes:
-                            continue
-
-                        logger.info(f"  ✓ Match [{idx_fila+1}/{num_filas}] pág.{pagina}: {nom}")
-                        matches_en_pagina += 1
-
-                        acciones = procesar_fila(drv, idx_fila, url_resultados)
-
-                        if acciones:
-                            try:
-                                with conn.cursor() as cur_u:
-                                    cur_u.execute(
-                                        "UPDATE licitaciones_cabecera "
-                                        "SET acciones_json = %s, "
-                                        "fecha_actualizacion_scraper = NOW() "
-                                        "WHERE nomenclatura = %s",
-                                        (json.dumps(acciones, ensure_ascii=False), nom)
-                                    )
-                                conn.commit()
-                                logger.info(f"    ✅ BD actualizado: {nom}")
-                                actualizados.append(nom)
-                                pendientes.discard(nom)
-                            except Exception as e:
-                                logger.error(f"    Error BD: {e}")
-                        else:
-                            logger.warning(f"    ⚠️ Sin acciones: {nom}")
-
-                        # Respetar límite
-                        if args.limit > 0 and len(actualizados) >= args.limit:
-                            logger.info(f"Límite {args.limit} alcanzado.")
-                            detener = True
-                            break
-
-                    if detener:
-                        break
-
-                    # Avanzar página con detección de reset post-Regresar
-                    avanzado = pagina_siguiente(drv)
-                    if avanzado:
-                        pagina += 1
-                        matches_en_pagina = 0
-                    elif matches_en_pagina > 0 and 'last_page' not in str(avanzado):
-                        # El Regresar reseteó el portal a página 1 (y NO fue el fin natural de las páginas).
-                        # Re-buscamos y avanzamos al siguiente número de página.
-                        logger.info(
-                            f"  [RESET] Portal reseteado por Regresar. "
-                            f"Re-buscando semestre {f_ini}-{f_fin} → pág.{pagina + 1}..."
+            if acciones:
+                try:
+                    with conn.cursor() as cur_u:
+                        cur_u.execute(
+                            "UPDATE licitaciones_cabecera "
+                            "SET acciones_json = %s, "
+                            "fecha_actualizacion_scraper = NOW() "
+                            "WHERE nomenclatura = %s",
+                            (json.dumps(acciones, ensure_ascii=False), nom)
                         )
-                        if not iniciar_busqueda(drv, portal_year, f_ini, f_fin):
-                            logger.error("  Re-búsqueda fallida. Abortando semestre.")
-                            break
-                        col_names = obtener_headers(drv)
-                        if pagina > 0 and not avanzar_n_paginas(drv, pagina):
-                            logger.warning("  No se pudo avanzar. Fin de páginas.")
-                            break
-                        pagina += 1
-                        matches_en_pagina = 0
-                        logger.info(f"  [RESET] Continuando desde página {pagina}.")
-                    else:
-                        logger.info(f"Fin natural de páginas para semestre {f_ini}-{f_fin}.")
-                        break
+                    conn.commit()
+                    logger.info(f"    ✅ BD actualizado: {nom}")
+                    actualizados.append(nom)
+                    pendientes.discard(nom)
+                except Exception as e:
+                    logger.error(f"    Error BD: {e}")
+            else:
+                logger.warning(f"    ⚠️ Sin acciones rescatadas: {nom}")
 
+            if args.limit > 0 and len(actualizados) >= args.limit:
+                logger.info(f"Límite {args.limit} alcanzado.")
+                break
 
     finally:
         if drv:

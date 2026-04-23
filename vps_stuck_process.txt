@@ -1,0 +1,58 @@
+--- PROCESOS DE PYTHON CORRIENDO (import_mef_csv) ---
+
+--- ESPACIO EN DISCO DE LA CARPETA SCRIPTS (Verificando CSVs) ---
+-rw-r--r-- 1 root root 190M Apr 22 16:02 /home/admin/public_html/api/scripts/mef_2026_gasto.csv
+
+--- PROCESOS ACTIVOS EN MYSQL (Mostrando bloqueos) ---
+Id	User	Host	db	Command	Time	State	Info	Time_ms	Rows_sent	Rows_examined
+9981	mcqs-jcq	localhost:56530	mcqs-jcq	Query	1	updating	UPDATE licitaciones_adjudicaciones SET ganador_ruc='20612843296' WHERE id_contrato='2267620'	1369	0	359386
+9984	mcqs-jcq	localhost:55802	mcqs-jcq	Query	1	updating	UPDATE licitaciones_adjudicaciones SET ganador_ruc='20610408100' WHERE id_contrato='2299192'	673	0	0
+10314	mcqs-jcq	localhost:42434	mcqs-jcq	Sleep	430		NULL	430157	0	0
+10316	mcqs-jcq	localhost:42454	mcqs-jcq	Sleep	692		NULL	692298	0	0
+10318	mcqs-jcq	localhost:42472	mcqs-jcq	Sleep	378		NULL	377916	0	0
+10330	mcqs-jcq	localhost:51684	mcqs-jcq	Sleep	435		NULL	434690	0	0
+10332	mcqs-jcq	localhost:51698	mcqs-jcq	Sleep	426		NULL	425795	0	0
+10333	mcqs-jcq	localhost:51702	mcqs-jcq	Sleep	414		NULL	413903	0	0
+10334	mcqs-jcq	localhost:40494	mcqs-jcq	Sleep	613		NULL	613240	0	0
+10337	mcqs-jcq	localhost:40520	mcqs-jcq	Sleep	513		NULL	512703	0	0
+10338	mcqs-jcq	localhost:55994	mcqs-jcq	Sleep	563		NULL	562959	0	0
+10339	mcqs-jcq	localhost:44796	mcqs-jcq	Sleep	509		NULL	509246	0	0
+10340	mcqs-jcq	localhost:46040	mcqs-jcq	Sleep	433		NULL	433265	0	0
+10341	mcqs-jcq	localhost:46590	mcqs-jcq	Sleep	483		NULL	482821	0	0
+10342	mcqs-jcq	localhost:51310	mcqs-jcq	Sleep	324		NULL	323915	0	0
+10343	mcqs-jcq	localhost:51314	mcqs-jcq	Sleep	436		NULL	435900	0	0
+10344	mcqs-jcq	localhost:37448	mcqs-jcq	Sleep	408		NULL	407917	0	0
+10345	mcqs-jcq	localhost:42722	mcqs-jcq	Sleep	387		NULL	386884	0	0
+10346	mcqs-jcq	localhost:42738	mcqs-jcq	Sleep	333		NULL	332755	0	0
+10347	mcqs-jcq	localhost:45114	mcqs-jcq	Sleep	513		NULL	512700	0	0
+10348	mcqs-jcq	localhost:58522	mcqs-jcq	Sleep	327		NULL	326912	0	0
+10349	mcqs-jcq	localhost:58534	mcqs-jcq	Sleep	294		NULL	293917	0	0
+10350	mcqs-jcq	localhost:51632	mcqs-jcq	Sleep	354		NULL	353864	0	0
+10351	mcqs-jcq	localhost:51644	mcqs-jcq	Sleep	363		NULL	362873	0	0
+10352	mcqs-jcq	localhost:51646	mcqs-jcq	Sleep	357		NULL	356930	0	0
+10353	mcqs-jcq	localhost:51648	mcqs-jcq	Sleep	330		NULL	329942	0	0
+10354	mcqs-jcq	localhost:57062	mcqs-jcq	Sleep	321		NULL	320897	0	0
+10355	mcqs-jcq	localhost:57070	mcqs-jcq	Sleep	315		NULL	314936	0	0
+10356	mcqs-jcq	localhost:56720	mcqs-jcq	Sleep	300		NULL	299928	0	0
+10357	mcqs-jcq	localhost:53754	mcqs-jcq	Sleep	405		NULL	404910	0	0
+10358	mcqs-jcq	localhost:43254	mcqs-jcq	Sleep	372		NULL	371905	0	0
+10359	mcqs-jcq	localhost:35056	mcqs-jcq	Sleep	312		NULL	311938	0	0
+10360	mcqs-jcq	localhost:35062	mcqs-jcq	Sleep	309		NULL	308919	0	0
+10361	mcqs-jcq	localhost:35068	mcqs-jcq	Sleep	303		NULL	302923	0	0
+10362	mcqs-jcq	localhost:52200	mcqs-jcq	Sleep	351		NULL	350906	0	0
+10363	mcqs-jcq	localhost:33264	mcqs-jcq	Sleep	348		NULL	347912	0	0
+10364	mcqs-jcq	localhost:33270	mcqs-jcq	Sleep	345		NULL	344905	0	0
+10365	mcqs-jcq	localhost:33276	mcqs-jcq	Sleep	342		NULL	341920	0	0
+10366	mcqs-jcq	localhost:33288	mcqs-jcq	Sleep	339		NULL	338895	0	0
+10367	mcqs-jcq	localhost:42592	mcqs-jcq	Sleep	336		NULL	335915	0	0
+10368	mcqs-jcq	localhost:42594	mcqs-jcq	Sleep	333		NULL	332905	0	0
+10369	mcqs-jcq	localhost:42606	mcqs-jcq	Sleep	333		NULL	332536	0	0
+10370	mcqs-jcq	localhost:50724	mcqs-jcq	Sleep	318		NULL	317919	0	0
+10371	mcqs-jcq	localhost:58932	mcqs-jcq	Sleep	306		NULL	305917	0	0
+10372	mcqs-jcq	localhost:58946	mcqs-jcq	Sleep	303		NULL	302600	0	0
+10373	mcqs-jcq	localhost:58954	mcqs-jcq	Sleep	303		NULL	302445	0	0
+10374	mcqs-jcq	localhost:41750	mcqs-jcq	Sleep	297		NULL	296928	0	0
+10375	mcqs-jcq	localhost	mcqs-jcq	Query	0	init	SHOW FULL PROCESSLIST	2	0	0
+
+ERRORES:
+mysql: [Warning] Using a password on the command line interface can be insecure.

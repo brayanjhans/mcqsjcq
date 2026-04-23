@@ -16,7 +16,9 @@ export interface Licitacion {
     departamento?: string;
     provincia?: string;
     distrito?: string;
-    cronograma_detalle_json?: string;
+    cronograma_detalle_json?: string | null;
+    acciones_json?: string | null;
+
 
     // Campos para Adjudicaciones / Contratado
     monto_total_adjudicado?: number;

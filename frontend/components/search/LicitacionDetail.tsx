@@ -745,22 +745,104 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                         </div>
 
                         {/* RIGHT SECTION: TIMELINE (Takes 1 column) */}
-                        <div className="lg:col-span-1 border-t lg:border-t-0 lg:border-l border-slate-100 dark:border-white/5 bg-[#fafafa] dark:bg-[#111c44] flex flex-col">
-                            <div className="p-5 md:p-6 border-b border-slate-100 dark:border-white/5 sticky top-0 z-10 bg-[#fafafa] dark:bg-[#111c44]">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-600 flex items-center justify-center shadow-sm">
-                                        <Clock className="w-5 h-5" />
-                                    </div>
-                                    <div>
-                                        <h3 className="text-[12px] font-black text-slate-800 dark:text-slate-200 uppercase tracking-[0.2em] leading-tight">Listado de Acciones</h3>
-                                        <p className="text-[9px] text-slate-400 font-bold uppercase mt-0.5">Historial del Proceso</p>
+                        <div className="lg:col-span-1 border-t lg:border-t-0 lg:border-l border-slate-100 dark:border-white/5 bg-[#fafafa] dark:bg-[#111c44] flex flex-col p-5 md:p-6 gap-6">
+                            
+                            {/* Panel 1: Listado de Acciones */}
+                            <div className="flex-1 flex flex-col rounded-2xl border border-slate-200 bg-white shadow-md dark:border-white/10 dark:bg-[#111c44] overflow-hidden">
+                                <div className="p-4 border-b border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/5">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-600 flex items-center justify-center shadow-sm">
+                                            <Clock className="w-5 h-5" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-[12px] font-black text-slate-800 dark:text-slate-200 uppercase tracking-[0.2em] leading-tight">Listado de Acciones</h3>
+                                            <p className="text-[9px] text-slate-400 font-bold uppercase mt-0.5">Historial del Proceso</p>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                            
-                            <div className="flex-1 p-5 md:p-6 pb-2">
-                                {(() => {
-                                    if (!licitacion.acciones_json) {
+                                
+                                <div className="p-5 md:p-6 pb-2">
+                                    {(() => {
+                                        const sz = { itemMt: "mt-1.5", dot: "w-3 h-3 -left-[7px] top-1.5 ring-4", boxPt: "pt-1", boxPb: "pb-1.5", label: "text-[8px] px-1.5 py-0.5", text: "text-[9px]", gap: "gap-1", linePb: "pb-1" };
+                                        const renderRow = (situacion: string, fechaVal: string, key: string) => {
+                                            const isSuccess = situacion.toLowerCase().includes('adjudic') || situacion.toLowerCase().includes('publicac') || situacion.toLowerCase().includes('consent') || situacion.toLowerCase().includes('buena pro') || situacion.toLowerCase().includes('firma');
+                                            const isAlert  = situacion.toLowerCase().includes('suspend') || situacion.toLowerCase().includes('cancel') || situacion.toLowerCase().includes('nulid');
+                                            const isInfo   = situacion.toLowerCase().includes('consulta') || situacion.toLowerCase().includes('base') || situacion.toLowerCase().includes('oferta') || situacion.toLowerCase().includes('ejecuci');
+                                            const dotColor = isSuccess ? 'bg-emerald-500' : isAlert ? 'bg-red-500' : isInfo ? 'bg-amber-500' : 'bg-indigo-400';
+                                            const labelCls = isSuccess ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-300' : isAlert ? 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/40 dark:text-red-300' : isInfo ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/40 dark:text-amber-300' : 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300';
+                                            const borderCls = isSuccess ? 'border-emerald-400/60' : isAlert ? 'border-red-400/60' : isInfo ? 'border-amber-400/60' : 'border-indigo-400/60';
+                                            return (
+                                                <div key={key} className={`relative pl-4 border-l-2 border-slate-200 dark:border-slate-700 last:border-l-transparent last:pb-0 group hover:bg-slate-50/50 dark:hover:bg-white/5 transition-colors duration-300 ${sz.itemMt} ${sz.linePb}`}>
+                                                    <span className={`absolute rounded-full ring-[#fafafa] dark:ring-[#111c44] shadow-sm ${sz.dot} ${dotColor}`} />
+                                                    <div className={`flex flex-col items-start w-full border-b-2 border-solid group-last:border-b-0 group-last:pb-0 ${sz.gap} ${sz.boxPt} ${sz.boxPb} ${borderCls}`}>
+                                                        <span className={`inline-flex items-center rounded font-black uppercase tracking-wider shadow-sm border ${sz.label} ${labelCls}`}>{situacion}</span>
+                                                        <span className={`font-black text-slate-400 tracking-wide ${sz.text}`}>{formatDateInSpanish(fechaVal)}</span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        };
+
+                                        if (licitacion.acciones_json) {
+                                            try {
+                                                const itemsData = JSON.parse(licitacion.acciones_json);
+                                                if (!Array.isArray(itemsData) || itemsData.length === 0) throw new Error("Empty");
+                                                const totalActionsCount = itemsData.reduce((acc: number, item: any) => acc + (item.acciones ? item.acciones.length : 0), 0);
+                                                const mode = totalActionsCount > 14 ? "ultracompact" : totalActionsCount > 8 ? "compact" : "normal";
+                                                const szA = mode === "ultracompact" ? { itemMt: "mt-0", dot: "w-2 h-2 -left-[5px] top-1 ring-2", boxPt: "pt-0", boxPb: "pb-0.5", label: "text-[6.5px] px-1 py-0", text: "text-[7.5px] leading-none", gap: "gap-0", linePb: "pb-0.5" } : mode === "compact" ? { itemMt: "mt-0.5", dot: "w-2 h-2 -left-[5px] top-1 ring-2", boxPt: "pt-0.5", boxPb: "pb-1", label: "text-[7.5px] px-1 py-0.5", text: "text-[8px] leading-tight", gap: "gap-0.5", linePb: "pb-1" } : { itemMt: "mt-1.5", dot: "w-3 h-3 -left-[7px] top-1.5 ring-4", boxPt: "pt-1", boxPb: "pb-1.5", label: "text-[8px] px-1.5 py-0.5", text: "text-[9px]", gap: "gap-1", linePb: "pb-1" };
+                                                return (
+                                                    <div className="space-y-0">
+                                                        {itemsData.map((item: any, idx: number) => (
+                                                            <div key={idx} className="relative">
+                                                                {item.acciones && item.acciones.map((acc: any, aidx: number) => {
+                                                                    const situacionKey = Object.keys(acc).find(k => k.toLowerCase().includes('situaci')) || '';
+                                                                    const situacion = acc[situacionKey] || acc['Situación'] || acc['Situacion'] || "Registro";
+                                                                    const fechaKey = Object.keys(acc).find(k => k.toLowerCase().includes('fecha')) || '';
+                                                                    const fechaVal = acc[fechaKey] || "—";
+                                                                    const isSuccess = situacion.toLowerCase().includes('adjudic') || situacion.toLowerCase().includes('publicac') || situacion.toLowerCase().includes('consent');
+                                                                    const isAlert = situacion.toLowerCase().includes('suspend') || situacion.toLowerCase().includes('cancel') || situacion.toLowerCase().includes('nulid');
+                                                                    const isInfo = situacion.toLowerCase().includes('post') || situacion.toLowerCase().includes('retro');
+                                                                    const borderColorClass = isSuccess ? 'border-emerald-400/60' : isAlert ? 'border-red-400/60' : isInfo ? 'border-amber-400/60' : 'border-indigo-400/60';
+                                                                    return (
+                                                                        <div key={aidx} className={`relative pl-4 border-l-2 border-slate-200 dark:border-slate-700 last:border-l-transparent last:pb-0 group hover:bg-slate-50/50 dark:hover:bg-white/5 transition-colors duration-300 ${szA.itemMt} ${szA.linePb}`}>
+                                                                            <span className={`absolute rounded-full ring-[#fafafa] dark:ring-[#111c44] shadow-sm ${szA.dot} ${isSuccess ? 'bg-emerald-500' : isAlert ? 'bg-red-500' : isInfo ? 'bg-amber-500' : 'bg-indigo-400'}`} />
+                                                                            <div className={`flex flex-col items-start w-full border-b-2 border-solid group-last:border-b-0 ${szA.gap} ${szA.boxPt} ${szA.boxPb} ${borderColorClass}`}>
+                                                                                <span className={`inline-flex items-center rounded font-black uppercase tracking-wider shadow-sm border ${szA.label} ${isSuccess ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-300' : isAlert ? 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/40 dark:text-red-300' : isInfo ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/40 dark:text-amber-300' : 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300'}`}>{situacion}</span>
+                                                                                <span className={`font-black text-slate-400 tracking-wide ${szA.text}`}>{formatDateInSpanish(fechaVal)}</span>
+                                                                            </div>
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                );
+                                            } catch { /* fallback */ }
+                                        }
+
+                                        if (licitacion.cronograma_detalle_json) {
+                                            try {
+                                                const crono = typeof licitacion.cronograma_detalle_json === 'string' ? JSON.parse(licitacion.cronograma_detalle_json) : licitacion.cronograma_detalle_json;
+                                                const rows: { situacion: string; fecha: string }[] = [];
+                                                const c = crono.convocatoria || {};
+                                                if (c.fecha_publicacion) rows.push({ situacion: 'Publicación Convocatoria', fecha: c.fecha_publicacion });
+                                                if (c.oferta_inicio)     rows.push({ situacion: 'Inicio Presentación Ofertas', fecha: c.oferta_inicio });
+                                                if (c.oferta_fin)        rows.push({ situacion: 'Fin Presentación Ofertas', fecha: c.oferta_fin });
+                                                if (c.consultas_inicio)  rows.push({ situacion: 'Inicio Consultas y Observaciones', fecha: c.consultas_inicio });
+                                                if (c.consultas_fin)     rows.push({ situacion: 'Fin Consultas y Observaciones', fecha: c.consultas_fin });
+                                                if (crono.adjudicacion?.fecha_buena_pro) rows.push({ situacion: 'Otorgamiento Buena Pro', fecha: crono.adjudicacion.fecha_buena_pro });
+                                                if (crono.contrato?.fecha_firma)         rows.push({ situacion: 'Firma del Contrato', fecha: crono.contrato.fecha_firma });
+                                                
+                                                if (rows.length === 0) throw new Error("No dates");
+                                                rows.sort((a, b) => (a.fecha || '').localeCompare(b.fecha || ''));
+                                                return (
+                                                    <div className="space-y-0">
+                                                        <p className="text-[8px] font-black uppercase tracking-widest text-slate-400 mb-2 pb-1 border-b border-slate-100 dark:border-white/5">📋 Cronograma OCDS</p>
+                                                        {rows.map((row, idx) => renderRow(row.situacion, row.fecha, `ocds-${idx}`))}
+                                                    </div>
+                                                );
+                                            } catch { /* fallback */ }
+                                        }
+
                                         return (
                                             <div className="text-center py-12 flex flex-col items-center justify-center">
                                                 <div className="relative mb-4">
@@ -772,90 +854,58 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                                                 <p className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-tight animate-pulse">Información<br/>en Proceso</p>
                                             </div>
                                         );
-                                    }
-
-                                    try {
-                                        const itemsData = JSON.parse(licitacion.acciones_json);
-                                        if (!Array.isArray(itemsData) || itemsData.length === 0) throw new Error("Empty data");
-
-                                        // Adaptative size based on items count to prevent vertical blowout
-                                        const totalActionsCount = itemsData.reduce((acc: number, item: any) => acc + (item.acciones ? item.acciones.length : 0), 0);
-                                        const mode = totalActionsCount > 14 ? "ultracompact" : totalActionsCount > 8 ? "compact" : "normal";
-                                        
-                                        const sz = mode === "ultracompact" ? {
-                                            itemMt: "mt-0", dot: "w-2 h-2 -left-[5px] top-1 ring-2", 
-                                            boxPt: "pt-0", boxPb: "pb-0.5",
-                                            label: "text-[6.5px] px-1 py-0", text: "text-[7.5px] leading-none", gap: "gap-0",
-                                            linePb: "pb-0.5"
-                                        } : mode === "compact" ? {
-                                            itemMt: "mt-0.5", dot: "w-2 h-2 -left-[5px] top-1 ring-2", 
-                                            boxPt: "pt-0.5", boxPb: "pb-1",
-                                            label: "text-[7.5px] px-1 py-0.5", text: "text-[8px] leading-tight", gap: "gap-0.5",
-                                            linePb: "pb-1"
-                                        } : {
-                                            itemMt: "mt-1.5", dot: "w-3 h-3 -left-[7px] top-1.5 ring-4", 
-                                            boxPt: "pt-1", boxPb: "pb-1.5",
-                                            label: "text-[8px] px-1.5 py-0.5", text: "text-[9px]", gap: "gap-1",
-                                            linePb: "pb-1"
-                                        };
-
-                                        return (
-                                            <div className="space-y-0">
-                                                {itemsData.map((item: any, idx: number) => (
-                                                    <div key={idx} className="relative">
-                                                        {item.acciones && item.acciones.map((acc: any, aidx: number) => {
-                                                            const situacionKey = Object.keys(acc).find(k => k.toLowerCase().includes('situaci')) || '';
-                                                            const situacion = acc[situacionKey] || acc['Situación'] || acc['Situacion'] || "Registro";
-                                                            const fechaKey = Object.keys(acc).find(k => k.toLowerCase().includes('fecha')) || '';
-                                                            const fechaVal = acc[fechaKey] || "—";
-                                                            
-                                                            const isSuccess = situacion.toLowerCase().includes('adjudic') || situacion.toLowerCase().includes('publicac') || situacion.toLowerCase().includes('consent');
-                                                            const isAlert = situacion.toLowerCase().includes('suspend') || situacion.toLowerCase().includes('cancel') || situacion.toLowerCase().includes('nulid');
-                                                            const isInfo = situacion.toLowerCase().includes('post') || situacion.toLowerCase().includes('retro');
-
-                                                            const borderColorClass = isSuccess ? 'border-emerald-400/60 dark:border-emerald-500/40 drop-shadow-[0_1px_1px_rgba(16,185,129,0.3)]' : 
-                                                                                     isAlert ? 'border-red-400/60 dark:border-red-500/40 drop-shadow-[0_1px_1px_rgba(239,68,68,0.3)]' : 
-                                                                                     isInfo ? 'border-amber-400/60 dark:border-amber-500/40 drop-shadow-[0_1px_1px_rgba(245,158,11,0.3)]' : 
-                                                                                     'border-indigo-400/60 dark:border-indigo-500/40 drop-shadow-[0_1px_1px_rgba(99,102,241,0.3)]';
-
-                                                            return (
-                                                                <div key={aidx} className={`relative pl-4 border-l-2 border-slate-200 dark:border-slate-700 last:border-l-transparent last:pb-0 group hover:bg-slate-50/50 dark:hover:bg-white/5 transition-colors duration-300 ${sz.itemMt} ${sz.linePb}`}>
-                                                                    <span className={`absolute rounded-full ring-[#fafafa] dark:ring-[#111c44] transition-colors shadow-sm ${sz.dot} ${
-                                                                        isSuccess ? 'bg-emerald-500' : isAlert ? 'bg-red-500' : isInfo ? 'bg-amber-500' : 'bg-indigo-400'
-                                                                    }`} />
-                                                                    <div className={`flex flex-col items-start w-full border-b-2 border-solid group-last:border-b-0 group-last:pb-0 transition-colors ${sz.gap} ${sz.boxPt} ${sz.boxPb} ${borderColorClass}`}>
-                                                                        <span className={`inline-flex items-center rounded font-black uppercase tracking-wider shadow-sm border ${sz.label} ${
-                                                                             isSuccess ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-300' :
-                                                                             isAlert ? 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/40 dark:text-red-300' :
-                                                                             isInfo ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/40 dark:text-amber-300' :
-                                                                             'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300'
-                                                                        }`}>
-                                                                            {situacion}
-                                                                        </span>
-                                                                        <span className={`font-black text-slate-400 tracking-wide ${sz.text}`}>{formatDateInSpanish(fechaVal)}</span>
-                                                                    </div>
-                                                                </div>
-                                                            );
-                                                        })}
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        );
-                                    } catch (e) {
-                                        return (
-                                            <div className="text-center py-6 bg-red-50 dark:bg-red-900/10 rounded-xl">
-                                                <p className="text-xs font-bold text-red-500 dark:text-red-400">Error en acciones.</p>
-                                            </div>
-                                        );
-                                    }
-                                })()}
+                                    })()}
+                                </div>
                             </div>
-                        </div>
 
+                            {/* Panel 2: Datos del Contrato */}
+                            {(() => {
+                                if (!licitacion.cronograma_detalle_json) return null;
+                                try {
+                                    const crono = typeof licitacion.cronograma_detalle_json === 'string' ? JSON.parse(licitacion.cronograma_detalle_json) : licitacion.cronograma_detalle_json;
+                                    const firma = crono.contrato?.fecha_firma;
+                                    const fin = crono.contrato?.ejecucion_fin;
+                                    if (!firma && !fin) return null;
+
+                                    return (
+                                        <div className="rounded-2xl border border-slate-200 bg-white shadow-md dark:border-white/10 dark:bg-[#111c44] flex flex-col overflow-hidden border-t-4 border-t-indigo-500 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                            <div className="p-4 border-b border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/5 flex items-center gap-2">
+                                                <div className="w-6 h-6 rounded-lg bg-indigo-500/10 text-indigo-500 flex items-center justify-center">
+                                                    <FileText className="w-3.5 h-3.5" />
+                                                </div>
+                                                <h3 className="text-[11px] font-black text-slate-800 dark:text-slate-200 uppercase tracking-widest">Datos del Contrato</h3>
+                                            </div>
+                                            <div className="p-5 flex flex-col gap-5">
+                                                {firma && (
+                                                    <div className="flex flex-col">
+                                                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
+                                                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                                            Fecha de firma de contrato
+                                                        </span>
+                                                        <span className="text-sm font-black text-slate-700 dark:text-slate-200">
+                                                            {formatDateInSpanish(firma)}
+                                                        </span>
+                                                    </div>
+                                                )}
+                                                {fin && (
+                                                    <div className="flex flex-col">
+                                                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
+                                                            <div className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
+                                                            Fecha prevista de fin de contrato
+                                                        </span>
+                                                        <span className="text-sm font-black text-slate-700 dark:text-slate-200">
+                                                            {formatDateInSpanish(fin)}
+                                                        </span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                            } catch { return null; }
+                        })()}
+                        </div>
                     </div>
                 </div>
-
-
                 {/* ========== EJECUCIÓN FINANCIERA CARD (NEW) ========== */}
                 {/* ========== EJECUCIÓN FINANCIERA CARD (MULTI-CUI) ========== */}
                 {adjudicaciones.length > 0 && (

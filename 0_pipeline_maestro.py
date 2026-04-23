@@ -472,7 +472,7 @@ def invocar_etl(anios, archivos_actualizados=None):
         traceback.print_exc()
         
     logging.info("--------------------------------------------------")
-    logging.info(f"🚀 INICIANDO ETL FASE 2: (APIS PRIVADAS SEACE - AÑOS {anios})")
+    logging.info(f"🚀 INICIANDO ETL FASE 1.6: (APIS PRIVADAS SEACE - AÑOS {anios})")
     logging.info("--------------------------------------------------")
     try:
         if 'motor_consorcios_seace' in sys.modules:
@@ -482,7 +482,42 @@ def invocar_etl(anios, archivos_actualizados=None):
         for a in anios:
             motor_consorcios_seace.main(year=a)
     except Exception as e:
-        logging.error(f"Error Ejecutando Fase 2: {e}")
+        logging.error(f"Error Ejecutando Fase 1.6: {e}")
+        traceback.print_exc()
+        return False
+
+    logging.info("--------------------------------------------------")
+    logging.info(f"🚀 INICIANDO ETL FASE 1.8: (CARGA MASIVA OEC - AÑOS {anios})")
+    logging.info("--------------------------------------------------")
+    try:
+        scripts_dir = os.path.join(script_dir, "scripts")
+        if scripts_dir not in sys.path:
+            sys.path.append(scripts_dir)
+        import carga_masiva_oec
+        importlib.reload(carga_masiva_oec)
+        for a in anios:
+            # force=False por defecto para integrarlo sin castigar la API de OEC a menos que falten
+            carga_masiva_oec.run(year=a, force=False)
+    except Exception as e:
+        logging.error(f"Error Ejecutando Fase 1.8: {e}")
+        traceback.print_exc()
+        return False
+
+    logging.info("--------------------------------------------------")
+    logging.info(f"🚀 INICIANDO ETL FASE 1.9: (ENRIQUECIMIENTO CONTRATOS SEACE)")
+    logging.info("--------------------------------------------------")
+    try:
+        scripts_dir = os.path.join(script_dir, "scripts")
+        if scripts_dir not in sys.path:
+            sys.path.append(scripts_dir)
+        import enrich_contratos_seace
+        importlib.reload(enrich_contratos_seace)
+        
+        for a in anios:
+            # Ejecutando sin skip porque al filtrar por año ya son relativamente pocos contratos (ej: 4068)
+            enrich_contratos_seace.run(year=a, skip=0)
+    except Exception as e:
+        logging.error(f"Error Ejecutando Fase 1.9: {e}")
         traceback.print_exc()
         return False
         
@@ -556,6 +591,8 @@ def main():
     
     if exito:
         logging.info("🎉 PIPELINE MAESTRO COMPLETADO SATISFACTORIAMENTE 🎉")
+        logging.info("🚀 INICIANDO SINCRONIZACIÓN AUTOMÁTICA AL VPS (Paso 2)...")
+        os.system(".\\venv\\Scripts\\python scripts\\sync_2026_db.py")
     else:
         logging.error("💥 PIPELINE FINALIZÓ CON ERRORES")
 

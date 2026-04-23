@@ -43,8 +43,9 @@ logs/pipeline_osce.log
 *.doc
 
 # Data - EXCLUDE LARGE FILES
-1_database/*.json
-1_database/*.csv
+*.csv
+*.json
+1_database/
 data/
 !app/data/
 !app/data/ubigeo_data.py
