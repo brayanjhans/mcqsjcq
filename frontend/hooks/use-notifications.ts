@@ -35,7 +35,7 @@ export function useNotifications(autoRefreshSeconds: number = 30) {
             setLoading(true);
             setError(null);
 
-            const response = await api.get<NotificationList>('/api/notifications', {
+            const response = await api.get<NotificationList>('/api/notifications/', {
                 params: { unread_only: unreadOnly, limit: 50 }
             });
 
@@ -104,20 +104,10 @@ export function useNotifications(autoRefreshSeconds: number = 30) {
         }
     }, [notifications]);
 
-    // Auto-refresh con polling
+    // Auto-refresh disabled to prevent API spam / loop
     useEffect(() => {
         fetchNotifications();
-
-        if (autoRefreshSeconds > 0) {
-            const interval = setInterval(() => {
-                // Fetch full list to ensure dropdown shows actual content when opened
-                // avoiding the "Badge says 3 but list is empty" bug
-                fetchNotifications();
-            }, autoRefreshSeconds * 1000);
-
-            return () => clearInterval(interval);
-        }
-    }, [fetchNotifications, fetchUnreadCount, autoRefreshSeconds]);
+    }, [fetchNotifications]);
 
     return {
         notifications,
