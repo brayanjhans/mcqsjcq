@@ -241,9 +241,19 @@ def get_licitaciones(
             limit_subquery = 500  # Capped to prevent building huge IN clauses
             
             # A. Fulltext Search
-            terms = [f"+{t.replace('*', '')}*" for t in search.strip().split() if len(t) > 1]
-            if terms:
-                boolean_search = " ".join(terms)
+            # Avoid using '+' on short words (<=3 chars) because if they are MySQL stopwords,
+            # the '+stopword' condition will instantly return 0 results.
+            terms = search.strip().split()
+            boolean_terms = []
+            for t in terms:
+                clean_t = t.replace('*', '')
+                if len(clean_t) > 3:
+                    boolean_terms.append(f"+{clean_t}*")
+                elif len(clean_t) > 1:
+                    boolean_terms.append(f"{clean_t}*") # Optional
+            
+            if boolean_terms:
+                boolean_search = " ".join(boolean_terms)
                 try:
                     ft_sql = text("""
                         SELECT id_convocatoria FROM licitaciones_cabecera 
@@ -300,18 +310,8 @@ def get_licitaciones(
                 print(f"Relational Search Error: {e}")
 
             # B3. Search Nomenclatura, Descripcion & OCID (Specific Fallback for Substrings)
-            # Fulltext might miss "SM-3" if tokens are split, or fail on stopwords like "DE"/"EN" in BOOLEAN MODE. 
-            # LIKE ensures we find it.
-            try:
-                cab_sql = text("""
-                    SELECT id_convocatoria FROM licitaciones_cabecera 
-                    WHERE nomenclatura LIKE :search OR descripcion LIKE :search OR ocid LIKE :search
-                    LIMIT :limit
-                """)
-                cab_ids = db.execute(cab_sql, {"search": search_like, "limit": limit_subquery}).scalars().all()
-                found_ids.update(cab_ids)
-            except Exception as e:
-                print(f"Cabecera Search Error: {e}")
+            # REMOVED: Using LIKE '%search%' on licitaciones_cabecera (450k+ rows, large text)
+            # takes 40-80 seconds and causes API timeouts. We rely purely on the Fulltext index.
             
             # C. Apply Filter — cap to 200 IDs max to keep SQL fast
             if found_ids:
