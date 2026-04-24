@@ -390,7 +390,7 @@ function BusquedaContent() {
 
                         {/* Search Bar - Replaced with AutocompleteSearch */}
                         {/* Search Bar & Tipo Procedimiento Row */}
-                        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-8 relative z-50">
+                        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-8 relative z-[99999]">
                             <div className="lg:col-span-3">
                                 <AutocompleteSearch
                                     onSearch={(term) => { setSearchTerm(term); setCurrentPage(1); }}

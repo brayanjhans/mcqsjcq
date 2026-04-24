@@ -36,7 +36,8 @@ def get_search_suggestions(
         
         # 1. Search Entidades, Nomenclaturas, Descripciones, Ubicaciones
         # Fast Fulltext search on cabecera instead of LIKE (which caused 80s timeouts)
-        terms = query.strip().split()
+        query_clean_ft = query.replace('-', ' ')
+        terms = query_clean_ft.strip().split()
         boolean_terms = []
         for t in terms:
             clean_t = t.replace('*', '')
@@ -303,7 +304,8 @@ def get_licitaciones(
                 # skip fulltext to avoid broad false positives like "Vanguardia Sur".
                 if not (provider_found and len(search_clean) > 15):
                     # Avoid using '+' on short words (<=3 chars)
-                    terms = search_clean.split()
+                    search_clean_ft = search_clean.replace('-', ' ')
+                    terms = search_clean_ft.split()
                     boolean_terms = []
                     for t in terms:
                         clean_t = t.replace('*', '')
