@@ -35,30 +35,34 @@ def get_search_suggestions(
         suggestions = []
         
         # 1. Search Entidades, Nomenclaturas, Descripciones, Ubicaciones
-        # MySQL requires parentheses for LIMIT within UNION
+        # Fast Fulltext search on cabecera instead of LIKE (which caused 80s timeouts)
+        terms = query.strip().split()
+        boolean_terms = []
+        for t in terms:
+            clean_t = t.replace('*', '')
+            if len(clean_t) > 3: boolean_terms.append(f"+{clean_t}*")
+            elif len(clean_t) > 1: boolean_terms.append(f"{clean_t}*")
+        
+        boolean_search = " ".join(boolean_terms) if boolean_terms else f"+{query_upper}*"
+
         sql_entidad = text("""
-            (SELECT TRIM(comprador) FROM licitaciones_cabecera WHERE comprador LIKE :pattern LIMIT 5)
+            SELECT TRIM(comprador) as val, 'Entidad' as type_label FROM licitaciones_cabecera 
+            WHERE MATCH(nomenclatura, descripcion, comprador, id_convocatoria, ubicacion_completa) AGAINST(:search_ft IN BOOLEAN MODE)
+            LIMIT 5
             UNION ALL
-            (SELECT TRIM(nomenclatura) FROM licitaciones_cabecera WHERE nomenclatura LIKE :pattern LIMIT 5)
-            UNION ALL
-            (SELECT ocid FROM licitaciones_cabecera WHERE ocid LIKE :pattern LIMIT 5)
-            UNION ALL
-            (SELECT TRIM(departamento) FROM licitaciones_cabecera WHERE departamento LIKE :pattern LIMIT 3)
-            UNION ALL
-            (SELECT SUBSTRING(descripcion FROM 1 FOR 60) FROM licitaciones_cabecera WHERE descripcion LIKE :pattern LIMIT 3)
+            SELECT TRIM(nomenclatura) as val, 'Nomenclatura' as type_label FROM licitaciones_cabecera 
+            WHERE MATCH(nomenclatura, descripcion, comprador, id_convocatoria, ubicacion_completa) AGAINST(:search_ft IN BOOLEAN MODE)
+            LIMIT 5
         """)
-        entidad_rows = db.execute(sql_entidad, {"pattern": search_pattern}).fetchall()
+        
+        entidad_rows = db.execute(sql_entidad, {"search_ft": boolean_search}).fetchall()
         for row in entidad_rows:
             if row[0]:
                 val = row[0]
-                type_label = "General"
-                val_upper = str(val).upper()
-                if len(val) == 2 and val.isdigit(): type_label = "Departamento"
-                elif "MUNICIPALIDAD" in val_upper or "GOBIERNO" in val_upper or "MINISTERIO" in val_upper: type_label = "Entidad"
-                elif "-" in val and any(c.isdigit() for c in val): type_label = "Código"
-                elif len(val) > 20 and " " in val: type_label = "Descripción"
-                else: type_label = "Ubicación/Otro"
+                type_label = row[1] if len(row) > 1 else "Sugerencia"
                 
+                # Truncate if it's too long (nomenclatura)
+                if len(str(val)) > 80: val = str(val)[:80] + "..."
                 suggestions.append({"value": val, "type": type_label})
 
         # 2. Search RUCs and Proveedores (Adjudicaciones)
@@ -240,74 +244,89 @@ def get_licitaciones(
             found_ids = set()
             limit_subquery = 500  # Capped to prevent building huge IN clauses
             
-            # A. Fulltext Search
-            # Avoid using '+' on short words (<=3 chars) because if they are MySQL stopwords,
-            # the '+stopword' condition will instantly return 0 results.
-            terms = search.strip().split()
-            boolean_terms = []
-            for t in terms:
-                clean_t = t.replace('*', '')
-                if len(clean_t) > 3:
-                    boolean_terms.append(f"+{clean_t}*")
-                elif len(clean_t) > 1:
-                    boolean_terms.append(f"{clean_t}*") # Optional
+            search_clean = search.strip()
             
-            if boolean_terms:
-                boolean_search = " ".join(boolean_terms)
+            # --- STRICT RUC SEARCH ---
+            if len(search_clean) == 11 and search_clean.isdigit():
                 try:
-                    ft_sql = text("""
-                        SELECT id_convocatoria FROM licitaciones_cabecera 
-                        WHERE MATCH(nomenclatura, descripcion, comprador, id_convocatoria, ubicacion_completa) 
-                        AGAINST(:search_ft IN BOOLEAN MODE)
+                    ruc_sql = text("""
+                        SELECT id_convocatoria FROM licitaciones_adjudicaciones WHERE ganador_ruc = :ruc
+                        UNION
+                        SELECT la.id_convocatoria FROM detalle_consorcios dc
+                        JOIN licitaciones_adjudicaciones la ON la.id_contrato = dc.id_contrato
+                        WHERE dc.ruc_miembro = :ruc
+                    """)
+                    ruc_ids = db.execute(ruc_sql, {"ruc": search_clean}).scalars().all()
+                    found_ids.update(ruc_ids)
+                except Exception as e:
+                    print(f"RUC Search Error: {e}")
+            else:
+                # --- HYBRID SEARCH (Providers + Fulltext) ---
+                search_like = f"%{search_clean}%"
+                provider_found = False
+                
+                # 1. Relational Search (Get Exact Provider/Bank/Consortium Matches FIRST)
+                try:
+                    cons_sql = text("""
+                        SELECT id_contrato FROM detalle_consorcios 
+                        WHERE nombre_miembro LIKE :search OR ruc_miembro LIKE :search
                         LIMIT :limit
                     """)
-                    ft_ids = db.execute(ft_sql, {"search_ft": boolean_search, "limit": limit_subquery}).scalars().all()
-                    found_ids.update(ft_ids)
+                    cons_contract_ids = db.execute(cons_sql, {"search": search_like, "limit": limit_subquery}).scalars().all()
+                    
+                    if cons_contract_ids:
+                        c_in_params = [f":cid_c{i}" for i in range(len(cons_contract_ids))]
+                        c_params = {f"cid_c{i}": cid for i, cid in enumerate(cons_contract_ids)}
+                        conv_from_cons_sql = text(f"""
+                            SELECT DISTINCT id_convocatoria FROM licitaciones_adjudicaciones 
+                            WHERE id_contrato IN ({','.join(c_in_params)}) OR id_adjudicacion IN ({','.join(c_in_params)})
+                        """) 
+                        c_ids = db.execute(conv_from_cons_sql, c_params).scalars().all()
+                        found_ids.update(c_ids)
+                        provider_found = True
+
+                    adj_sql = text("""
+                        SELECT id_convocatoria FROM licitaciones_adjudicaciones 
+                        WHERE (ganador_nombre LIKE :search OR ganador_ruc LIKE :search OR entidad_financiera LIKE :search OR id_contrato LIKE :search)
+                        LIMIT :limit
+                    """)
+                    adj_ids = db.execute(adj_sql, {"search": search_like, "limit": limit_subquery}).scalars().all()
+                    if adj_ids:
+                        found_ids.update(adj_ids)
+                        provider_found = True
+                        
                 except Exception as e:
-                    print(f"Fulltext Error: {e}")
+                    print(f"Relational Search Error: {e}")
 
-            # B. Relational Search (Split into granular lookups)
-            search_like = f"%{search}%"
-            try:
-                # B1. Search Consortium Members directly (Get IDs first)
-                cons_sql = text("""
-                    SELECT id_contrato FROM detalle_consorcios 
-                    WHERE nombre_miembro LIKE :search OR ruc_miembro LIKE :search
-                    LIMIT :limit
-                """)
-                cons_contract_ids = db.execute(cons_sql, {"search": search_like, "limit": limit_subquery}).scalars().all()
-                
-                if cons_contract_ids:
-                    # Get Convocatorias for these contracts
-                    # Use DISTINCT to avoid duplicates
-                    # Manual expansion for raw SQL
-                    c_in_params = [f":cid_c{i}" for i in range(len(cons_contract_ids))]
-                    c_params = {f"cid_c{i}": cid for i, cid in enumerate(cons_contract_ids)}
+                # 2. Fulltext Search (Only if it's not a long exact provider match, or we combine them)
+                # If they clicked an autocomplete provider (>15 chars) and we FOUND it in the provider tables,
+                # skip fulltext to avoid broad false positives like "Vanguardia Sur".
+                if not (provider_found and len(search_clean) > 15):
+                    # Avoid using '+' on short words (<=3 chars)
+                    terms = search_clean.split()
+                    boolean_terms = []
+                    for t in terms:
+                        clean_t = t.replace('*', '')
+                        if len(clean_t) > 3:
+                            boolean_terms.append(f"+{clean_t}*")
+                        elif len(clean_t) > 1:
+                            boolean_terms.append(f"{clean_t}*") # Optional
                     
-                    conv_from_cons_sql = text(f"""
-                        SELECT DISTINCT id_convocatoria FROM licitaciones_adjudicaciones 
-                        WHERE id_contrato IN ({','.join(c_in_params)}) OR id_adjudicacion IN ({','.join(c_in_params)})
-                    """) 
-                    
-                    c_ids = db.execute(conv_from_cons_sql, c_params).scalars().all()
-                    found_ids.update(c_ids)
+                    if boolean_terms:
+                        boolean_search = " ".join(boolean_terms)
+                        try:
+                            ft_sql = text("""
+                                SELECT id_convocatoria FROM licitaciones_cabecera 
+                                WHERE MATCH(nomenclatura, descripcion, comprador, id_convocatoria, ubicacion_completa) 
+                                AGAINST(:search_ft IN BOOLEAN MODE)
+                                LIMIT :limit
+                            """)
+                            ft_ids = db.execute(ft_sql, {"search_ft": boolean_search, "limit": limit_subquery}).scalars().all()
+                            found_ids.update(ft_ids)
+                        except Exception as e:
+                            print(f"Fulltext Error: {e}")
 
-                # B2. Search Adjudication Details (Winners, Banks, guarantees)
-                adj_sql = text("""
-                    SELECT id_convocatoria FROM licitaciones_adjudicaciones 
-                    WHERE (
-                        ganador_nombre LIKE :search OR 
-                        ganador_ruc LIKE :search OR 
-                        entidad_financiera LIKE :search OR 
-                        id_contrato LIKE :search
-                    )
-                    LIMIT :limit
-                """)
-                adj_ids = db.execute(adj_sql, {"search": search_like, "limit": limit_subquery}).scalars().all()
-                found_ids.update(adj_ids)
-                
-            except Exception as e:
-                print(f"Relational Search Error: {e}")
+
 
             # B3. Search Nomenclatura, Descripcion & OCID (Specific Fallback for Substrings)
             # REMOVED: Using LIKE '%search%' on licitaciones_cabecera (450k+ rows, large text)
