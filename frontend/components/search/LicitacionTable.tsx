@@ -339,11 +339,22 @@ export const LicitacionTable: React.FC<Props> = ({
                                         <div className="text-[10px] font-black text-slate-800 dark:text-white uppercase leading-tight">
                                             {lic.ganador_nombre || <span className="text-slate-400 italic font-normal">No adjudicado</span>}
                                         </div>
-                                        {((lic.miembros_consorcio && lic.miembros_consorcio.length > 0) || lic.nombres_consorciados) && (
-                                            <div className="flex flex-wrap gap-1">
-                                                <span className="text-[9px] font-black text-blue-600 uppercase tracking-widest bg-blue-600/5 px-1.5 rounded">Consorcio</span>
+                                        {lic.miembros_consorcio && lic.miembros_consorcio.length > 0 ? (
+                                            <div className="flex flex-col gap-1 mt-1">
+                                                <span className="text-[9px] font-black text-blue-600 uppercase tracking-widest bg-blue-600/5 px-1.5 rounded self-start">Consorcio</span>
+                                                {lic.miembros_consorcio.map((m: any, i: number) => (
+                                                    <div key={i} className="text-[9px] font-medium text-slate-500 dark:text-slate-400 flex flex-col border-b border-slate-100 dark:border-white/5 last:border-0 pb-1 last:pb-0">
+                                                        <span className="line-clamp-2 leading-tight" title={m.nombre_miembro}>{m.nombre_miembro}</span>
+                                                        {m.porcentaje_participacion ? <span className="font-bold text-slate-700 dark:text-slate-300">{m.porcentaje_participacion}%</span> : null}
+                                                    </div>
+                                                ))}
                                             </div>
-                                        )}
+                                        ) : lic.nombres_consorciados ? (
+                                            <div className="flex flex-col gap-1 mt-1">
+                                                <span className="text-[9px] font-black text-blue-600 uppercase tracking-widest bg-blue-600/5 px-1.5 rounded self-start">Consorcio</span>
+                                                <span className="text-[9px] font-medium text-slate-500 dark:text-slate-400 line-clamp-2" title={lic.nombres_consorciados}>{lic.nombres_consorciados}</span>
+                                            </div>
+                                        ) : null}
                                     </div>
                                 </td>
                                 <td className="px-5 py-6">

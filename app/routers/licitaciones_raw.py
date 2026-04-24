@@ -46,13 +46,13 @@ def get_search_suggestions(
         boolean_search = " ".join(boolean_terms) if boolean_terms else f"+{query_upper}*"
 
         sql_entidad = text("""
-            SELECT TRIM(comprador) as val, 'Entidad' as type_label FROM licitaciones_cabecera 
+            (SELECT TRIM(comprador) as val, 'Entidad' as type_label FROM licitaciones_cabecera 
             WHERE MATCH(nomenclatura, descripcion, comprador, id_convocatoria, ubicacion_completa) AGAINST(:search_ft IN BOOLEAN MODE)
-            LIMIT 5
+            LIMIT 5)
             UNION ALL
-            SELECT TRIM(nomenclatura) as val, 'Nomenclatura' as type_label FROM licitaciones_cabecera 
+            (SELECT TRIM(nomenclatura) as val, 'Nomenclatura' as type_label FROM licitaciones_cabecera 
             WHERE MATCH(nomenclatura, descripcion, comprador, id_convocatoria, ubicacion_completa) AGAINST(:search_ft IN BOOLEAN MODE)
-            LIMIT 5
+            LIMIT 5)
         """)
         
         entidad_rows = db.execute(sql_entidad, {"search_ft": boolean_search}).fetchall()
