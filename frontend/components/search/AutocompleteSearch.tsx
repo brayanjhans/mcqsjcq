@@ -69,13 +69,13 @@ export const AutocompleteSearch: React.FC<AutocompleteSearchProps> = ({
         return () => clearTimeout(timer);
     }, [query]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    // ── Debounce 2: Trigger main LIVE search (300ms)
+    // ── Debounce 2: Trigger main LIVE search (150ms)
     useEffect(() => {
         const timer = setTimeout(() => {
             if (query.length >= 3 || query.length === 0) {
                 onSearch(query);
             }
-        }, 300);
+        }, 150);
         return () => clearTimeout(timer);
     }, [query]); // eslint-disable-line react-hooks/exhaustive-deps
 
