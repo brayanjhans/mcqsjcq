@@ -52,11 +52,18 @@ def get_search_suggestions(
             LIMIT 5)
             UNION ALL
             (SELECT TRIM(nomenclatura) as val, 'Nomenclatura' as type_label FROM licitaciones_cabecera 
+            WHERE nomenclatura LIKE :pattern_prefix
+            LIMIT 5)
+            UNION ALL
+            (SELECT TRIM(nomenclatura) as val, 'Nomenclatura' as type_label FROM licitaciones_cabecera 
             WHERE MATCH(nomenclatura, descripcion, comprador, id_convocatoria, ubicacion_completa) AGAINST(:search_ft IN BOOLEAN MODE)
             LIMIT 5)
         """)
         
-        entidad_rows = db.execute(sql_entidad, {"search_ft": boolean_search}).fetchall()
+        entidad_rows = db.execute(sql_entidad, {
+            "search_ft": boolean_search,
+            "pattern_prefix": f"{query_upper}%"
+        }).fetchall()
         for row in entidad_rows:
             if row[0]:
                 val = row[0]
@@ -261,7 +268,22 @@ def get_licitaciones(
                     found_ids.update(ruc_ids)
                 except Exception as e:
                     print(f"RUC Search Error: {e}")
-            else:
+            
+            # --- NOMENCLATURA SEARCH (High Precision) ---
+            # Try exact match or prefix match for nomenclature first
+            try:
+                nom_sql = text("""
+                    SELECT id_convocatoria FROM licitaciones_cabecera 
+                    WHERE nomenclatura = :q OR nomenclatura LIKE :qp
+                    LIMIT 10
+                """)
+                nom_ids = db.execute(nom_sql, {"q": search_clean, "qp": f"{search_clean}%"}).scalars().all()
+                if nom_ids:
+                    found_ids.update(nom_ids)
+            except Exception as e:
+                print(f"Nom Search Error: {e}")
+            
+            if len(search_clean) < 11 or not search_clean.isdigit():
                 # --- HYBRID SEARCH (Providers + Fulltext) ---
                 search_like = f"%{search_clean}%"
                 provider_found = False
