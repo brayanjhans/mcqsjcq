@@ -19,92 +19,96 @@ router = APIRouter(prefix="/api/licitaciones", tags=["Licitaciones"])
 
 @router.get("/suggestions")
 def get_search_suggestions(
-    query: str = Query(..., min_length=3),
+    query: str = Query(..., min_length=2),
     db: Session = Depends(get_db)
 ):
     """
-    Get autocomplete suggestions for Universal Search.
-    Searches: Comprador, Nomenclatura, Descripcion, RUC Ganador, Ganador Name, Entidad Financiera.
+    Fast autocomplete suggestions. Priority:
+    1. Nomenclatura exact prefix (fast, indexed, max 3)
+    2. Proveedores / Consorciados LIKE (max 3)
+    3. Entidades fulltext (max 3)
     """
     try:
         query_upper = query.upper().strip()
-        # Restore wildcard search for comprehensive matches (substrings)
-        # Keeping UNION ALL + LIMIT to maintain performance
-        search_pattern = f"%{query_upper}%"
-        
         suggestions = []
-        
-        # 1. Search Entidades, Nomenclaturas, Descripciones, Ubicaciones
-        # Fast Fulltext search on cabecera instead of LIKE (which caused 80s timeouts)
-        query_clean_ft = query.replace('-', ' ')
-        terms = query_clean_ft.strip().split()
-        boolean_terms = []
-        for t in terms:
-            clean_t = t.replace('*', '')
-            if len(clean_t) > 3: boolean_terms.append(f"+{clean_t}*")
-            elif len(clean_t) > 1: boolean_terms.append(f"{clean_t}*")
-        
-        boolean_search = " ".join(boolean_terms) if boolean_terms else f"+{query_upper}*"
-
-        sql_entidad = text("""
-            (SELECT TRIM(comprador) as val, 'Entidad' as type_label FROM licitaciones_cabecera 
-            WHERE MATCH(nomenclatura, descripcion, comprador, id_convocatoria, ubicacion_completa) AGAINST(:search_ft IN BOOLEAN MODE)
-            LIMIT 5)
-            UNION ALL
-            (SELECT TRIM(nomenclatura) as val, 'Nomenclatura' as type_label FROM licitaciones_cabecera 
-            WHERE nomenclatura LIKE :pattern_prefix
-            LIMIT 5)
-            UNION ALL
-            (SELECT TRIM(nomenclatura) as val, 'Nomenclatura' as type_label FROM licitaciones_cabecera 
-            WHERE MATCH(nomenclatura, descripcion, comprador, id_convocatoria, ubicacion_completa) AGAINST(:search_ft IN BOOLEAN MODE)
-            LIMIT 5)
-        """)
-        
-        entidad_rows = db.execute(sql_entidad, {
-            "search_ft": boolean_search,
-            "pattern_prefix": f"{query_upper}%"
-        }).fetchall()
-        for row in entidad_rows:
-            if row[0]:
-                val = row[0]
-                type_label = row[1] if len(row) > 1 else "Sugerencia"
-                
-                # Truncate if it's too long (nomenclatura)
-                if len(str(val)) > 80: val = str(val)[:80] + "..."
-                suggestions.append({"value": val, "type": type_label})
-
-        # 2. Search RUCs and Proveedores (Adjudicaciones)
-        sql_details = text("""
-            SELECT provider, type_label FROM (
-                (SELECT TRIM(ganador_nombre) as provider, 'Proveedor' as type_label FROM licitaciones_adjudicaciones WHERE ganador_nombre LIKE :pattern LIMIT 5)
-                UNION ALL
-                (SELECT ganador_ruc as provider, 'RUC' as type_label FROM licitaciones_adjudicaciones WHERE ganador_ruc LIKE :pattern LIMIT 5)
-                UNION ALL
-                (SELECT TRIM(entidad_financiera) as provider, 'Banco' as type_label FROM licitaciones_adjudicaciones WHERE entidad_financiera LIKE :pattern LIMIT 3)
-                UNION ALL
-                (SELECT TRIM(nombre_miembro) as provider, 'Consorciado' as type_label FROM detalle_consorcios WHERE nombre_miembro LIKE :pattern LIMIT 10)
-                UNION ALL
-                (SELECT ruc_miembro as provider, 'RUC Consorciado' as type_label FROM detalle_consorcios WHERE ruc_miembro LIKE :pattern LIMIT 5)
-            ) as sub
-        """)
-        detail_rows = db.execute(sql_details, {"pattern": search_pattern}).fetchall()
-        for row in detail_rows:
-            if row[0]:
-                suggestions.append({"value": row[0], "type": row[1]})
-        
-        # Deduplicate
         seen = set()
-        unique_results = []
-        for s in suggestions:
-            if s['value'] not in seen:
-                seen.add(s['value'])
-                unique_results.append(s)
-        
-        return unique_results[:10]
+
+        def add(val, type_label):
+            if val and str(val).strip() and str(val) not in seen:
+                seen.add(str(val))
+                label = str(val)
+                if len(label) > 90: label = label[:90] + "..."
+                suggestions.append({"value": label, "type": type_label})
+
+        # ── 1. NOMENCLATURA: exact prefix only (muy rápido con LIKE 'X%' en columna indexada)
+        try:
+            nom_sql = text("""
+                SELECT DISTINCT TRIM(nomenclatura)
+                FROM licitaciones_cabecera
+                WHERE nomenclatura LIKE :prefix
+                LIMIT 3
+            """)
+            for row in db.execute(nom_sql, {"prefix": f"{query_upper}%"}).fetchall():
+                add(row[0], 'Nomenclatura')
+        except Exception as e:
+            print(f"Nom suggest error: {e}")
+
+        # ── 2. PROVEEDORES / CONSORCIADOS (LIKE, rápido sobre índices existentes)
+        search_like = f"%{query_upper}%"
+        try:
+            prov_sql = text("""
+                SELECT TRIM(ganador_nombre) as val, 'Proveedor' as t
+                FROM licitaciones_adjudicaciones
+                WHERE ganador_nombre LIKE :s
+                LIMIT 3
+            """)
+            for row in db.execute(prov_sql, {"s": search_like}).fetchall():
+                add(row[0], row[1])
+        except Exception as e:
+            print(f"Prov suggest error: {e}")
+
+        try:
+            cons_sql = text("""
+                SELECT DISTINCT TRIM(nombre_miembro) as val
+                FROM detalle_consorcios
+                WHERE nombre_miembro LIKE :s
+                LIMIT 3
+            """)
+            for row in db.execute(cons_sql, {"s": search_like}).fetchall():
+                add(row[0], 'Consorcio')
+        except Exception as e:
+            print(f"Cons suggest error: {e}")
+
+        # ── 3. ENTIDADES (fulltext, solo si ya no hay suficientes resultados)
+        if len(suggestions) < 5:
+            try:
+                query_clean_ft = query.replace('-', ' ')
+                terms = query_clean_ft.strip().split()
+                boolean_terms = []
+                for t in terms:
+                    clean_t = t.replace('*', '')
+                    if len(clean_t) > 3: boolean_terms.append(f"+{clean_t}*")
+                    elif len(clean_t) > 1: boolean_terms.append(f"{clean_t}*")
+                if boolean_terms:
+                    boolean_search = " ".join(boolean_terms)
+                    ent_sql = text("""
+                        SELECT DISTINCT TRIM(comprador)
+                        FROM licitaciones_cabecera
+                        WHERE MATCH(nomenclatura, descripcion, comprador, id_convocatoria, ubicacion_completa)
+                        AGAINST(:ft IN BOOLEAN MODE)
+                        LIMIT 4
+                    """)
+                    for row in db.execute(ent_sql, {"ft": boolean_search}).fetchall():
+                        add(row[0], 'Entidad')
+            except Exception as e:
+                print(f"FT suggest error: {e}")
+
+        return suggestions[:10]
     except Exception as e:
         import traceback
         traceback.print_exc()
-        return [{"value": f"Error: {str(e)}", "type": "Error"}]
+        return []
+
 
 @router.get("/filters/all")
 def get_all_filters(db: Session = Depends(get_db)):
@@ -270,20 +274,25 @@ def get_licitaciones(
                     print(f"RUC Search Error: {e}")
             
             # --- NOMENCLATURA SEARCH (High Precision) ---
-            # Try exact match or prefix match for nomenclature first
+            # Detect nomenclature pattern: queries with hyphens (e.g. AS-SM-1-2021, CP-ABR-3...)
+            # These should return ONLY exact/prefix nomenclature matches, never fulltext
+            is_nomenclatura = '-' in search_clean or (search_clean.upper() == search_clean and any(c.isdigit() for c in search_clean))
             try:
                 nom_sql = text("""
                     SELECT id_convocatoria FROM licitaciones_cabecera 
                     WHERE nomenclatura = :q OR nomenclatura LIKE :qp
-                    LIMIT 10
+                    LIMIT 20
                 """)
-                nom_ids = db.execute(nom_sql, {"q": search_clean, "qp": f"{search_clean}%"}).scalars().all()
+                nom_ids = db.execute(nom_sql, {"q": search_clean.upper(), "qp": f"{search_clean.upper()}%"}).scalars().all()
                 if nom_ids:
                     found_ids.update(nom_ids)
             except Exception as e:
                 print(f"Nom Search Error: {e}")
             
-            if len(search_clean) < 11 or not search_clean.isdigit():
+            # If it looks like a nomenclature code, skip hybrid/fulltext (avoid false positives)
+            if is_nomenclatura and found_ids:
+                pass  # found_ids already has the precise results, skip hybrid
+            elif len(search_clean) < 11 or not search_clean.isdigit():
                 # --- HYBRID SEARCH (Providers + Fulltext) ---
                 search_like = f"%{search_clean}%"
                 provider_found = False
