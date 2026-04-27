@@ -13,8 +13,34 @@ from app.models.user import User
 from app.utils.dependencies import get_current_user
 from urllib.parse import unquote
 import uuid
+import time
 
 router = APIRouter(prefix="/api/licitaciones", tags=["Licitaciones"])
+
+# ─────────────────────────────────────────────────────────────────────────────
+# In-memory cache (module-level, shared across requests within the same worker)
+# Keyed by a tuple of (search_params), TTL = 2 minutes for search results
+# TTL = 60 sec for suggestions (they change frequently)
+# ─────────────────────────────────────────────────────────────────────────────
+_cache: dict = {}
+_SEARCH_TTL  = 120   # 2 min for search results
+_SUGGEST_TTL = 30    # 30 sec for suggestions
+_MAX_ENTRIES = 300
+
+def _get(key: str):
+    entry = _cache.get(key)
+    if entry and (time.time() - entry["ts"]) < entry["ttl"]:
+        return entry["data"]
+    return None
+
+def _set(key: str, data, ttl: int):
+    if len(_cache) >= _MAX_ENTRIES:
+        # Prune 20% oldest entries
+        sorted_keys = sorted(_cache, key=lambda k: _cache[k]["ts"])
+        for k in sorted_keys[:_MAX_ENTRIES // 5]:
+            _cache.pop(k, None)
+    _cache[key] = {"ts": time.time(), "ttl": ttl, "data": data}
+
 
 
 @router.get("/suggestions")
@@ -29,6 +55,12 @@ def get_search_suggestions(
     3. Entidades fulltext (max 3)
     """
     try:
+        # Check suggestions cache first (30 sec TTL)
+        cache_key = f"suggest:{query.strip().upper()}"
+        cached = _get(cache_key)
+        if cached is not None:
+            return cached
+
         query_upper = query.upper().strip()
         suggestions = []
         seen = set()
@@ -103,7 +135,9 @@ def get_search_suggestions(
             except Exception as e:
                 print(f"FT suggest error: {e}")
 
-        return suggestions[:10]
+        result = suggestions[:10]
+        _set(cache_key, result, _SUGGEST_TTL)
+        return result
     except Exception as e:
         import traceback
         traceback.print_exc()
@@ -243,10 +277,16 @@ def get_licitaciones(
     """
     
     try:
+        # ── BACKEND CACHE: 2-minute TTL keyed by all search params ──
+        _ck = f"search:{page}:{limit}:{search}:{estado}:{categoria}:{departamento}:{provincia}:{distrito}:{year}:{mes}:{tipo_garantia}:{entidad_financiera}:{comprador}:{tipo_procedimiento}"
+        _cached = _get(_ck)
+        if _cached is not None:
+            return _cached
+
         # Build WHERE clause
         where_clauses = []
         params = {}
-        
+
 
         if search:
             # OPTIMIZED APP-SIDE JOIN STRATEGY
@@ -716,13 +756,15 @@ def get_licitaciones(
         # Calculate pagination
         total_pages = (total + limit - 1) // limit if limit > 0 else 0
         
-        return {
+        result = {
             "total": total,
             "page": page,
             "limit": limit,
             "total_pages": total_pages,
             "items": items
         }
+        _set(_ck, result, _SEARCH_TTL)
+        return result
         
     except Exception as e:
         import traceback

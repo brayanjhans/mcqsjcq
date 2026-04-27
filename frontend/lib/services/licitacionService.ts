@@ -1,38 +1,63 @@
 import api from '../api';
 import type { Licitacion, SearchFilters } from '@/types/licitacion';
 
-const searchCache = new Map<string, { timestamp: number, data: any }>();
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes cache
+const searchCache = new Map<string, { timestamp: number; data: any }>();
+const CACHE_TTL_MS  = 10 * 60 * 1000;  // 10 min — serve stale, refresh in BG
+const MAX_CACHE     = 60;               // LRU cap
+
+function getCached(key: string) {
+    const hit = searchCache.get(key);
+    if (!hit) return null;
+    // Always serve if within TTL; for stale entries we still return but caller refreshes BG
+    return hit.data;
+}
+
+function setCache(key: string, data: any) {
+    if (searchCache.size >= MAX_CACHE) {
+        // Evict oldest entry
+        const oldest = searchCache.keys().next().value;
+        if (oldest) searchCache.delete(oldest);
+    }
+    searchCache.set(key, { timestamp: Date.now(), data });
+}
+
+function isFresh(key: string) {
+    const hit = searchCache.get(key);
+    return hit ? (Date.now() - hit.timestamp < CACHE_TTL_MS) : false;
+}
 
 export const licitacionService = {
     // Get paginated licitaciones with filters
     getAll: async (page: number, limit: number, filters: SearchFilters = {}) => {
-        const params: any = {
-            page,
-            limit,
-            ...filters
-        };
+        const params: any = { page, limit, ...filters };
 
         // Remove empty filters
         Object.keys(params).forEach(key =>
             (params[key] === undefined || params[key] === '' || params[key] === null) && delete params[key]
         );
 
-        // Check cache before fetching
         const cacheKey = JSON.stringify(params);
-        const cached = searchCache.get(cacheKey);
-        if (cached && (Date.now() - cached.timestamp < CACHE_TTL_MS)) {
-            return cached.data;
+        const cached   = getCached(cacheKey);
+        const fresh    = isFresh(cacheKey);
+
+        // INSTANT: return cached immediately
+        if (cached && fresh) return cached;
+
+        // Add timestamp only when no cache (to force network)
+        params._t = Date.now();
+
+        const fetchPromise = api.get('/api/licitaciones', { params }).then(res => {
+            setCache(cacheKey, res.data);
+            return res.data;
+        });
+
+        // Stale-While-Revalidate: if we have stale data, return it NOW and refresh in BG
+        if (cached) {
+            fetchPromise.catch(() => {/* silent */});
+            return cached;
         }
 
-        // Add Timestamp to prevent axios/browser caching
-        params._t = new Date().getTime();
-
-        const response = await api.get('/api/licitaciones', { params });
-        
-        // Save to cache
-        searchCache.set(cacheKey, { timestamp: Date.now(), data: response.data });
-        return response.data;
+        return fetchPromise;
     },
 
     // Get filter options
