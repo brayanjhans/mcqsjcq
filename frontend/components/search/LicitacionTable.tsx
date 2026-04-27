@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import Link from "next/link";
-import { Eye, Search, FileDown, Loader2 } from "lucide-react";
+import { Eye, Search, FileDown, Loader2, FileText, Users } from "lucide-react";
 import type { Licitacion } from "@/types/licitacion";
 import { LOGO_MQS_B64, LOGO_JCQ_B64 } from "@/lib/utils/pdfAssets";
 
@@ -289,6 +289,7 @@ export const LicitacionTable: React.FC<Props> = ({
                             <th className="px-5 py-6 min-w-[180px] border-b border-white/10">Cronograma</th>
                             <th className="px-5 py-6 min-w-[120px] border-b border-white/10">Fechas</th>
                             <th className="px-5 py-6 min-w-[120px] border-b border-white/10">Aseguradora</th>
+                            <th className="px-5 py-6 min-w-[160px] text-center border-b border-white/10">Documentos</th>
                             <th className="px-5 py-6 text-center sticky right-0 bg-[#172554] border-b border-white/10 shadow-[-10px_0_20px_-10px_rgba(0,0,0,0.3)] last:rounded-tr-[2rem]">Acciones</th>
                         </tr>
                     </thead>
@@ -398,6 +399,37 @@ export const LicitacionTable: React.FC<Props> = ({
                                         {lic.entidades_financieras ? getHighlightedText(lic.entidades_financieras, searchTerm) : <span className="text-slate-300 font-normal">N/A</span>}
                                     </div>
                                 </td>
+                                <td className="px-5 py-6">
+                                    <div className="flex flex-col gap-2">
+                                        {lic.url_pdf_contrato && (
+                                            <a 
+                                                href={lic.url_pdf_contrato} 
+                                                target="_blank" 
+                                                rel="noopener noreferrer"
+                                                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-100 dark:border-blue-500/20 hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-all text-[10px] font-bold uppercase tracking-tight shadow-sm hover:shadow-md"
+                                            >
+                                                <FileText className="w-3.5 h-3.5" />
+                                                <span>Contrato</span>
+                                            </a>
+                                        )}
+                                        {lic.url_pdf_consorcio && (
+                                            <a 
+                                                href={lic.url_pdf_consorcio} 
+                                                target="_blank" 
+                                                rel="noopener noreferrer"
+                                                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-500/20 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-all text-[10px] font-bold uppercase tracking-tight shadow-sm hover:shadow-md"
+                                            >
+                                                <Users className="w-3.5 h-3.5" />
+                                                <span>Consorcio</span>
+                                            </a>
+                                        )}
+                                        {!lic.url_pdf_contrato && !lic.url_pdf_consorcio && (
+                                            <div className="flex items-center justify-center py-2 px-3 rounded-lg border border-dashed border-slate-200 dark:border-white/5">
+                                                <span className="text-[10px] text-slate-400 italic">Sin documentos</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </td>
                                 <td className="px-5 py-6 text-center sticky right-0 bg-white dark:bg-[#0A192F] shadow-[-10px_0_20px_-10px_rgba(0,0,0,0.05)] border-l border-slate-100 dark:border-white/5 transition-colors group-hover/row:bg-blue-50/50 dark:group-hover/row:bg-white/[0.05]">
                                     <Link
                                         href={`${basePath}/${lic.id_convocatoria}`}
@@ -414,7 +446,7 @@ export const LicitacionTable: React.FC<Props> = ({
 
                         {licitaciones.length === 0 && (
                             <tr>
-                                <td colSpan={11} className="px-5 py-32 text-center bg-slate-50/50 dark:bg-white/[0.01] rounded-b-[2rem]">
+                                <td colSpan={12} className="px-5 py-32 text-center bg-slate-50/50 dark:bg-white/[0.01] rounded-b-[2rem]">
                                     <div className="flex flex-col items-center justify-center gap-4 max-w-md mx-auto">
                                         <div className="w-20 h-20 rounded-full bg-white dark:bg-white/5 shadow-xl flex items-center justify-center">
                                             <Search className="w-10 h-10 text-slate-300 dark:text-slate-700" />

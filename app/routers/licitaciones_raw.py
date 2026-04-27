@@ -589,7 +589,9 @@ def get_licitaciones(
                 "id_contrato": None,
                 "nombres_consorciados": None,
                 "rucs_consorciados": None,
-                "miembros_consorcio": []
+                "miembros_consorcio": [],
+                "url_pdf_contrato": None,
+                "url_pdf_consorcio": None
             })
             
         # --- BATCH FETCH EVERYTHING ---
@@ -604,7 +606,8 @@ def get_licitaciones(
                 SELECT 
                     id_convocatoria, ganador_nombre, ganador_ruc, 
                     entidad_financiera, tipo_garantia, monto_adjudicado, 
-                    fecha_adjudicacion, id_contrato, nombres_consorciados, rucs_consorciados
+                    fecha_adjudicacion, id_contrato, nombres_consorciados, rucs_consorciados,
+                    url_pdf_contrato, url_pdf_consorcio
                 FROM licitaciones_adjudicaciones
                 WHERE id_convocatoria IN ({','.join(adj_in_params)})
             """)
@@ -633,6 +636,9 @@ def get_licitaciones(
                     item["id_contrato"] = first[7]
                     item["nombres_consorciados"] = " | ".join(sorted(list(set(filter(None, [a[8] for a in adjs])))))
                     item["rucs_consorciados"] = " | ".join(sorted(list(set(filter(None, [a[9] for a in adjs])))))
+                    # Batch fetch URLs (take first available non-null for simplified view)
+                    item["url_pdf_contrato"] = next((a[10] for a in adjs if a[10]), None)
+                    item["url_pdf_consorcio"] = next((a[11] for a in adjs if a[11]), None)
 
             # 2. Fetch Consortium Members (Batch + UNION Optimized)
             cons_in_params = [f":cid{i}" for i in range(len(visible_ids))]

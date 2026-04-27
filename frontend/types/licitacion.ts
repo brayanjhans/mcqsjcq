@@ -37,6 +37,10 @@ export interface Licitacion {
     miembros_consorcio?: MiembroConsorcio[];
     nombres_consorciados?: string;
     rucs_consorciados?: string;
+
+    // PDFs
+    url_pdf_contrato?: string | null;
+    url_pdf_consorcio?: string | null;
 }
 
 export interface MiembroConsorcio {
