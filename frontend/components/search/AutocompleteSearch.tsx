@@ -1,17 +1,9 @@
-import { Search, Loader2, Building2, FileText, User, CreditCard, Clock, X, Hash } from "lucide-react";
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import { Search, Loader2, Building2, User, CreditCard, Clock, X, Hash } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
 import { licitacionService } from "@/lib/services/licitacionService";
 
-interface Suggestion {
-    value: string;
-    type: string;
-    id?: string;
-}
-
-interface HistoryItem {
-    term: string;
-    timestamp: number;
-}
+interface Suggestion { value: string; type: string; }
+interface HistoryItem { term: string; timestamp: number; }
 
 const HISTORY_KEY = 'seace_search_history';
 const MAX_HISTORY = 5;
@@ -33,14 +25,7 @@ export const AutocompleteSearch: React.FC<AutocompleteSearchProps> = ({
     const [history, setHistory] = useState<HistoryItem[]>([]);
     const [loading, setLoading] = useState(false);
     const [isOpen, setIsOpen] = useState(false);
-    const [dropdownRect, setDropdownRect] = useState<DOMRect | null>(null);
     const wrapperRef = useRef<HTMLDivElement>(null);
-
-    const updateRect = useCallback(() => {
-        if (wrapperRef.current) {
-            setDropdownRect(wrapperRef.current.getBoundingClientRect());
-        }
-    }, []);
 
     // Initial value sync
     const didMountRef = useRef(false);
@@ -53,24 +38,23 @@ export const AutocompleteSearch: React.FC<AutocompleteSearchProps> = ({
         if (initialValue === "") setQuery("");
     }, [initialValue]);
 
-    // ── Debounce: Autocomplete suggestions (180ms)
+    // ── Suggestions debounce: 150ms
     useEffect(() => {
         const timer = setTimeout(async () => {
             if (query.length >= 2) {
                 setLoading(true);
-                updateRect();
                 try {
                     const results: Suggestion[] = await licitacionService.getAutocomplete(query);
-                    // Filter errors, sort: starts-with first, then contains
                     const clean = results.filter(r => r.type !== 'Error');
+                    // Sort: starts-with first
                     const q = query.toUpperCase();
-                    const sorted = clean.sort((a, b) => {
-                        const aStarts = a.value.toUpperCase().startsWith(q) ? 0 : 1;
-                        const bStarts = b.value.toUpperCase().startsWith(q) ? 0 : 1;
-                        return aStarts - bStarts;
+                    clean.sort((a, b) => {
+                        const aS = a.value.toUpperCase().startsWith(q) ? 0 : 1;
+                        const bS = b.value.toUpperCase().startsWith(q) ? 0 : 1;
+                        return aS - bS;
                     });
-                    setSuggestions(sorted);
-                    if (sorted.length > 0) setIsOpen(true);
+                    setSuggestions(clean);
+                    if (clean.length > 0) setIsOpen(true);
                 } catch {
                     setSuggestions([]);
                 } finally {
@@ -78,76 +62,57 @@ export const AutocompleteSearch: React.FC<AutocompleteSearchProps> = ({
                 }
             } else {
                 setSuggestions([]);
-                setIsOpen(query.length === 0 && history.length > 0);
+                if (query.length === 0 && history.length > 0) setIsOpen(true);
+                else setIsOpen(false);
             }
-        }, 180);
+        }, 150);
         return () => clearTimeout(timer);
     }, [query]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    // ── Main search debounce: 250ms so results appear while typing
+    // ── Main search debounce: 200ms — very fast
     useEffect(() => {
         const timer = setTimeout(() => {
-            if (query.length >= 3 || query.length === 0) {
-                onSearch(query);
-            }
-        }, 250);
+            if (query.length >= 3 || query.length === 0) onSearch(query);
+        }, 200);
         return () => clearTimeout(timer);
     }, [query]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Load history
     useEffect(() => {
-        const stored = localStorage.getItem(HISTORY_KEY);
-        if (stored) {
-            try {
+        try {
+            const stored = localStorage.getItem(HISTORY_KEY);
+            if (stored) {
                 const parsed: HistoryItem[] = JSON.parse(stored);
                 const now = Date.now();
-                const filtered = parsed.filter(item => (now - item.timestamp) < HISTORY_TTL_MS);
-                setHistory(filtered);
-            } catch { /**/ }
-        }
+                setHistory(parsed.filter(item => (now - item.timestamp) < HISTORY_TTL_MS));
+            }
+        } catch { /**/ }
     }, []);
 
+    // Close on click outside
     useEffect(() => {
-        function handleClickOutside(event: MouseEvent) {
-            if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
-                setIsOpen(false);
-            }
+        function outside(e: MouseEvent) {
+            if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) setIsOpen(false);
         }
-        function handleScrollOrResize() { updateRect(); }
-        document.addEventListener("mousedown", handleClickOutside);
-        window.addEventListener("scroll", handleScrollOrResize, true);
-        window.addEventListener("resize", handleScrollOrResize);
-        return () => {
-            document.removeEventListener("mousedown", handleClickOutside);
-            window.removeEventListener("scroll", handleScrollOrResize, true);
-            window.removeEventListener("resize", handleScrollOrResize);
-        };
-    }, [updateRect]);
+        document.addEventListener("mousedown", outside);
+        return () => document.removeEventListener("mousedown", outside);
+    }, []);
 
     const saveToHistory = (term: string) => {
         if (!term || term.trim().length < 3) return;
-        const cleanTerm = term.trim();
         setHistory(prev => {
-            const filtered = prev.filter(h => h.term.toLowerCase() !== cleanTerm.toLowerCase());
-            const newHistory = [{ term: cleanTerm, timestamp: Date.now() }, ...filtered].slice(0, MAX_HISTORY);
-            localStorage.setItem(HISTORY_KEY, JSON.stringify(newHistory));
-            return newHistory;
+            const filtered = prev.filter(h => h.term.toLowerCase() !== term.trim().toLowerCase());
+            const next = [{ term: term.trim(), timestamp: Date.now() }, ...filtered].slice(0, MAX_HISTORY);
+            localStorage.setItem(HISTORY_KEY, JSON.stringify(next));
+            return next;
         });
     };
 
-    const removeFromHistory = (term: string) => {
-        setHistory(prev => {
-            const newHistory = prev.filter(h => h.term !== term);
-            localStorage.setItem(HISTORY_KEY, JSON.stringify(newHistory));
-            return newHistory;
-        });
-    };
-
-    const handleSelect = (suggestion: Suggestion) => {
-        setQuery(suggestion.value);
+    const handleSelect = (value: string) => {
+        setQuery(value);
         setIsOpen(false);
-        onSearch(suggestion.value);
-        saveToHistory(suggestion.value);
+        onSearch(value);
+        saveToHistory(value);
     };
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -156,58 +121,41 @@ export const AutocompleteSearch: React.FC<AutocompleteSearchProps> = ({
     };
 
     const getIcon = (type: string) => {
-        switch (type) {
-            case 'Entidad': return <Building2 className="w-3.5 h-3.5" />;
-            case 'Proveedor': return <User className="w-3.5 h-3.5" />;
-            case 'Consorcio': return <CreditCard className="w-3.5 h-3.5" />;
-            case 'Nomenclatura': return <Hash className="w-3.5 h-3.5" />;
-            default: return <Search className="w-3.5 h-3.5" />;
-        }
+        if (type === 'Entidad') return <Building2 className="w-3 h-3" />;
+        if (type === 'Proveedor') return <User className="w-3 h-3" />;
+        if (type === 'Consorcio') return <CreditCard className="w-3 h-3" />;
+        if (type === 'Nomenclatura') return <Hash className="w-3 h-3" />;
+        return <Search className="w-3 h-3" />;
     };
 
-    const getTypeStyle = (type: string) => {
-        switch (type) {
-            case 'Entidad': return { pill: 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400', icon: 'text-orange-500' };
-            case 'Proveedor': return { pill: 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400', icon: 'text-green-500' };
-            case 'Consorcio': return { pill: 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400', icon: 'text-purple-500' };
-            case 'Nomenclatura': return { pill: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400', icon: 'text-blue-500' };
-            default: return { pill: 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400', icon: 'text-slate-400' };
-        }
+    const typeColors: Record<string, string> = {
+        Entidad: 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400',
+        Proveedor: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+        Consorcio: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
+        Nomenclatura: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
     };
 
-    const highlightMatch = (text: string, term: string) => {
-        if (!term) return <span className="truncate">{text}</span>;
+    const highlight = (text: string) => {
+        if (!query) return <>{text}</>;
         try {
-            const regex = new RegExp(`(${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+            const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
             const parts = text.split(regex);
-            return (
-                <span className="truncate block">
-                    {parts.map((part, i) =>
-                        regex.test(part)
-                            ? <span key={i} className="text-indigo-600 dark:text-indigo-300 font-black">{part}</span>
-                            : <span key={i}>{part}</span>
-                    )}
-                </span>
-            );
-        } catch {
-            return <span className="truncate">{text}</span>;
-        }
+            return <>{parts.map((p, i) => regex.test(p) ? <b key={i} className="text-indigo-600 dark:text-indigo-300 not-italic">{p}</b> : p)}</>;
+        } catch { return <>{text}</>; }
     };
 
-    const showDropdown = isOpen && (suggestions.length > 0 || (query.length < 2 && history.length > 0));
-
-    // Dropdown fixed position — viewport-relative (no scrollY)
-    const dropdownStyle: React.CSSProperties = dropdownRect ? {
-        position: 'fixed',
-        top: dropdownRect.bottom + 6,
-        left: dropdownRect.left,
-        width: Math.min(dropdownRect.width * 0.55, 420),   // ← max 55% del ancho del input, máx 420px
-        zIndex: 99999,
-    } : { display: 'none' };
+    const showHistory = isOpen && query.length < 2 && history.length > 0;
+    const showSuggestions = isOpen && query.length >= 2 && suggestions.length > 0;
+    const showDropdown = showHistory || showSuggestions;
 
     return (
-        <div ref={wrapperRef} className="relative w-full group">
-            {/* Icon */}
+        /* 
+         * The wrapper MUST have `relative` + a high z-index so the absolute dropdown 
+         * paints above the result cards (which use CSS transforms creating new stacking contexts).
+         * We use isolation: isolate via the `isolate` class as well.
+         */
+        <div ref={wrapperRef} className="relative w-full isolate" style={{ zIndex: 99999 }}>
+            {/* Search icon */}
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
                 {loading
                     ? <Loader2 className="h-4 w-4 text-indigo-500 animate-spin" />
@@ -221,35 +169,41 @@ export const AutocompleteSearch: React.FC<AutocompleteSearchProps> = ({
                 className="block w-full pl-11 pr-4 py-3.5 rounded-xl border border-slate-200 text-sm font-medium placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all bg-white dark:bg-[#111c44] dark:border-slate-700 dark:text-white"
                 placeholder={placeholder}
                 value={query}
-                onChange={(e) => { setQuery(e.target.value); updateRect(); }}
+                onChange={e => setQuery(e.target.value)}
                 onKeyDown={handleKeyDown}
-                onFocus={() => { updateRect(); if (history.length > 0 && query.length < 2) setIsOpen(true); if (suggestions.length > 0) setIsOpen(true); }}
+                onFocus={() => {
+                    if (history.length > 0 && query.length < 2) setIsOpen(true);
+                    if (suggestions.length > 0) setIsOpen(true);
+                }}
             />
 
-            {/* Dropdown — fixed position to escape any overflow/z-index traps */}
+            {/* 
+             * Dropdown — position: absolute, anchored to the LEFT edge of the input.
+             * Width is 50% of the wrapper (roughly half the search bar).
+             * The high z-index on the wrapper ensures it paints above result cards.
+             */}
             {showDropdown && (
-                <div style={dropdownStyle} className="bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-700/80 rounded-xl shadow-[0_16px_48px_-8px_rgba(0,0,0,0.35)] overflow-hidden">
+                <div className="absolute top-[calc(100%+6px)] left-0 w-1/2 min-w-[260px] max-w-[440px] bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-700 rounded-xl shadow-[0_16px_48px_-8px_rgba(0,0,0,0.3)] overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150">
 
-                    {/* History mode */}
-                    {query.length < 2 && history.length > 0 ? (
+                    {/* ── History ── */}
+                    {showHistory && (
                         <>
                             <div className="text-[9px] uppercase font-bold text-slate-400 px-3 py-1.5 bg-slate-50 dark:bg-slate-800/60 tracking-widest border-b border-slate-100 dark:border-slate-700/50">
                                 Recientes
                             </div>
                             <ul>
                                 {history.slice(0, 4).map((item, idx) => (
-                                    <li
-                                        key={idx}
-                                        onMouseDown={(e) => { e.preventDefault(); setQuery(item.term); onSearch(item.term); saveToHistory(item.term); setIsOpen(false); }}
-                                        className="px-3 py-2 hover:bg-slate-50 dark:hover:bg-white/5 cursor-pointer flex items-center justify-between gap-2 group/item transition-colors border-b border-slate-50 last:border-0 dark:border-slate-700/30"
+                                    <li key={idx}
+                                        onMouseDown={e => { e.preventDefault(); handleSelect(item.term); }}
+                                        className="px-3 py-2 hover:bg-slate-50 dark:hover:bg-white/5 cursor-pointer flex items-center justify-between gap-2 group/item border-b border-slate-50 last:border-0 dark:border-slate-700/30 transition-colors"
                                     >
                                         <div className="flex items-center gap-2 min-w-0">
                                             <Clock className="w-3 h-3 text-slate-400 shrink-0" />
                                             <span className="text-xs font-medium text-slate-700 dark:text-slate-300 truncate">{item.term}</span>
                                         </div>
                                         <button
-                                            onMouseDown={(e) => { e.stopPropagation(); e.preventDefault(); removeFromHistory(item.term); }}
-                                            className="p-0.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-300 hover:text-slate-500 opacity-0 group-hover/item:opacity-100 transition-all shrink-0"
+                                            onMouseDown={e => { e.stopPropagation(); e.preventDefault(); setHistory(p => { const n = p.filter(h => h.term !== item.term); localStorage.setItem(HISTORY_KEY, JSON.stringify(n)); return n; }); }}
+                                            className="p-0.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700 opacity-0 group-hover/item:opacity-100 text-slate-400 transition-all shrink-0"
                                         >
                                             <X className="w-2.5 h-2.5" />
                                         </button>
@@ -257,36 +211,38 @@ export const AutocompleteSearch: React.FC<AutocompleteSearchProps> = ({
                                 ))}
                             </ul>
                         </>
-                    ) : suggestions.length > 0 ? (
-                        /* Suggestions mode */
-                        <ul className="max-h-[260px] overflow-y-auto">
-                            {suggestions.map((item, idx) => {
-                                const style = getTypeStyle(item.type);
-                                return (
-                                    <li
-                                        key={idx}
-                                        onMouseDown={(e) => { e.preventDefault(); handleSelect(item); }}
-                                        className="px-3 py-2 hover:bg-indigo-50/60 dark:hover:bg-white/5 cursor-pointer flex items-center gap-2.5 transition-colors border-b border-slate-50 last:border-0 dark:border-slate-700/30"
-                                    >
-                                        {/* Icon pill */}
-                                        <span className={`p-1 rounded-md shrink-0 ${style.pill}`}>
-                                            <span className={style.icon}>{getIcon(item.type)}</span>
-                                        </span>
+                    )}
 
-                                        {/* Text — truncated to fit */}
-                                        <div className="flex-1 min-w-0">
-                                            <div className="text-[12px] font-semibold text-slate-800 dark:text-slate-100 leading-tight truncate">
-                                                {highlightMatch(item.value, query)}
+                    {/* ── Suggestions ── */}
+                    {showSuggestions && (
+                        <>
+                            <div className="text-[9px] uppercase font-bold text-slate-400 px-3 py-1.5 bg-slate-50 dark:bg-slate-800/60 tracking-widest border-b border-slate-100 dark:border-slate-700/50 flex items-center justify-between">
+                                <span>Sugerencias</span>
+                                <span className="text-slate-300 dark:text-slate-600 font-normal normal-case text-[9px]">{suggestions.length}</span>
+                            </div>
+                            <ul className="max-h-[240px] overflow-y-auto">
+                                {suggestions.map((item, idx) => {
+                                    const color = typeColors[item.type] ?? 'bg-slate-100 text-slate-500';
+                                    return (
+                                        <li key={idx}
+                                            onMouseDown={e => { e.preventDefault(); handleSelect(item.value); }}
+                                            className="px-3 py-2 hover:bg-indigo-50/60 dark:hover:bg-white/5 cursor-pointer flex items-center gap-2.5 border-b border-slate-50 last:border-0 dark:border-slate-700/30 transition-colors"
+                                        >
+                                            <span className={`p-1 rounded-md shrink-0 ${color}`}>{getIcon(item.type)}</span>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="text-[12px] font-semibold text-slate-800 dark:text-slate-100 truncate leading-tight">
+                                                    {highlight(item.value)}
+                                                </div>
+                                                <span className={`text-[9px] font-bold uppercase tracking-widest ${color.split(' ')[1] ?? 'text-slate-400'}`}>
+                                                    {item.type}
+                                                </span>
                                             </div>
-                                            <span className={`text-[9px] font-bold uppercase tracking-widest ${style.icon}`}>
-                                                {item.type}
-                                            </span>
-                                        </div>
-                                    </li>
-                                );
-                            })}
-                        </ul>
-                    ) : null}
+                                        </li>
+                                    );
+                                })}
+                            </ul>
+                        </>
+                    )}
                 </div>
             )}
         </div>
