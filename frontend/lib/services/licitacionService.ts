@@ -67,11 +67,13 @@ export const licitacionService = {
         return response.data;
     },
 
-    // Get Autocomplete Suggestions
+    // Get Autocomplete Suggestions — with in-memory cache (TTL 2 min)
     getAutocomplete: async (query: string) => {
-        const response = await api.get('/api/licitaciones/suggestions', {
-            params: { query }
-        });
+        const key = `ac:${query.trim().toUpperCase()}`;
+        const cached = getCached(key);
+        if (cached) return cached;
+        const response = await api.get('/api/licitaciones/suggestions', { params: { query } });
+        setCache(key, response.data);
         return response.data;
     },
 

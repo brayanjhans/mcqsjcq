@@ -65,7 +65,7 @@ export const AutocompleteSearch: React.FC<AutocompleteSearchProps> = ({
                 if (query.length === 0 && history.length > 0) setIsOpen(true);
                 else setIsOpen(false);
             }
-        }, 150);
+        }, 80);
         return () => clearTimeout(timer);
     }, [query]); // eslint-disable-line react-hooks/exhaustive-deps
 

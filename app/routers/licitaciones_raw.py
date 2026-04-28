@@ -72,7 +72,8 @@ def get_search_suggestions(
                 if len(label) > 90: label = label[:90] + "..."
                 suggestions.append({"value": label, "type": type_label})
 
-        # ── 1. NOMENCLATURA: exact prefix only (muy rápido con LIKE 'X%' en columna indexada)
+        # ── 1. NOMENCLATURA: always MySQL exact prefix (LIKE 'X%' on indexed column)
+        # Meilisearch tokenizes hyphens → false positives for codes like CP-ABR-1-2026
         try:
             nom_sql = text("""
                 SELECT DISTINCT TRIM(nomenclatura)
@@ -85,55 +86,63 @@ def get_search_suggestions(
         except Exception as e:
             print(f"Nom suggest error: {e}")
 
-        # ── 2. PROVEEDORES / CONSORCIADOS (LIKE, rápido sobre índices existentes)
-        search_like = f"%{query_upper}%"
-        try:
-            prov_sql = text("""
-                SELECT TRIM(ganador_nombre) as val, 'Proveedor' as t
-                FROM licitaciones_adjudicaciones
-                WHERE ganador_nombre LIKE :s
-                LIMIT 3
-            """)
-            for row in db.execute(prov_sql, {"s": search_like}).fetchall():
-                add(row[0], row[1])
-        except Exception as e:
-            print(f"Prov suggest error: {e}")
-
-        try:
-            cons_sql = text("""
-                SELECT DISTINCT TRIM(nombre_miembro) as val
-                FROM detalle_consorcios
-                WHERE nombre_miembro LIKE :s
-                LIMIT 3
-            """)
-            for row in db.execute(cons_sql, {"s": search_like}).fetchall():
-                add(row[0], 'Consorcio')
-        except Exception as e:
-            print(f"Cons suggest error: {e}")
-
-        # ── 3. ENTIDADES (fulltext, solo si ya no hay suficientes resultados)
-        if len(suggestions) < 5:
+        # ── 2. PROVEEDORES / CONSORCIOS / ENTIDADES via Meilisearch (~1-4ms)
+        # Fallback: MySQL FULLTEXT if Meilisearch is unavailable
+        meili_used = False
+        if len(query.strip()) >= 3:
             try:
-                query_clean_ft = query.replace('-', ' ')
-                terms = query_clean_ft.strip().split()
-                boolean_terms = []
-                for t in terms:
-                    clean_t = t.replace('*', '')
-                    if len(clean_t) > 3: boolean_terms.append(f"+{clean_t}*")
-                    elif len(clean_t) > 1: boolean_terms.append(f"{clean_t}*")
-                if boolean_terms:
-                    boolean_search = " ".join(boolean_terms)
-                    ent_sql = text("""
-                        SELECT DISTINCT TRIM(comprador)
-                        FROM licitaciones_cabecera
-                        WHERE MATCH(nomenclatura, descripcion, comprador, id_convocatoria, ubicacion_completa)
-                        AGAINST(:ft IN BOOLEAN MODE)
-                        LIMIT 4
-                    """)
-                    for row in db.execute(ent_sql, {"ft": boolean_search}).fetchall():
-                        add(row[0], 'Entidad')
+                from app.services.meili_service import suggest_from_meili
+                meili_results = suggest_from_meili(query.strip(), limit=10)
+                if meili_results is not None:
+                    for item in meili_results:
+                        add(item["value"], item["type"])
+                    meili_used = True
             except Exception as e:
-                print(f"FT suggest error: {e}")
+                print(f"Meili suggest error: {e}")
+
+        # ── 3. MYSQL FULLTEXT fallback (if Meilisearch unavailable)
+        if not meili_used:
+            search_like = f"%{query_upper}%"
+            ft_terms = []
+            for t in query.replace('-', ' ').split():
+                ct = t.replace('*', '').strip()
+                if len(ct) > 3:   ft_terms.append(f"+{ct}*")
+                elif len(ct) > 1: ft_terms.append(f"{ct}*")
+            ft_prov = " ".join(ft_terms) if ft_terms else None
+
+            if ft_prov:
+                try:
+                    for row in db.execute(text("""
+                        SELECT DISTINCT TRIM(ganador_nombre) FROM licitaciones_adjudicaciones
+                        WHERE MATCH(ganador_nombre, ganador_ruc, entidad_financiera) AGAINST(:ft IN BOOLEAN MODE)
+                        LIMIT 4
+                    """), {"ft": ft_prov}).fetchall():
+                        add(row[0], 'Proveedor')
+                except Exception:
+                    for row in db.execute(text("SELECT TRIM(ganador_nombre) FROM licitaciones_adjudicaciones WHERE ganador_nombre LIKE :s LIMIT 4"), {"s": search_like}).fetchall():
+                        add(row[0], 'Proveedor')
+
+                try:
+                    for row in db.execute(text("""
+                        SELECT DISTINCT TRIM(nombre_miembro) FROM detalle_consorcios
+                        WHERE MATCH(nombre_miembro, ruc_miembro) AGAINST(:ft IN BOOLEAN MODE)
+                        LIMIT 3
+                    """), {"ft": ft_prov}).fetchall():
+                        add(row[0], 'Consorcio')
+                except Exception:
+                    for row in db.execute(text("SELECT DISTINCT TRIM(nombre_miembro) FROM detalle_consorcios WHERE nombre_miembro LIKE :s LIMIT 3"), {"s": search_like}).fetchall():
+                        add(row[0], 'Consorcio')
+
+                if len(suggestions) < 5:
+                    try:
+                        for row in db.execute(text("""
+                            SELECT DISTINCT TRIM(comprador) FROM licitaciones_cabecera
+                            WHERE MATCH(nomenclatura, descripcion, comprador, id_convocatoria, ubicacion_completa)
+                            AGAINST(:ft IN BOOLEAN MODE) LIMIT 4
+                        """), {"ft": ft_prov}).fetchall():
+                            add(row[0], 'Entidad')
+                    except Exception as e:
+                        print(f"FT suggest error: {e}")
 
         result = suggestions[:10]
         _set(cache_key, result, _SUGGEST_TTL)

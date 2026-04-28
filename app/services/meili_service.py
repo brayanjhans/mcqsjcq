@@ -77,6 +77,75 @@ def search_ids(
         return None
 
 
+def suggest_from_meili(query: str, limit: int = 10) -> Optional[list[dict]]:
+    """
+    Get autocomplete suggestions from Meilisearch (~1-4ms).
+    Extracts unique values from ganador_nombre, nombres_consorciados, comprador.
+    Returns None if Meilisearch is unavailable (triggers MySQL fallback).
+
+    Only activates for queries >= 3 chars (shorter queries too broad for FULLTEXT).
+    """
+    if not query or len(query) < 3 or not _is_available():
+        return None
+
+    try:
+        payload = {
+            "q": query,
+            "limit": 30,   # fetch more hits to extract diverse suggestions
+            "offset": 0,
+            "attributesToRetrieve": [
+                "ganador_nombre", "nombres_consorciados", "comprador"
+            ],
+            "matchingStrategy": "all",
+        }
+        r = httpx.post(
+            f"{MEILI_URL}/indexes/{INDEX_NAME}/search",
+            json=payload,
+            headers=_headers(),
+            timeout=2.0,
+        )
+        if r.status_code != 200:
+            return None
+
+        hits   = r.json().get("hits", [])
+        q_low  = query.lower()
+        seen   = set()
+        result = []
+
+        def add_suggestion(value: str, stype: str):
+            """Only add if the value actually contains the query substring."""
+            v = (value or "").strip()
+            if not v or v in seen:
+                return
+            # Verify real match: the field must contain the search term
+            if q_low not in v.lower():
+                return
+            seen.add(v)
+            result.append({"value": v[:90], "type": stype})
+
+        for hit in hits:
+            if len(result) >= limit:
+                break
+            add_suggestion(hit.get("ganador_nombre", ""), "Proveedor")
+
+            # Consortium members are pipe-separated (set during sync)
+            nc = hit.get("nombres_consorciados", "")
+            if nc:
+                for member in nc.split(" | "):
+                    add_suggestion(member, "Consorcio")
+
+            add_suggestion(hit.get("comprador", ""), "Entidad")
+
+        return result[:limit]
+
+    except Exception as exc:
+        print(f"[meili_service] suggest error: {exc}")
+        _health_cache["ok"] = False
+        _health_cache["ts"] = time.time()
+        return None
+
+
+
 def configure_index() -> bool:
     """Apply searchable / filterable / sortable settings to the index."""
     if not _is_available():
