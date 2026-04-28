@@ -23,6 +23,7 @@ export const AutocompleteSearch: React.FC<AutocompleteSearchProps> = ({
     const [query, setQuery] = useState(initialValue);
     const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
     const [history, setHistory] = useState<HistoryItem[]>([]);
+    const [lastFetchedQuery, setLastFetchedQuery] = useState("");
     const [loading, setLoading] = useState(false);
     const [isOpen, setIsOpen] = useState(false);
     const wrapperRef = useRef<HTMLDivElement>(null);
@@ -74,9 +75,13 @@ export const AutocompleteSearch: React.FC<AutocompleteSearchProps> = ({
                     });
                     
                     setSuggestions(clean);
+                    setLastFetchedQuery(query);
                     if (clean.length > 0) setIsOpen(true);
                 } catch {
-                    if (isCurrent) setSuggestions([]);
+                    if (isCurrent) {
+                        setSuggestions([]);
+                        setLastFetchedQuery(query);
+                    }
                 } finally {
                     if (isCurrent) setLoading(false);
                 }
@@ -165,12 +170,9 @@ export const AutocompleteSearch: React.FC<AutocompleteSearchProps> = ({
         } catch { return <>{text}</>; }
     };
 
-    const visibleSuggestions = suggestions.filter(s => 
-        s.value.toLowerCase().includes(query.trim().toLowerCase())
-    );
-
+    const isStale = query.trim() !== lastFetchedQuery.trim();
     const showHistory = isOpen && query.length < 2 && history.length > 0;
-    const showSuggestions = isOpen && query.length >= 2 && visibleSuggestions.length > 0;
+    const showSuggestions = isOpen && query.length >= 2 && suggestions.length > 0 && !isStale;
     const showDropdown = showHistory || showSuggestions;
 
     return (
@@ -198,7 +200,7 @@ export const AutocompleteSearch: React.FC<AutocompleteSearchProps> = ({
                 onKeyDown={handleKeyDown}
                 onFocus={() => {
                     if (history.length > 0 && query.length < 2) setIsOpen(true);
-                    if (visibleSuggestions.length > 0) setIsOpen(true);
+                    if (suggestions.length > 0 && query.trim() === lastFetchedQuery.trim()) setIsOpen(true);
                 }}
             />
 
@@ -243,10 +245,10 @@ export const AutocompleteSearch: React.FC<AutocompleteSearchProps> = ({
                         <>
                             <div className="text-[9px] uppercase font-bold text-slate-400 px-3 py-1.5 bg-slate-50 dark:bg-slate-800/60 tracking-widest border-b border-slate-100 dark:border-slate-700/50 flex items-center justify-between">
                                 <span>Sugerencias</span>
-                                <span className="text-slate-300 dark:text-slate-600 font-normal normal-case text-[9px]">{visibleSuggestions.length}</span>
+                                <span className="text-slate-300 dark:text-slate-600 font-normal normal-case text-[9px]">{suggestions.length}</span>
                             </div>
                             <ul className="max-h-[240px] overflow-y-auto">
-                                {visibleSuggestions.map((item, idx) => {
+                                {suggestions.map((item, idx) => {
                                     const color = typeColors[item.type] ?? 'bg-slate-100 text-slate-500';
                                     return (
                                         <li key={idx}
