@@ -25,6 +25,7 @@ export const LicitacionTable: React.FC<Props> = ({
     entityName,
 }) => {
     const [exporting, setExporting] = useState(false);
+    const [exportingExcel, setExportingExcel] = useState(false);
 
     // FORMATTERS
     const MESES_ES = [
@@ -238,6 +239,191 @@ export const LicitacionTable: React.FC<Props> = ({
             console.error("Error al exportar PDF:", err);
             // Fallback: exportar solo los de la página actual
             await buildPDF(licitaciones);
+        } finally {
+            setExporting(false);
+        }
+    };
+
+    // --- BUILD EXCEL ---
+    const buildExcel = async (data: Licitacion[]) => {
+        const ExcelJS = (await import("exceljs")).default || await import("exceljs");
+        
+        const workbook = new ExcelJS.Workbook();
+        workbook.creator = 'SEACE Inteligente';
+        workbook.created = new Date();
+        const worksheet = workbook.addWorksheet('Licitaciones', {
+            views: [{ state: 'frozen', ySplit: 5 }] // Freeze pane at row 5
+        });
+
+        // Styles
+        const headerColor = 'FF1e3a8a';
+        const textColor = 'FF303a4b';
+        const borderColor = 'FFdcdcf0';
+
+        // 1. Cabecera Corporativa
+        const cleanSearch = searchTerm ? searchTerm.toUpperCase() : "BÚSQUEDA DE PROCEDIMIENTOS";
+        let titleText = entityName || cleanSearch;
+        if (ruc) {
+            titleText = entityName ? `${entityName} - RUC: ${ruc}` : (ruc !== searchTerm ? `${titleText} - RUC: ${ruc}` : `RUC: ${ruc}`);
+        }
+        
+        worksheet.mergeCells('A1:J2');
+        const titleCell = worksheet.getCell('A1');
+        titleCell.value = titleText;
+        titleCell.font = { name: 'Arial', size: 14, bold: true, color: { argb: 'FFFFFFFF' } };
+        titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: headerColor } };
+        titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
+
+        worksheet.mergeCells('A3:J3');
+        const metaCell = worksheet.getCell('A3');
+        metaCell.value = `Generado: ${new Date().toLocaleString("es-PE")} | Total: ${data.length} registro(s)`;
+        metaCell.font = { name: 'Arial', size: 9, color: { argb: 'FF555555' } };
+        metaCell.alignment = { vertical: 'middle', horizontal: 'center' };
+
+        worksheet.addRow([]); // Fila vacía 4
+
+        // 2. Cabeceras de Tabla
+        const headerRow = worksheet.addRow(["N°", "Entidad", "Nomenclatura", "Descripción", "Monto Estimado", "Monto Adjudicado", "Consorcio y Consorciado", "Datos del Contrato", "Fechas", "Aseguradora"]);
+        headerRow.eachCell((cell) => {
+            cell.font = { name: 'Arial', size: 9, bold: true, color: { argb: 'FFFFFFFF' } };
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: headerColor } };
+            cell.alignment = { vertical: 'middle', horizontal: 'center' };
+            cell.border = {
+                top: { style: 'thin', color: { argb: borderColor } },
+                bottom: { style: 'thin', color: { argb: borderColor } },
+                left: { style: 'thin', color: { argb: borderColor } },
+                right: { style: 'thin', color: { argb: borderColor } }
+            };
+        });
+        headerRow.height = 25;
+
+        // Anchos de columna
+        worksheet.columns = [
+            { width: 5 },   // N°
+            { width: 35 },  // Entidad
+            { width: 25 },  // Nomenclatura
+            { width: 45 },  // Descripcion
+            { width: 18 },  // Monto Est
+            { width: 18 },  // Monto Adj
+            { width: 50 },  // Consorcio
+            { width: 25 },  // Contrato
+            { width: 25 },  // Fechas
+            { width: 20 },  // Aseguradora
+        ];
+
+        // 3. Insertar Datos
+        data.forEach((lic, idx) => {
+            let ganador = lic.ganador_nombre || "";
+            if (lic.miembros_consorcio && lic.miembros_consorcio.length > 0) {
+                const miembros = lic.miembros_consorcio
+                    .map((m: any) => `  - ${m.nombre_miembro}${m.ruc_miembro ? ` (${m.ruc_miembro})` : ""}${Number(m.porcentaje_participacion) > 0 ? ` (${Number(m.porcentaje_participacion).toFixed(1)}%)` : ""}`)
+                    .join("\n");
+                ganador += (ganador ? "\nMiembros:\n" : "Miembros:\n") + miembros;
+            } else if (lic.nombres_consorciados) {
+                const miembros = lic.nombres_consorciados.split("|")
+                    .map((n: string) => `  - ${n.trim()}`)
+                    .join("\n");
+                ganador += (ganador ? "\nMiembros:\n" : "Miembros:\n") + miembros;
+            }
+
+            const montoAdj = (lic.estado_proceso?.toUpperCase().includes("CONTRATADO") ||
+                lic.estado_proceso?.toUpperCase().includes("ADJUDICADO") ||
+                lic.monto_total_adjudicado)
+                ? (lic.monto_total_adjudicado || 0)
+                : "N/A";
+            
+            const montoEst = lic.monto_estimado || 0;
+
+            const primerMiembro = lic.miembros_consorcio?.find(m => m.fecha_firma_contrato || m.fecha_prevista_fin);
+            let datosContrato = "N/A";
+            if (primerMiembro) {
+                const lines = [];
+                if (primerMiembro.fecha_firma_contrato) lines.push(`Fecha de firma de contrato\n${formatDate(primerMiembro.fecha_firma_contrato)}`);
+                if (primerMiembro.fecha_prevista_fin) lines.push(`Fecha prevista de fin de contrato\n${formatDate(primerMiembro.fecha_prevista_fin)}`);
+                if (lines.length > 0) datosContrato = lines.join("\n\n");
+            }
+
+            const row = worksheet.addRow([
+                idx + 1,
+                lic.comprador || "",
+                lic.nomenclatura || "S/N",
+                lic.descripcion || "",
+                montoEst,
+                montoAdj,
+                ganador,
+                datosContrato,
+                `Conv: ${formatDate(lic.fecha_publicacion)}\nAdj: ${formatDate(lic.fecha_adjudicacion)}`,
+                lic.entidades_financieras || "N/A"
+            ]);
+
+            // Estilos de la fila
+            row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+                cell.font = { name: 'Arial', size: 9, color: { argb: textColor } };
+                cell.border = {
+                    top: { style: 'thin', color: { argb: borderColor } },
+                    bottom: { style: 'thin', color: { argb: borderColor } },
+                    left: { style: 'thin', color: { argb: borderColor } },
+                    right: { style: 'thin', color: { argb: borderColor } }
+                };
+                
+                // Alineación Wrap y Top
+                let hAlign: 'left'|'center'|'right' = 'left';
+                if (colNumber === 1 || colNumber === 9) hAlign = 'center';
+                if (colNumber === 5 || colNumber === 6) hAlign = 'right';
+
+                cell.alignment = { vertical: 'top', horizontal: hAlign, wrapText: true };
+
+                // Filas alternas (Cebra)
+                if (idx % 2 !== 0) {
+                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF5F7FF' } };
+                }
+
+                // Montos color y formato
+                if (colNumber === 5) {
+                    if (typeof cell.value === 'number') cell.numFmt = '"S/" #,##0.00';
+                }
+                if (colNumber === 6) {
+                    if (typeof cell.value === 'number') {
+                        cell.numFmt = '"S/" #,##0.00';
+                        cell.font = { name: 'Arial', size: 9, bold: true, color: { argb: 'FF059669' } }; // Verde
+                    }
+                }
+                if (colNumber === 3) {
+                    cell.font = { name: 'Arial', size: 9, bold: true, color: { argb: 'FF1e3a8a' } }; // Azul nomenclatura
+                }
+            });
+        });
+
+        worksheet.autoFilter = 'A5:J5';
+
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        
+        const cleanFileSearch = searchTerm ? searchTerm.replace(/[^a-zA-Z0-9]/g, "_").substring(0, 30) : "procedimientos";
+        const filename = ruc 
+            ? `reporte_${cleanFileSearch}_${ruc}.xlsx`
+            : `reporte_${cleanFileSearch}.xlsx`;
+
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+    };
+
+    const handleExportExcel = async () => {
+        setExportingExcel(true);
+        try {
+            const allData = onFetchAll ? await onFetchAll() : licitaciones;
+            await buildExcel(allData);
+        } catch (err) {
+            console.error("Error al exportar Excel:", err);
+            await buildExcel(licitaciones);
+        } finally {
+            setExportingExcel(false);
         }
     };
 
@@ -261,17 +447,30 @@ export const LicitacionTable: React.FC<Props> = ({
                     </div>
                 </div>
                 
-                <button
-                    onClick={handleExportPDF}
-                    disabled={licitaciones.length === 0 || exporting}
-                    className="group relative inline-flex items-center gap-2.5 px-6 py-3 bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white text-xs font-black uppercase tracking-widest rounded-xl shadow-lg shadow-rose-500/20 transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:pointer-events-none overflow-hidden"
-                >
-                    <div className="absolute inset-0 w-1/2 h-full skew-x-[-20deg] bg-white/10 -translate-x-full group-hover:translate-x-[250%] transition-transform duration-1000"></div>
-                    {exporting
-                        ? <><Loader2 className="w-4 h-4 animate-spin" /> Generando...</>
-                        : <><FileDown className="w-4 h-4" /> Exportar PDF {totalItems && totalItems > licitaciones.length ? `(${totalItems})` : ""}</>
-                    }
-                </button>
+                <div className="flex gap-2">
+                    <button
+                        onClick={handleExportExcel}
+                        disabled={licitaciones.length === 0 || exportingExcel}
+                        className="group relative inline-flex items-center gap-2.5 px-6 py-3 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white text-xs font-black uppercase tracking-widest rounded-xl shadow-lg shadow-emerald-500/20 transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:pointer-events-none overflow-hidden"
+                    >
+                        <div className="absolute inset-0 w-1/2 h-full skew-x-[-20deg] bg-white/10 -translate-x-full group-hover:translate-x-[250%] transition-transform duration-1000"></div>
+                        {exportingExcel
+                            ? <><Loader2 className="w-4 h-4 animate-spin" /> Generando...</>
+                            : <><FileDown className="w-4 h-4" /> Exportar Excel {totalItems && totalItems > licitaciones.length ? `(${totalItems})` : ""}</>
+                        }
+                    </button>
+                    <button
+                        onClick={handleExportPDF}
+                        disabled={licitaciones.length === 0 || exporting}
+                        className="group relative inline-flex items-center gap-2.5 px-6 py-3 bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white text-xs font-black uppercase tracking-widest rounded-xl shadow-lg shadow-rose-500/20 transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:pointer-events-none overflow-hidden"
+                    >
+                        <div className="absolute inset-0 w-1/2 h-full skew-x-[-20deg] bg-white/10 -translate-x-full group-hover:translate-x-[250%] transition-transform duration-1000"></div>
+                        {exporting
+                            ? <><Loader2 className="w-4 h-4 animate-spin" /> Generando...</>
+                            : <><FileDown className="w-4 h-4" /> Exportar PDF {totalItems && totalItems > licitaciones.length ? `(${totalItems})` : ""}</>
+                        }
+                    </button>
+                </div>
             </div>
 
             {/* Table Container with Glass Effect */}
