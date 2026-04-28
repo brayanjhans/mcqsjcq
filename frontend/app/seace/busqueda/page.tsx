@@ -356,7 +356,7 @@ function BusquedaContent() {
             <div className="mx-auto max-w-[1700px] space-y-10 relative z-10">
 
                 {/* Main Filter Card */}
-                <div className="rounded-[2.5rem] glass-luxury border-white/40 mb-10">
+                <div className="relative z-50 rounded-[2.5rem] glass-luxury border-white/40 mb-10">
                     <div className="p-8 md:p-10">
 
                         {/* Header */}

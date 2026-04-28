@@ -81,6 +81,7 @@ export const AutocompleteSearch: React.FC<AutocompleteSearchProps> = ({
                     if (isCurrent) setLoading(false);
                 }
             } else {
+                if (isCurrent) setLoading(false);
                 setSuggestions([]);
                 if (query.length === 0 && history.length > 0) setIsOpen(true);
                 else setIsOpen(false);
