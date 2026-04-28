@@ -38,27 +38,47 @@ export const AutocompleteSearch: React.FC<AutocompleteSearchProps> = ({
         if (initialValue === "") setQuery("");
     }, [initialValue]);
 
-    // ── Suggestions debounce: 150ms
+    // ── Suggestions debounce: 80ms
     useEffect(() => {
+        let isCurrent = true;
         const timer = setTimeout(async () => {
             if (query.length >= 2) {
                 setLoading(true);
                 try {
                     const results: Suggestion[] = await licitacionService.getAutocomplete(query);
+                    if (!isCurrent) return;
+
                     const clean = results.filter(r => r.type !== 'Error');
-                    // Sort: starts-with first
                     const q = query.toUpperCase();
+                    
+                    const typePriority: Record<string, number> = {
+                        'Proveedor': 1,
+                        'Consorcio': 2,
+                        'Entidad': 3,
+                        'Nomenclatura': 4
+                    };
+
                     clean.sort((a, b) => {
+                        // 1. Starts with exact match
                         const aS = a.value.toUpperCase().startsWith(q) ? 0 : 1;
                         const bS = b.value.toUpperCase().startsWith(q) ? 0 : 1;
-                        return aS - bS;
+                        if (aS !== bS) return aS - bS;
+                        
+                        // 2. Type priority (Proveedor/Consorcio first)
+                        const prioA = typePriority[a.type] || 5;
+                        const prioB = typePriority[b.type] || 5;
+                        if (prioA !== prioB) return prioA - prioB;
+
+                        // 3. Alphabetical fallback
+                        return a.value.localeCompare(b.value);
                     });
+                    
                     setSuggestions(clean);
                     if (clean.length > 0) setIsOpen(true);
                 } catch {
-                    setSuggestions([]);
+                    if (isCurrent) setSuggestions([]);
                 } finally {
-                    setLoading(false);
+                    if (isCurrent) setLoading(false);
                 }
             } else {
                 setSuggestions([]);
@@ -66,7 +86,7 @@ export const AutocompleteSearch: React.FC<AutocompleteSearchProps> = ({
                 else setIsOpen(false);
             }
         }, 80);
-        return () => clearTimeout(timer);
+        return () => { isCurrent = false; clearTimeout(timer); };
     }, [query]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // ── Main search debounce: 200ms — very fast

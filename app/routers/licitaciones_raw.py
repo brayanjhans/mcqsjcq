@@ -72,21 +72,7 @@ def get_search_suggestions(
                 if len(label) > 90: label = label[:90] + "..."
                 suggestions.append({"value": label, "type": type_label})
 
-        # ── 1. NOMENCLATURA: always MySQL exact prefix (LIKE 'X%' on indexed column)
-        # Meilisearch tokenizes hyphens → false positives for codes like CP-ABR-1-2026
-        try:
-            nom_sql = text("""
-                SELECT DISTINCT TRIM(nomenclatura)
-                FROM licitaciones_cabecera
-                WHERE nomenclatura LIKE :prefix
-                LIMIT 3
-            """)
-            for row in db.execute(nom_sql, {"prefix": f"{query_upper}%"}).fetchall():
-                add(row[0], 'Nomenclatura')
-        except Exception as e:
-            print(f"Nom suggest error: {e}")
-
-        # ── 2. PROVEEDORES / CONSORCIOS / ENTIDADES via Meilisearch (~1-4ms)
+        # ── 1. PROVEEDORES / CONSORCIOS / ENTIDADES via Meilisearch (~1-4ms)
         # Fallback: MySQL FULLTEXT if Meilisearch is unavailable
         meili_used = False
         if len(query.strip()) >= 3:
@@ -100,7 +86,7 @@ def get_search_suggestions(
             except Exception as e:
                 print(f"Meili suggest error: {e}")
 
-        # ── 3. MYSQL FULLTEXT fallback (if Meilisearch unavailable)
+        # ── 2. MYSQL FULLTEXT fallback (if Meilisearch unavailable)
         if not meili_used:
             search_like = f"%{query_upper}%"
             ft_terms = []
@@ -133,7 +119,7 @@ def get_search_suggestions(
                     for row in db.execute(text("SELECT DISTINCT TRIM(nombre_miembro) FROM detalle_consorcios WHERE nombre_miembro LIKE :s LIMIT 3"), {"s": search_like}).fetchall():
                         add(row[0], 'Consorcio')
 
-                if len(suggestions) < 5:
+                if len(suggestions) < 8:
                     try:
                         for row in db.execute(text("""
                             SELECT DISTINCT TRIM(comprador) FROM licitaciones_cabecera
@@ -143,6 +129,22 @@ def get_search_suggestions(
                             add(row[0], 'Entidad')
                     except Exception as e:
                         print(f"FT suggest error: {e}")
+
+        # ── 3. NOMENCLATURA: always MySQL exact prefix (LIKE 'X%' on indexed column)
+        # We put this LAST so Proveedores/Consorcios fill the suggestions first.
+        # Only searches if we haven't maxed out our 10 suggestions.
+        if len(suggestions) < 10:
+            try:
+                nom_sql = text("""
+                    SELECT DISTINCT TRIM(nomenclatura)
+                    FROM licitaciones_cabecera
+                    WHERE nomenclatura LIKE :prefix
+                    LIMIT 3
+                """)
+                for row in db.execute(nom_sql, {"prefix": f"{query_upper}%"}).fetchall():
+                    add(row[0], 'Nomenclatura')
+            except Exception as e:
+                print(f"Nom suggest error: {e}")
 
         result = suggestions[:10]
         _set(cache_key, result, _SUGGEST_TTL)
