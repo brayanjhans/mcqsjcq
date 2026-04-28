@@ -45,31 +45,46 @@ def search_ids(
     Returns None if Meilisearch is unavailable (triggers MySQL fallback).
     Returns [] if Meilisearch is up but found nothing.
 
-    matchingStrategy='all' means ALL words in the query must appear in the document.
-    This prevents the 'lean work' → 237 false-positive problem.
+    Implements a strict exact-phrase prioritization:
+    1. First tries the exact phrase (`"query"`). If hits > 0, returns those.
+    2. Fallbacks to `matchingStrategy='all'` without quotes if exact phrase yields 0.
+    This solves the issue of "CONSORCIO GRECIA" returning 7 results instead of exactly the 2-3 precise ones.
     """
     if not query or not _is_available():
         return None
 
     try:
-        payload = {
-            "q": query,
-            "limit": min(limit, 500),
-            "offset": 0,
-            "attributesToRetrieve": ["id_convocatoria"],
-            # ALL words must be present — eliminates false positives
-            "matchingStrategy": "all",
-        }
-        r = httpx.post(
-            f"{MEILI_URL}/indexes/{INDEX_NAME}/search",
-            json=payload,
-            headers=_headers(),
-            timeout=3.0,
-        )
-        if r.status_code != 200:
+        def _do_search(q_str: str) -> Optional[list[dict]]:
+            payload = {
+                "q": q_str,
+                "limit": min(limit, 500),
+                "offset": 0,
+                "attributesToRetrieve": ["id_convocatoria"],
+                "matchingStrategy": "all",
+            }
+            r = httpx.post(
+                f"{MEILI_URL}/indexes/{INDEX_NAME}/search",
+                json=payload,
+                headers=_headers(),
+                timeout=3.0,
+            )
+            if r.status_code != 200:
+                return None
+            return r.json().get("hits", [])
+
+        # 1. Try exact phrase match
+        exact_query = f'"{query.strip()}"'
+        hits = _do_search(exact_query)
+        
+        # 2. Fallback to normal match if 0 results
+        if hits is not None and len(hits) == 0:
+            hits = _do_search(query.strip())
+
+        if hits is None:
             return None
-        hits = r.json().get("hits", [])
+            
         return [h["id_convocatoria"] for h in hits if h.get("id_convocatoria")]
+        
     except Exception as exc:
         print(f"[meili_service] search error: {exc}")
         _health_cache["ok"] = False

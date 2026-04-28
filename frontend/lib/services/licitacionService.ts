@@ -71,9 +71,11 @@ export const licitacionService = {
     getAutocomplete: async (query: string) => {
         const key = `ac:${query.trim().toUpperCase()}`;
         const cached = getCached(key);
-        if (cached) return cached;
+        if (cached && cached.length > 0) return cached;
         const response = await api.get('/api/licitaciones/suggestions', { params: { query } });
-        setCache(key, response.data);
+        if (response.data && response.data.length > 0) {
+            setCache(key, response.data);
+        }
         return response.data;
     },
 
