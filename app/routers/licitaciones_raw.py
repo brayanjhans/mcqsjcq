@@ -283,21 +283,79 @@ def get_licitaciones(
         if _cached is not None:
             return _cached
 
-        # Build WHERE clause
-        where_clauses = []
-        params = {}
+        # ── MEILISEARCH FAST PATH ─────────────────────────────────────────
+        # If Meilisearch is available and there's a text query, use it to get
+        # IDs instantly (~5-20ms). MySQL then only fetches those exact records.
+        if search and search.strip():
+            try:
+                from app.services.meili_service import search_ids as meili_search
+                meili_ids = meili_search(search.strip(), limit=500)
+                if meili_ids is not None:  # None = Meilisearch unavailable → fallback
+                    # meili_ids is a list (possibly empty). Build WHERE accordingly.
+                    found_ids = set(meili_ids)
+                    # Fall through to the rest of the function with found_ids set
+                    # The code below will use `found_ids` to apply MySQL filters + paginate.
+                    where_clauses = []
+                    params = {}
+                    if found_ids:
+                        id_list = list(found_ids)[:500]
+                        in_params = [f":id{i}" for i in range(len(id_list))]
+                        where_clauses.append(f"licitaciones_cabecera.id_convocatoria IN ({','.join(in_params)})")
+                        for i, id_val in enumerate(id_list):
+                            params[f"id{i}"] = id_val
+                    else:
+                        where_clauses.append("1=0")  # no results
 
+                    # Apply additional SQL filters on top of Meilisearch results
+                    if estado:
+                        where_clauses.append("estado_proceso = :estado")
+                        params['estado'] = estado
+                    if categoria:
+                        cat_search = [categoria]
+                        if categoria == 'BIENES': cat_search.append('GOODS')
+                        elif categoria == 'OBRAS': cat_search.append('WORKS')
+                        elif categoria == 'SERVICIOS': cat_search.append('SERVICES')
+                        elif categoria == 'CONSULTORIA DE OBRAS':
+                            cat_search.extend(['CONSULTING SERVICES', 'CONSULTORIA'])
+                        in_c = [f":cat{i}" for i in range(len(cat_search))]
+                        where_clauses.append(f"categoria IN ({','.join(in_c)})")
+                        for i, c in enumerate(cat_search): params[f"cat{i}"] = c
+                    if departamento:
+                        where_clauses.append("departamento = :departamento")
+                        params['departamento'] = departamento.upper()
+                    if year:
+                        where_clauses.append("YEAR(fecha_publicacion) = :year")
+                        params['year'] = year
+                    if tipo_procedimiento:
+                        where_clauses.append("tipo_procedimiento = :tipo_procedimiento")
+                        params['tipo_procedimiento'] = tipo_procedimiento
 
-        if search:
+                    # Skip the long MySQL search block — jump straight to final query
+                    _use_meili_path = True
+                else:
+                    _use_meili_path = False
+            except Exception as _meili_err:
+                print(f"[meili] fast path error: {_meili_err}")
+                _use_meili_path = False
+        else:
+            _use_meili_path = False
+
+        if not _use_meili_path:
+            # ── MYSQL FULLTEXT PATH (original logic) ──────────────────────
+            # Build WHERE clause
+            where_clauses = []
+            params = {}
+
+        if not _use_meili_path and search:
             # OPTIMIZED APP-SIDE JOIN STRATEGY
             # 1. Execute subqueries separately to get IDs
             # This avoids MySQL optimizer issues with complex UNION joins
-            
+
             found_ids = set()
             limit_subquery = 500  # Capped to prevent building huge IN clauses
-            
+
             search_clean = search.strip()
-            
+
             # --- STRICT RUC SEARCH ---
             if len(search_clean) == 11 and search_clean.isdigit():
                 try:
@@ -447,25 +505,26 @@ def get_licitaciones(
                 # Force no result if search yields nothing
                 where_clauses.append("1=0")
 
-        if estado:
+        if estado and not _use_meili_path:
             where_clauses.append("estado_proceso = :estado")
             params['estado'] = estado
-        if categoria:
+
+        if categoria and not _use_meili_path:
             # Reverse Normalization for Search (Handle English/Spanish mix)
             cat_search = [categoria]
             if categoria == 'BIENES': cat_search.append('GOODS')
             elif categoria == 'OBRAS': cat_search.append('WORKS')
             elif categoria == 'SERVICIOS': cat_search.append('SERVICES')
-            elif categoria == 'CONSULTORIA DE OBRAS': 
+            elif categoria == 'CONSULTORIA DE OBRAS':
                 cat_search.extend(['CONSULTING SERVICES', 'CONSULTORIA'])
-            
+
             if len(cat_search) > 1:
                 where_clauses.append("categoria IN :categoria_list")
                 params['categoria_list'] = tuple(cat_search)
             else:
                 where_clauses.append("categoria = :categoria")
                 params['categoria'] = categoria
-        if departamento:
+        if departamento and not _use_meili_path:
             where_clauses.append("departamento = :departamento")
             params['departamento'] = departamento
         if provincia:
@@ -474,21 +533,19 @@ def get_licitaciones(
         if distrito:
             where_clauses.append("distrito = :distrito")
             params['distrito'] = distrito
-        if year:
+        if year and not _use_meili_path:
             where_clauses.append("fecha_publicacion >= :year_start AND fecha_publicacion <= :year_end")
             params['year_start'] = f"{year}-01-01"
             params['year_end'] = f"{year}-12-31"
         if comprador:
             where_clauses.append("comprador = :comprador")
             params['comprador'] = comprador
-        if tipo_procedimiento:
+        if tipo_procedimiento and not _use_meili_path:
             # 1. Symbol Normalization (Ordinal 'º' -> Degree '°')
-            normalized_proc = tipo_procedimiento.upper().replace('º', '°').replace('Nº', 'N°')
-            
-            # 2. Spacing Normalization (Handle "N° 123" vs "N°123")
-            # We compare both sides with 'N° ' replaced by 'N°' to ignore that specific space.
+            normalized_proc = tipo_procedimiento.upper().replace('\u00ba', '\u00b0').replace('N\u00ba', 'N\u00b0')
+            # 2. Spacing Normalization
             where_clauses.append("""
-                REPLACE(tipo_procedimiento, 'N° ', 'N°') = REPLACE(:tipo_procedimiento, 'N° ', 'N°')
+                REPLACE(tipo_procedimiento, 'N\u00b0 ', 'N\u00b0') = REPLACE(:tipo_procedimiento, 'N\u00b0 ', 'N\u00b0')
             """)
             params['tipo_procedimiento'] = normalized_proc
             
