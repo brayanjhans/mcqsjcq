@@ -286,7 +286,18 @@ def get_licitaciones(
         # ── MEILISEARCH FAST PATH ─────────────────────────────────────────
         # If Meilisearch is available and there's a text query, use it to get
         # IDs instantly (~5-20ms). MySQL then only fetches those exact records.
-        if search and search.strip():
+        #
+        # SKIP Meilisearch for nomenclatura patterns (CP-ABR-1-2026-...).
+        # Meilisearch tokenizes hyphens and returns hundreds of false positives.
+        # Nomenclaturas go to MySQL exact/prefix search → 1-3 precise results.
+        _search_clean_pre = (search or "").strip()
+        _is_nomenclatura_search = (
+            '-' in _search_clean_pre and
+            any(c.isdigit() for c in _search_clean_pre) and
+            any(c.isalpha() for c in _search_clean_pre)
+        )
+
+        if search and search.strip() and not _is_nomenclatura_search:
             try:
                 from app.services.meili_service import search_ids as meili_search
                 meili_ids = meili_search(search.strip(), limit=500)

@@ -44,6 +44,9 @@ def search_ids(
     Search Meilisearch and return a list of id_convocatoria strings.
     Returns None if Meilisearch is unavailable (triggers MySQL fallback).
     Returns [] if Meilisearch is up but found nothing.
+
+    matchingStrategy='all' means ALL words in the query must appear in the document.
+    This prevents the 'lean work' → 237 false-positive problem.
     """
     if not query or not _is_available():
         return None
@@ -54,6 +57,8 @@ def search_ids(
             "limit": min(limit, 500),
             "offset": 0,
             "attributesToRetrieve": ["id_convocatoria"],
+            # ALL words must be present — eliminates false positives
+            "matchingStrategy": "all",
         }
         r = httpx.post(
             f"{MEILI_URL}/indexes/{INDEX_NAME}/search",
@@ -67,7 +72,7 @@ def search_ids(
         return [h["id_convocatoria"] for h in hits if h.get("id_convocatoria")]
     except Exception as exc:
         print(f"[meili_service] search error: {exc}")
-        _health_cache["ok"] = False          # force recheck next request
+        _health_cache["ok"] = False
         _health_cache["ts"] = time.time()
         return None
 
@@ -78,12 +83,14 @@ def configure_index() -> bool:
         return False
     try:
         settings = {
+            # Priority order: ganador_nombre first (most specific), then nomenclatura,
+            # then comprador, etc. Meilisearch ranks by attribute position.
             "searchableAttributes": [
-                "nomenclatura",
-                "comprador",
                 "ganador_nombre",
                 "ganador_ruc",
                 "nombres_consorciados",
+                "nomenclatura",
+                "comprador",
                 "descripcion",
                 "ubicacion_completa",
             ],
@@ -98,9 +105,9 @@ def configure_index() -> bool:
             "rankingRules": [
                 "words", "typo", "proximity", "attribute", "sort", "exactness"
             ],
+            # Disable typo tolerance: precision over fuzzy matching
             "typoTolerance": {
-                "enabled": True,
-                "minWordSizeForTypos": {"oneTypo": 5, "twoTypos": 9},
+                "enabled": False,
             },
         }
         r = httpx.patch(
