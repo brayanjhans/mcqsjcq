@@ -8,9 +8,7 @@ from sqlalchemy import text
 from app.database import get_db
 from typing import Optional
 from decimal import Decimal
-from cachetools import TTLCache
-
-DASHBOARD_CACHE = TTLCache(maxsize=100, ttl=600)  # 10 minute cache
+from app.utils.disk_cache import disk_cache_get, disk_cache_set
 
 router = APIRouter(prefix="/api/dashboard", tags=["Dashboard"])
 
@@ -29,8 +27,9 @@ def get_dashboard_kpis(
     Get dashboard KPIs using data from licitaciones_cabecera.
     """
     cache_key = f"kpis_{year}_{mes}_{estado}_{tipo_procedimiento}_{categoria}_{departamento}"
-    if cache_key in DASHBOARD_CACHE:
-        return DASHBOARD_CACHE[cache_key]
+    cached_data = disk_cache_get(cache_key)
+    if cached_data is not None:
+        return cached_data
 
     try:
         # Build WHERE clause for filters
@@ -93,7 +92,7 @@ def get_dashboard_kpis(
             "distribucion_categorias": distribucion_categorias,
             "distribucion_estados": distribucion_estados
         }
-        DASHBOARD_CACHE[cache_key] = ans
+        disk_cache_set(cache_key, ans)
         return ans
     except Exception as e:
         import traceback
@@ -118,8 +117,9 @@ def get_distribution_by_type(
     db: Session = Depends(get_db)
 ):
     cache_key = f"dist_{year}_{mes}_{estado}_{tipo_procedimiento}_{categoria}_{departamento}"
-    if cache_key in DASHBOARD_CACHE:
-        return DASHBOARD_CACHE[cache_key]
+    cached_data = disk_cache_get(cache_key)
+    if cached_data is not None:
+        return cached_data
 
     try:
         # Build filters
@@ -207,7 +207,7 @@ def get_distribution_by_type(
         # Sort by value DESC
         data.sort(key=lambda x: x["value"], reverse=True)
         
-        DASHBOARD_CACHE[cache_key] = {"data": data}
+        disk_cache_set(cache_key, {"data": data})
         
         return {"data": data}
     except Exception as e:
@@ -224,8 +224,9 @@ def get_stats_by_status(
     db: Session = Depends(get_db)
 ):
     cache_key = f"stats_{year}_{mes}_{estado}_{tipo_procedimiento}_{categoria}_{departamento}"
-    if cache_key in DASHBOARD_CACHE:
-        return DASHBOARD_CACHE[cache_key]
+    cached_data = disk_cache_get(cache_key)
+    if cached_data is not None:
+        return cached_data
 
     try:
         # Build filters
@@ -273,7 +274,7 @@ def get_stats_by_status(
         """)
         result = db.execute(sql, params).fetchall()
         data = [{"name": row[0], "value": row[1]} for row in result]
-        DASHBOARD_CACHE[cache_key] = {"data": data}
+        disk_cache_set(cache_key, {"data": data})
         return {"data": data}
     except Exception as e:
         return {"data": [], "error": str(e)}
@@ -289,8 +290,9 @@ def get_monthly_trend(
     db: Session = Depends(get_db)
 ):
     cache_key = f"trend_{year}_{mes}_{estado}_{tipo_procedimiento}_{categoria}_{departamento}"
-    if cache_key in DASHBOARD_CACHE:
-        return DASHBOARD_CACHE[cache_key]
+    cached_data = disk_cache_get(cache_key)
+    if cached_data is not None:
+        return cached_data
 
     try:
         # Build filters
@@ -351,7 +353,7 @@ def get_monthly_trend(
                 "value": float(row[2]) if row else 0
             })
             
-        DASHBOARD_CACHE[cache_key] = {"data": data}
+        disk_cache_set(cache_key, {"data": data})
             
         return {"data": data}
     except Exception as e:
@@ -367,8 +369,9 @@ def get_department_ranking(
     db: Session = Depends(get_db)
 ):
     cache_key = f"dept_rank_{year}_{mes}_{estado}_{tipo_procedimiento}_{categoria}"
-    if cache_key in DASHBOARD_CACHE:
-        return DASHBOARD_CACHE[cache_key]
+    cached_data = disk_cache_get(cache_key)
+    if cached_data is not None:
+        return cached_data
 
     try:
         # Build filters
@@ -415,7 +418,7 @@ def get_department_ranking(
         
         result = db.execute(sql, params).fetchall()
         data = [{"name": row[0], "count": row[1], "amount": float(row[2])} for row in result]
-        DASHBOARD_CACHE[cache_key] = {"data": data}
+        disk_cache_set(cache_key, {"data": data})
         return {"data": data}
     except Exception as e:
         return {"data": [], "error": str(e)}
@@ -431,8 +434,9 @@ def get_financial_entities_ranking(
     db: Session = Depends(get_db)
 ):
     cache_key = f"fin_rank_{year}_{mes}_{departamento}_{estado}_{tipo_procedimiento}_{categoria}"
-    if cache_key in DASHBOARD_CACHE:
-        return DASHBOARD_CACHE[cache_key]
+    cached_data = disk_cache_get(cache_key)
+    if cached_data is not None:
+        return cached_data
         
     try:
         # Build SQL with filters - targeted at 'c' (cabecera)
@@ -534,8 +538,8 @@ def get_financial_entities_ranking(
         if not data:
             data = []
 
-        DASHBOARD_CACHE[cache_key] = {"data": data}
-        DASHBOARD_CACHE[cache_key] = {"data": data}
+        disk_cache_set(cache_key, {"data": data})
+        disk_cache_set(cache_key, {"data": data})
         return {"data": data}
     except Exception as e:
          return {"data": [], "error": str(e)}
@@ -551,8 +555,9 @@ def get_province_ranking(
     db: Session = Depends(get_db)
 ):
     cache_key = f"prov_rank_{department}_{year}_{mes}_{estado}_{tipo_procedimiento}_{categoria}"
-    if cache_key in DASHBOARD_CACHE:
-        return DASHBOARD_CACHE[cache_key]
+    cached_data = disk_cache_get(cache_key)
+    if cached_data is not None:
+        return cached_data
 
     try:
         # Build filters
@@ -599,7 +604,7 @@ def get_province_ranking(
         
         result = db.execute(sql, params).fetchall()
         data = [{"name": row[0], "count": row[1], "amount": float(row[2])} for row in result]
-        DASHBOARD_CACHE[cache_key] = {"data": data}
+        disk_cache_set(cache_key, {"data": data})
         return {"data": data}
     except Exception as e:
         return {"data": [], "error": str(e)}
