@@ -10,38 +10,40 @@ from app.models.seace import LicitacionesCabecera, LicitacionesAdjudicaciones
 from app.schemas import DashboardKPIsSchema, TopItemSchema
 from decimal import Decimal
 from typing import Optional, List
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
+
+from cachetools import cached, LRUCache
+from cachetools.keys import hashkey
 
 router = APIRouter(prefix="/api/dashboard", tags=["Dashboard"])
 
+# --- Cache Configuration (6 AM / 6 PM Windows) ---
+def get_dashboard_cache_key(*args, **kwargs):
+    # Ignorar la sesión de base de datos para no afectar el hash
+    filtered_kwargs = {k: v for k, v in kwargs.items() if k != 'db'}
+    # Determinar la franja horaria (Día: 6:00 a 17:59, Noche: 18:00 a 05:59)
+    now = datetime.now()
+    if 6 <= now.hour < 18:
+        window = f"{now.date()}_day"
+    else:
+        d = now.date() if now.hour >= 18 else (now.date() - timedelta(days=1))
+        window = f"{d}_night"
+    return hashkey(window, *args, **filtered_kwargs)
 
-@router.get("/kpis", response_model=DashboardKPIsSchema)
-def get_dashboard_kpis(
-    estado: Optional[str] = Query(None, description="Filter by estado_proceso"),
-    aseguradora: Optional[str] = Query(None, description="Filter by entidad_financiera"),
-    tipo_entidad: Optional[str] = Query(None, description="Filter by tipo_procedimiento"),
-    objeto: Optional[str] = Query(None, description="Filter by categoria"),
-    db: Session = Depends(get_db)
-):
-    """
-    Get dashboard KPIs with optional filters:
-    - Total adjudicated amount
-    - Total number of tenders
-    - Top 5 banks (by guarantee count)
-    - Top 5 public entities (by tender count)
-    
-    Filters:
-    - estado: Filter by process status
-    - aseguradora: Filter by financial entity (bank)
-    - tipo_entidad: Filter by procedure type
-    - objeto: Filter by category
-    """
-    
-    # Build base query with filters
+kpis_cache = LRUCache(maxsize=128)
+trend_cache = LRUCache(maxsize=128)
+dist_cache = LRUCache(maxsize=128)
+status_cache = LRUCache(maxsize=128)
+dept_cache = LRUCache(maxsize=128)
+fin_cache = LRUCache(maxsize=128)
+
+# --- Helper Functions (Cached) ---
+
+@cached(cache=kpis_cache, key=get_dashboard_cache_key)
+def _get_kpis_data(estado, aseguradora, tipo_entidad, objeto, db):
     cabecera_query = db.query(LicitacionesCabecera)
     adjudicacion_query = db.query(LicitacionesAdjudicaciones)
     
-    # Apply filters to cabecera
     if estado:
         cabecera_query = cabecera_query.filter(LicitacionesCabecera.estado_proceso == estado)
     if tipo_entidad:
@@ -49,11 +51,9 @@ def get_dashboard_kpis(
     if objeto:
         cabecera_query = cabecera_query.filter(LicitacionesCabecera.categoria == objeto)
     
-    # Apply filters to adjudicaciones
     if aseguradora:
         adjudicacion_query = adjudicacion_query.filter(LicitacionesAdjudicaciones.entidad_financiera == aseguradora)
     
-    # Join filters if needed
     if estado or tipo_entidad or objeto:
         adjudicacion_query = adjudicacion_query.join(
             LicitacionesCabecera,
@@ -66,15 +66,12 @@ def get_dashboard_kpis(
         if objeto:
             adjudicacion_query = adjudicacion_query.filter(LicitacionesCabecera.categoria == objeto)
     
-    # 1. Total adjudicated amount
     monto_total = adjudicacion_query.with_entities(
         func.coalesce(func.sum(LicitacionesAdjudicaciones.monto_adjudicado), 0)
     ).scalar()
     
-    # 2. Total number of tenders
     total_licitaciones = cabecera_query.count()
     
-    # 3. Top 5 banks by guarantee count
     top_bancos_query = adjudicacion_query.with_entities(
         LicitacionesAdjudicaciones.entidad_financiera.label("nombre"),
         func.count(LicitacionesAdjudicaciones.id_adjudicacion).label("total")
@@ -89,7 +86,6 @@ def get_dashboard_kpis(
     
     top_bancos = [TopItemSchema(nombre=row.nombre, total=row.total) for row in top_bancos_query]
     
-    # 4. Top 5 public entities by tender count
     top_entidades_query = cabecera_query.with_entities(
         LicitacionesCabecera.comprador.label("nombre"),
         func.count(LicitacionesCabecera.id_convocatoria).label("total")
@@ -112,17 +108,8 @@ def get_dashboard_kpis(
     )
 
 
-@router.get("/monthly-trend")
-def get_monthly_trend(
-    year: Optional[int] = Query(None, description="Filter by year"),
-    db: Session = Depends(get_db)
-):
-    """
-    Get monthly trend data for adjudications.
-    Returns monthly aggregated amounts for the current or specified year.
-    """
-    current_year = year or datetime.now().year
-    
+@cached(cache=trend_cache, key=get_dashboard_cache_key)
+def _get_monthly_trend_data(current_year, db):
     monthly_data = db.query(
         extract('month', LicitacionesAdjudicaciones.fecha_adjudicacion).label('month'),
         func.sum(LicitacionesAdjudicaciones.monto_adjudicado).label('total')
@@ -137,7 +124,6 @@ def get_monthly_trend(
         extract('month', LicitacionesAdjudicaciones.fecha_adjudicacion)
     ).all()
     
-    # Format data for frontend
     months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
     result = []
     
@@ -153,12 +139,8 @@ def get_monthly_trend(
     }
 
 
-@router.get("/distribution-by-type")
-def get_distribution_by_type(db: Session = Depends(get_db)):
-    """
-    Get distribution of tenders by category/type.
-    Returns aggregated amounts by category.
-    """
+@cached(cache=dist_cache, key=get_dashboard_cache_key)
+def _get_distribution_data(db):
     distribution = db.query(
         LicitacionesCabecera.categoria.label('type'),
         func.sum(LicitacionesAdjudicaciones.monto_adjudicado).label('total')
@@ -184,12 +166,8 @@ def get_distribution_by_type(db: Session = Depends(get_db)):
     return {'data': result}
 
 
-@router.get("/stats-by-status")
-def get_stats_by_status(db: Session = Depends(get_db)):
-    """
-    Get statistics grouped by tender status.
-    Returns count and total amount for each status.
-    """
+@cached(cache=status_cache, key=get_dashboard_cache_key)
+def _get_stats_by_status_data(db):
     stats = db.query(
         LicitacionesCabecera.estado_proceso.label('status'),
         func.count(LicitacionesCabecera.id_convocatoria).label('count'),
@@ -212,12 +190,111 @@ def get_stats_by_status(db: Session = Depends(get_db)):
     return {'data': result}
 
 
+@cached(cache=dept_cache, key=get_dashboard_cache_key)
+def _get_department_ranking_data(db):
+    ranking = db.query(
+        LicitacionesCabecera.departamento.label('name'),
+        func.count(LicitacionesCabecera.id_convocatoria).label('count')
+    ).filter(
+        LicitacionesCabecera.departamento.isnot(None),
+        LicitacionesCabecera.departamento != ""
+    ).group_by(
+        LicitacionesCabecera.departamento
+    ).order_by(
+        func.count(LicitacionesCabecera.id_convocatoria).desc()
+    ).all()
+    
+    total_licitaciones = sum(r.count for r in ranking)
+    
+    result = []
+    for rank, (name, count) in enumerate(ranking, 1):
+        result.append({
+            'rank': rank,
+            'name': name,
+            'count': count,
+            'percentage': round((count / total_licitaciones * 100), 1) if total_licitaciones > 0 else 0
+        })
+    
+    return {'data': result}
+
+
+@cached(cache=fin_cache, key=get_dashboard_cache_key)
+def _get_financial_entities_ranking_data(db):
+    dept_coverage = db.query(
+        LicitacionesAdjudicaciones.entidad_financiera,
+        func.count(func.distinct(LicitacionesCabecera.departamento)).label('dept_count')
+    ).join(
+        LicitacionesCabecera,
+        LicitacionesAdjudicaciones.id_convocatoria == LicitacionesCabecera.id_convocatoria
+    ).group_by(
+        LicitacionesAdjudicaciones.entidad_financiera
+    ).subquery()
+
+    ranking = db.query(
+        LicitacionesAdjudicaciones.entidad_financiera.label('name'),
+        func.count(LicitacionesAdjudicaciones.id_adjudicacion).label('garantias'),
+        func.sum(LicitacionesAdjudicaciones.monto_adjudicado).label('monto'),
+        dept_coverage.c.dept_count
+    ).join(
+        dept_coverage,
+        LicitacionesAdjudicaciones.entidad_financiera == dept_coverage.c.entidad_financiera
+    ).filter(
+        LicitacionesAdjudicaciones.entidad_financiera.isnot(None),
+        LicitacionesAdjudicaciones.entidad_financiera != ""
+    ).group_by(
+        LicitacionesAdjudicaciones.entidad_financiera,
+        dept_coverage.c.dept_count
+    ).order_by(
+        func.sum(LicitacionesAdjudicaciones.monto_adjudicado).desc()
+    ).limit(40).all()
+    
+    result = []
+    for r in ranking:
+        result.append({
+            'name': r.name,
+            'garantias': r.garantias,
+            'monto': float(r.monto) if r.monto else 0,
+            'depts': f"{r.dept_count} Depts.",
+            'cobertura': "Nacional" if r.dept_count >= 15 else "Regional"
+        })
+    
+    return {'data': result}
+
+# --- Router Endpoints ---
+
+@router.get("/kpis", response_model=DashboardKPIsSchema)
+def get_dashboard_kpis(
+    estado: Optional[str] = Query(None, description="Filter by estado_proceso"),
+    aseguradora: Optional[str] = Query(None, description="Filter by entidad_financiera"),
+    tipo_entidad: Optional[str] = Query(None, description="Filter by tipo_procedimiento"),
+    objeto: Optional[str] = Query(None, description="Filter by categoria"),
+    db: Session = Depends(get_db)
+):
+    return _get_kpis_data(estado, aseguradora, tipo_entidad, objeto, db=db)
+
+
+@router.get("/monthly-trend")
+def get_monthly_trend(
+    year: Optional[int] = Query(None, description="Filter by year"),
+    db: Session = Depends(get_db)
+):
+    current_year = year or datetime.now().year
+    return _get_monthly_trend_data(current_year, db=db)
+
+
+@router.get("/distribution-by-type")
+def get_distribution_by_type(db: Session = Depends(get_db)):
+    return _get_distribution_data(db=db)
+
+
+@router.get("/stats-by-status")
+def get_stats_by_status(db: Session = Depends(get_db)):
+    return _get_stats_by_status_data(db=db)
+
+
 @router.get("/filter-options")
 def get_filter_options(db: Session = Depends(get_db)):
-    """
-    Get all available filter options for dropdowns.
-    Returns unique values for each filter field.
-    """
+    # Optional: Cache this as well if needed, but usually these are light queries (distinct)
     # Get unique estados
     estados = db.query(LicitacionesCabecera.estado_proceso).distinct().filter(
         LicitacionesCabecera.estado_proceso.isnot(None),
@@ -256,80 +333,12 @@ def get_filter_options(db: Session = Depends(get_db)):
         'departamentos': [d[0] for d in departamentos]
     }
 
+
 @router.get("/department-ranking")
 def get_department_ranking(db: Session = Depends(get_db)):
-    """
-    Get ranking of departments by tender count.
-    """
-    ranking = db.query(
-        LicitacionesCabecera.departamento.label('name'),
-        func.count(LicitacionesCabecera.id_convocatoria).label('count')
-    ).filter(
-        LicitacionesCabecera.departamento.isnot(None),
-        LicitacionesCabecera.departamento != ""
-    ).group_by(
-        LicitacionesCabecera.departamento
-    ).order_by(
-        func.count(LicitacionesCabecera.id_convocatoria).desc()
-    ).all()
-    
-    total_licitaciones = sum(r.count for r in ranking)
-    
-    result = []
-    for rank, (name, count) in enumerate(ranking, 1):
-        result.append({
-            'rank': rank,
-            'name': name,
-            'count': count,
-            'percentage': round((count / total_licitaciones * 100), 1) if total_licitaciones > 0 else 0
-        })
-    
-    return {'data': result}
+    return _get_department_ranking_data(db=db)
 
 
 @router.get("/financial-entities-ranking")
 def get_financial_entities_ranking(db: Session = Depends(get_db)):
-    """
-    Get detailed ranking of financial entities.
-    Includes: Guarantee count, Total amount, Department coverage (National/Regional).
-    """
-    # Subquery to count distinct departments per entity
-    dept_coverage = db.query(
-        LicitacionesAdjudicaciones.entidad_financiera,
-        func.count(func.distinct(LicitacionesCabecera.departamento)).label('dept_count')
-    ).join(
-        LicitacionesCabecera,
-        LicitacionesAdjudicaciones.id_convocatoria == LicitacionesCabecera.id_convocatoria
-    ).group_by(
-        LicitacionesAdjudicaciones.entidad_financiera
-    ).subquery()
-
-    ranking = db.query(
-        LicitacionesAdjudicaciones.entidad_financiera.label('name'),
-        func.count(LicitacionesAdjudicaciones.id_adjudicacion).label('garantias'),
-        func.sum(LicitacionesAdjudicaciones.monto_adjudicado).label('monto'),
-        dept_coverage.c.dept_count
-    ).join(
-        dept_coverage,
-        LicitacionesAdjudicaciones.entidad_financiera == dept_coverage.c.entidad_financiera
-    ).filter(
-        LicitacionesAdjudicaciones.entidad_financiera.isnot(None),
-        LicitacionesAdjudicaciones.entidad_financiera != ""
-    ).group_by(
-        LicitacionesAdjudicaciones.entidad_financiera,
-        dept_coverage.c.dept_count
-    ).order_by(
-        func.sum(LicitacionesAdjudicaciones.monto_adjudicado).desc()
-    ).limit(40).all()
-    
-    result = []
-    for r in ranking:
-        result.append({
-            'name': r.name,
-            'garantias': r.garantias,
-            'monto': float(r.monto) if r.monto else 0,
-            'depts': f"{r.dept_count} Depts.",
-            'cobertura': "Nacional" if r.dept_count >= 15 else "Regional"  # Threshold for Nacional/Regional
-        })
-    
-    return {'data': result}
+    return _get_financial_entities_ranking_data(db=db)
