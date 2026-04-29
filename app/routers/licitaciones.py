@@ -343,17 +343,9 @@ def get_licitacion_detalle(
     id_clean = id_convocatoria.strip()
     
     # Query with eager loading and robust lookup
-    # DISABLED joinedload to debug ORM issues
     licitacion = db.query(LicitacionesCabecera).filter(
         LicitacionesCabecera.id_convocatoria == id_clean
     ).first()
-    
-    # Fallback: Try with LIKE if exact match fails (handles potential dirty data in DB)
-    if not licitacion:
-        print(f"DEBUG: Exact match failed for '{id_clean}'. Retrying with LIKE...")
-        licitacion = db.query(LicitacionesCabecera).filter(
-            LicitacionesCabecera.id_convocatoria.ilike(f"%{id_clean}%")
-        ).first()
     
     print(f"DEBUG: Resultado búsqueda: {licitacion}")
 
@@ -369,29 +361,39 @@ def get_licitacion_detalle(
     total_adjudicado = 0
     
     try:
-        print("DEBUG: Accessing adjuciaciones relationship...")
+        print("DEBUG: Accessing adjudicaciones relationship...")
         if licitacion.adjudicaciones:
             print(f"DEBUG: Found {len(licitacion.adjudicaciones)} adjudicaciones.")
             from app.models.seace import DetalleConsorcios
             from app.schemas import AdjudicacionSchema, DetalleConsorcioSchema
             
+            # --- 1. Obtener todos los IDs de contrato en una sola lista ---
+            target_ids = []
+            for adj in licitacion.adjudicaciones:
+                tid = str(adj.id_contrato) if adj.id_contrato else str(adj.id_adjudicacion)
+                if tid:
+                    target_ids.append(tid)
+            
+            # --- 2. Hacer 1 sola consulta a la BD (Batching) ---
+            consorcios_by_contrato = {}
+            if target_ids:
+                try:
+                    all_consorcios = db.query(DetalleConsorcios).filter(
+                        DetalleConsorcios.id_contrato.in_(target_ids)
+                    ).all()
+                    for c in all_consorcios:
+                        consorcios_by_contrato.setdefault(c.id_contrato, []).append(c)
+                except Exception as e_cons:
+                    print(f"ERROR: Error batch loading consorcios: {e_cons}")
+
+            # --- 3. Mapear resultados en memoria ---
             for adj in licitacion.adjudicaciones:
                 # Calculate total
                 if adj.monto_adjudicado:
                     total_adjudicado += adj.monto_adjudicado
                 
-                # Manually load consorcios for this adjudication
-                consorcios = []
-                
-                # Safe consorcio loading
-                try:
-                    target_id_contrato = str(adj.id_contrato) if adj.id_contrato else str(adj.id_adjudicacion)
-                    if target_id_contrato:
-                         consorcios = db.query(DetalleConsorcios).filter(
-                            DetalleConsorcios.id_contrato == target_id_contrato
-                        ).all()
-                except Exception as e_cons:
-                    print(f"ERROR: Error loading consorcios for adj {adj.id_adjudicacion}: {e_cons}")
+                tid = str(adj.id_contrato) if adj.id_contrato else str(adj.id_adjudicacion)
+                consorcios = consorcios_by_contrato.get(tid, [])
 
                 # Build adjudication schema with consorcios
                 try:
