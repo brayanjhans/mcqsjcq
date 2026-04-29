@@ -252,7 +252,7 @@ export const LicitacionTable: React.FC<Props> = ({
         workbook.creator = 'SEACE Inteligente';
         workbook.created = new Date();
         const worksheet = workbook.addWorksheet('Licitaciones', {
-            views: [{ state: 'frozen', ySplit: 5 }] // Freeze pane at row 5
+            views: [{ state: 'frozen', ySplit: 6 }] // Freeze después de cabeceras (fila 6)
         });
 
         // Styles
@@ -260,29 +260,60 @@ export const LicitacionTable: React.FC<Props> = ({
         const textColor = 'FF303a4b';
         const borderColor = 'FFdcdcf0';
 
-        // 1. Cabecera Corporativa
-        const cleanSearch = searchTerm ? searchTerm.toUpperCase() : "BÚSQUEDA DE PROCEDIMIENTOS";
-        let titleText = entityName || cleanSearch;
+        // 1. Cabecera Corporativa — misma lógica exacta que buildPDF
+        let titleText = entityName || (searchTerm ? searchTerm.toUpperCase() : "BÚSQUEDA DE PROCEDIMIENTOS");
         if (ruc) {
-            titleText = entityName ? `${entityName} - RUC: ${ruc}` : (ruc !== searchTerm ? `${titleText} - RUC: ${ruc}` : `RUC: ${ruc}`);
+            if (entityName) {
+                titleText = `${entityName} - RUC: ${ruc}`;
+            } else if (ruc !== searchTerm) {
+                titleText = `${titleText} - RUC: ${ruc}`;
+            } else {
+                titleText = `RUC: ${ruc}`;
+            }
         }
-        
-        worksheet.mergeCells('A1:J2');
+
+        // Fila 1-3: fondo azul combinado (3 filas × 24px = 72px)
+        worksheet.mergeCells('A1:J3');
         const titleCell = worksheet.getCell('A1');
         titleCell.value = titleText;
-        titleCell.font = { name: 'Arial', size: 14, bold: true, color: { argb: 'FFFFFFFF' } };
+        titleCell.font = { name: 'Arial', size: 13, bold: true, color: { argb: 'FFFFFFFF' } };
         titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: headerColor } };
-        titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
+        titleCell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
 
-        worksheet.mergeCells('A3:J3');
-        const metaCell = worksheet.getCell('A3');
+        // Altura de las 3 filas del header (3x17 = 51px)
+        [1, 2, 3].forEach(r => { worksheet.getRow(r).height = 17; });
+
+        // Logos: 51px total. Para margen de 15px arriba, el logo debe ser de 36px (15+36=51)
+        // Offset: 15 / 17 = 0.88 filas
+        try {
+            const mqsId = workbook.addImage({ base64: LOGO_MQS_B64.replace('data:image/png;base64,', ''), extension: 'png' });
+            worksheet.addImage(mqsId, {
+                tl: { col: 1.2, row: 0.88 },
+                ext: { width: 50, height: 36 },
+                editAs: 'oneCell'
+            });
+        } catch (_) {}
+        try {
+            const jcqId = workbook.addImage({ base64: LOGO_JCQ_B64.replace('data:image/png;base64,', ''), extension: 'png' });
+            worksheet.addImage(jcqId, {
+                tl: { col: 9.15, row: 0.88 },
+                ext: { width: 50, height: 36 },
+                editAs: 'oneCell'
+            });
+        } catch (_) {}
+
+        // Fila 4: Metadata (fecha / total)
+        worksheet.mergeCells('A4:J4');
+        const metaCell = worksheet.getCell('A4');
         metaCell.value = `Generado: ${new Date().toLocaleString("es-PE")} | Total: ${data.length} registro(s)`;
         metaCell.font = { name: 'Arial', size: 9, color: { argb: 'FF555555' } };
+        metaCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF0F4FF' } };
         metaCell.alignment = { vertical: 'middle', horizontal: 'center' };
+        worksheet.getRow(4).height = 16;
 
-        worksheet.addRow([]); // Fila vacía 4
+        worksheet.addRow([]); // Fila 5 vacía separadora
 
-        // 2. Cabeceras de Tabla
+        // 2. Cabeceras de Tabla (fila 6)
         const headerRow = worksheet.addRow(["N°", "Entidad", "Nomenclatura", "Descripción", "Monto Estimado", "Monto Adjudicado", "Consorcio y Consorciado", "Datos del Contrato", "Fechas", "Aseguradora"]);
         headerRow.eachCell((cell) => {
             cell.font = { name: 'Arial', size: 9, bold: true, color: { argb: 'FFFFFFFF' } };
@@ -394,7 +425,7 @@ export const LicitacionTable: React.FC<Props> = ({
             });
         });
 
-        worksheet.autoFilter = 'A5:J5';
+        worksheet.autoFilter = 'A6:J6';
 
         const buffer = await workbook.xlsx.writeBuffer();
         const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
