@@ -59,27 +59,6 @@ export default function RootLayout({
         <html lang="es">
             <head>
                 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-                <script
-                    dangerouslySetInnerHTML={{
-                        __html: `
-                            (function() {
-                                try {
-                                    var storageKey = 'theme';
-                                    var className = 'dark';
-                                    var darkQuery = window.matchMedia('(prefers-color-scheme: dark)');
-                                    var localStorageTheme = localStorage.getItem(storageKey);
-                                    var systemTheme = darkQuery.matches;
-                                    
-                                    if (localStorageTheme === 'dark' || (!localStorageTheme && systemTheme)) {
-                                        document.documentElement.classList.add(className);
-                                    } else {
-                                        document.documentElement.classList.remove(className);
-                                    }
-                                } catch (e) {}
-                            })();
-                        `,
-                    }}
-                />
             </head>
             <body className={montserrat.className}>
                 <Providers>
