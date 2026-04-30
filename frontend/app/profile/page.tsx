@@ -212,7 +212,7 @@ export default function ProfilePage() {
 
                     {/* Main Content */}
                     <div className="flex-1 relative z-20">
-                        <div className="bg-white dark:bg-[#111c44] rounded-3xl shadow-2xl border border-slate-200/50 dark:border-white/5 p-8 md:p-10 min-h-[500px] backdrop-blur-sm">
+                        <div className="bg-white dark:bg-[#111c44] rounded-3xl shadow-2xl border border-slate-200/50 dark:border-white/5 p-8 md:p-10 min-h-[500px] max-h-[85vh] overflow-y-auto backdrop-blur-sm">
                             {activeSection === 'info' && <PersonalInfoForm user={user} setUser={setUser} />}
                             {activeSection === 'security' && isAdminOrDirector && <SecuritySettings />}
                             {activeSection === 'admin' && isAdminOrDirector && <UserManagement currentUser={user} />}
@@ -530,7 +530,7 @@ function UserManagement({ currentUser }: { currentUser: any }) {
             </div>
 
             {/* Users Table */}
-            <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl bg-white dark:bg-slate-900/50 backdrop-blur-sm min-h-[200px]">
+            <div className="overflow-x-auto overflow-y-auto max-h-[480px] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl bg-white dark:bg-slate-900/50 backdrop-blur-sm min-h-[200px]">
                 {loading ? (
                     <div className="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm z-10 transition-all">
                         <div className="flex flex-col items-center gap-3">
@@ -541,7 +541,7 @@ function UserManagement({ currentUser }: { currentUser: any }) {
                 ) : null}
 
                 <table className="w-full text-left text-sm">
-                    <thead className="bg-slate-50/50 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider text-[11px] border-b border-slate-200 dark:border-slate-800">
+                    <thead className="sticky top-0 bg-slate-50/95 dark:bg-slate-900/95 backdrop-blur-sm text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider text-[11px] border-b border-slate-200 dark:border-slate-800 z-10">
                         <tr>
                             <th className="p-5 pl-8">Usuario</th>
                             <th className="p-5">Rol</th>
