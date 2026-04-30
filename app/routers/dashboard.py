@@ -141,6 +141,7 @@ def _get_monthly_trend_data(current_year, db):
 
 @cached(cache=dist_cache, key=get_dashboard_cache_key)
 def _get_distribution_data(db):
+    print(">>> CACHE MISS! Fetching from DB...")
     distribution = db.query(
         LicitacionesCabecera.categoria.label('type'),
         func.sum(LicitacionesAdjudicaciones.monto_adjudicado).label('total')

@@ -39,13 +39,17 @@ api.interceptors.response.use(
         if (error.response?.status === 401) {
             // Exclude endpoints where 401 is a normal error (wrong PIN, etc.)
             const url = error.config?.url || '';
+            console.error(`[API Interceptor] 401 Unauthorized for URL: ${url}`);
+            
             const skipLogoutUrls = ['/api/auth/verify-pin', '/api/auth/login'];
             const shouldSkip = skipLogoutUrls.some(u => url.includes(u));
             if (!shouldSkip) {
                 // Unauthorized - clear token and redirect to login
-                localStorage.removeItem('access_token');
-                localStorage.removeItem('user');
-                window.location.href = '/';
+                // TEMPORALMENTE DESHABILITADO PARA DEPURAR EL CIERRE DE SESIÓN LOCAL
+                // localStorage.removeItem('access_token');
+                // localStorage.removeItem('user');
+                // window.location.href = '/';
+                console.warn(`[Auth] Redirección evitada para: ${url}. Si el token expiró, cierra sesión manualmente.`);
             }
         }
         return Promise.reject(error);

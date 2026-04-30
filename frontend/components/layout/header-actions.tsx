@@ -12,7 +12,6 @@ import { SupportModal } from '@/components/support/support-modal';
 export function HeaderActions() {
     const router = useRouter();
     const [user, setUser] = useState<any>(null);
-    const [darkMode, setDarkMode] = useState(false);
     const [isUpdatingMef, setIsUpdatingMef] = useState(false);
     const [updateSuccess, setUpdateSuccess] = useState(false);
     const [mefStatusText, setMefStatusText] = useState('Actualizando...');
@@ -56,15 +55,9 @@ export function HeaderActions() {
         loadUser();
         window.addEventListener('userUpdated', loadUser);
 
-        const isDark = localStorage.getItem('theme') === 'dark' ||
-            (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
-
-        setDarkMode(isDark);
-        if (isDark) {
-            document.documentElement.classList.add('dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-        }
+        // Forzar siempre modo claro
+        document.documentElement.classList.remove('dark');
+        localStorage.setItem('theme', 'light');
 
         return () => window.removeEventListener('userUpdated', loadUser);
     }, []);
@@ -167,17 +160,6 @@ export function HeaderActions() {
         return pollInterval;
     };
 
-    const toggleTheme = () => {
-        const newMode = !darkMode;
-        setDarkMode(newMode);
-        if (newMode) {
-            document.documentElement.classList.add('dark');
-            localStorage.setItem('theme', 'dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-            localStorage.setItem('theme', 'light');
-        }
-    };
 
     const confirmLogout = () => {
         localStorage.clear();
@@ -339,36 +321,7 @@ export function HeaderActions() {
                                     <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user?.email || 'usuario@example.com'}</p>
                                 </div>
 
-                                {/* Theme & Alerts Row */}
-                                <div className="flex items-center justify-around gap-4 p-3 m-2 bg-gray-50/80 dark:bg-slate-900/50 rounded-xl border border-gray-100 dark:border-slate-700">
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            toggleTheme();
-                                        }}
-                                        className="flex flex-col items-center gap-1 group"
-                                    >
-                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center shadow-sm border transition-all ${darkMode ? 'bg-slate-800 border-slate-700 text-blue-300' : 'bg-white border-gray-200 text-amber-500'} group-active:scale-95`}>
-                                            <i className={`fas ${darkMode ? 'fa-moon' : 'fa-sun'} text-lg`}></i>
-                                        </div>
-                                        <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400">Tema</span>
-                                    </button>
 
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setActiveDropdown(null);
-                                            setIsNotificationModalOpen(true);
-                                        }}
-                                        className="flex flex-col items-center gap-1 group"
-                                    >
-                                        <div className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center shadow-sm border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-300 group-active:scale-95 relative">
-                                            <i className="fas fa-bell text-lg"></i>
-                                            <span className="absolute top-2 right-2.5 w-2 h-2 bg-red-500 rounded-full border border-white dark:border-slate-800"></span>
-                                        </div>
-                                        <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400">Alertas</span>
-                                    </button>
-                                </div>
 
                                 <div className="p-2">
                                     {['admin', 'director', 'DIRECTOR', 'ADMIN'].includes(user?.role) && (
