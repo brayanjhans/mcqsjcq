@@ -19,7 +19,7 @@ export function SettingsModal({
     const { settings, updateSettings, refreshSettings } = useSettings();
     const [preferences, setPreferences] = useState(settings);
     const [loading, setLoading] = useState(false);
-    const [activeTab, setActiveTab] = useState('appearance');
+    const [activeTab, setActiveTab] = useState('notifications');
 
     useEffect(() => {
         setPreferences(settings);
@@ -86,7 +86,7 @@ export function SettingsModal({
                     <div className="flex flex-1 overflow-hidden">
                         {/* Sidebar Tabs */}
                         <div className="w-64 bg-slate-50 dark:bg-slate-900/50 border-r border-slate-100 dark:border-slate-800 p-4 space-y-1 hidden md:block overflow-y-auto">
-                            <SidebarTab active={activeTab === 'appearance'} onClick={() => setActiveTab('appearance')} icon={Monitor} label="Apariencia" />
+
                             <SidebarTab active={activeTab === 'notifications'} onClick={() => setActiveTab('notifications')} icon={Bell} label="Notificaciones" />
                             <SidebarTab active={activeTab === 'accessibility'} onClick={() => setActiveTab('accessibility')} icon={Type} label="Accesibilidad" />
                             <SidebarTab active={activeTab === 'security'} onClick={() => setActiveTab('security')} icon={ShieldCheck} label="Seguridad" />
@@ -102,7 +102,7 @@ export function SettingsModal({
                                     value={activeTab}
                                     onChange={(e) => setActiveTab(e.target.value)}
                                 >
-                                    <option value="appearance">Apariencia</option>
+
                                     <option value="notifications">Notificaciones</option>
                                     <option value="accessibility">Accesibilidad</option>
                                     <option value="security">Seguridad</option>
@@ -110,36 +110,7 @@ export function SettingsModal({
                                 </select>
                             </div>
 
-                            {activeTab === 'appearance' && (
-                                <div className="space-y-6 animate-in hover-none fade-in slide-in-from-right-4 duration-300">
-                                    <h3 className="font-bold text-lg text-slate-900 dark:text-white mb-4">Apariencia</h3>
-                                    <div className="grid grid-cols-3 gap-4">
-                                        {[
-                                            { id: 'light', icon: Sun, label: 'Claro' },
-                                            { id: 'dark', icon: Moon, label: 'Oscuro' },
-                                            { id: 'system', icon: Monitor, label: 'Sistema' }
-                                        ].map((theme) => (
-                                            <button
-                                                key={theme.id}
-                                                onClick={() => {
-                                                    const newPrefs = { ...preferences, theme: theme.id as 'light' | 'dark' | 'system' };
-                                                    setPreferences(newPrefs);
-                                                    updateSettings(newPrefs);
-                                                }}
-                                                className={cn(
-                                                    "p-4 rounded-xl border-2 flex flex-col items-center gap-3 transition-all",
-                                                    preferences.theme === theme.id
-                                                        ? "border-blue-600 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400"
-                                                        : "border-slate-200 hover:border-slate-300 dark:border-slate-700 hover:bg-slate-50 text-slate-500"
-                                                )}
-                                            >
-                                                <theme.icon className="w-6 h-6" />
-                                                <span className="text-sm font-medium">{theme.label}</span>
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
+
 
                             {activeTab === 'notifications' && (
                                 <div className="space-y-6 animate-in hover-none fade-in slide-in-from-right-4 duration-300">
