@@ -111,9 +111,8 @@ function LoginModal({ onClose }: { onClose: () => void }) {
         setLoading(true);
 
         try {
-            // Real authentication with backend
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
-            const response = await fetch(`${apiUrl}/api/auth/login`, {
+            // Real authentication with backend - always use relative URL for Next.js proxy
+            const response = await fetch('/api/auth/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -128,28 +127,28 @@ function LoginModal({ onClose }: { onClose: () => void }) {
                 const errorData = await response.json();
                 setError(errorData.detail || 'Credenciales inválidas');
                 setLoading(false);
-                // Shake animation trigger could go here
                 return;
             }
 
             const data = await response.json();
 
             // Store token and user data
+            const perfilRaw = data.user?.perfil || 'COLABORADOR';
             localStorage.setItem('access_token', data.access_token);
             localStorage.setItem('user', JSON.stringify({
                 id: data.user.id,
                 username: data.user.id_corporativo,
                 email: data.user.email,
-                role: data.user.perfil.toLowerCase(),
-                perfil: data.user.perfil, // Guardar también perfil original para compatibilidad
+                role: perfilRaw.toLowerCase(),
+                perfil: perfilRaw,
                 nombre: data.user.nombre,
-                job_title: data.user.job_title // ✅ AGREGADO: Cargo del usuario
+                job_title: data.user.job_title
             }));
 
-            // Close modal and redirect
+            // Use window.location for hard redirect to ensure localStorage is committed
             setLoading(false);
             onClose();
-            router.push('/modules');
+            window.location.href = '/modules';
         } catch (error) {
             console.error('Error en login:', error);
             setError('Error de conexión con el servidor');

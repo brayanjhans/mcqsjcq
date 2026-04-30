@@ -37,10 +37,16 @@ api.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response?.status === 401) {
-            // Unauthorized - clear token and redirect to login
-            localStorage.removeItem('access_token');
-            localStorage.removeItem('user');
-            window.location.href = '/';
+            // Exclude endpoints where 401 is a normal error (wrong PIN, etc.)
+            const url = error.config?.url || '';
+            const skipLogoutUrls = ['/api/auth/verify-pin', '/api/auth/login'];
+            const shouldSkip = skipLogoutUrls.some(u => url.includes(u));
+            if (!shouldSkip) {
+                // Unauthorized - clear token and redirect to login
+                localStorage.removeItem('access_token');
+                localStorage.removeItem('user');
+                window.location.href = '/';
+            }
         }
         return Promise.reject(error);
     }
