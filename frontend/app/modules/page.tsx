@@ -21,19 +21,25 @@ const CircuitEffect = () => {
         canvas.width = width;
         canvas.height = height;
 
+        // Debounce: only update dimensions when the user stops resizing (150ms idle)
+        let resizeTimer: ReturnType<typeof setTimeout>;
         const handleResize = () => {
-            width = window.innerWidth;
-            height = window.innerHeight;
-            canvas.width = width;
-            canvas.height = height;
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                width = window.innerWidth;
+                height = window.innerHeight;
+                canvas.width = width;
+                canvas.height = height;
+            }, 150);
         };
         window.addEventListener('resize', handleResize);
 
-        const lines: any[] = [];
+        // CircuitLine and Spark are defined below — types are used here forward-declared style
+        const lines: CircuitLine[] = [];
         const maxLines = 70;
         const gridSize = 60;
         const nodes: {x: number, y: number, opacity: number}[] = [];
-        const sparks: any[] = [];
+        const sparks: Spark[] = [];
 
         // Create nodes at intersections
         for (let x = 0; x < width; x += gridSize) {

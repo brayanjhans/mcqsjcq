@@ -124,8 +124,20 @@ function LoginModal({ onClose }: { onClose: () => void }) {
             });
 
             if (!response.ok) {
-                const errorData = await response.json();
-                setError(errorData.detail || 'Credenciales inválidas');
+                // Safely parse error body — server might return HTML on 502/timeout
+                let errorMessage = 'Credenciales inválidas';
+                try {
+                    const contentType = response.headers.get('content-type') || '';
+                    if (contentType.includes('application/json')) {
+                        const errorData = await response.json();
+                        errorMessage = errorData.detail || errorMessage;
+                    } else {
+                        errorMessage = `Error del servidor (${response.status})`;
+                    }
+                } catch {
+                    errorMessage = `Error del servidor (${response.status})`;
+                }
+                setError(errorMessage);
                 setLoading(false);
                 return;
             }
