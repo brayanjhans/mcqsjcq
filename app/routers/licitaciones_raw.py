@@ -146,7 +146,9 @@ def get_search_suggestions(
         # ── 3. NOMENCLATURA: always MySQL exact prefix (LIKE 'X%' on indexed column)
         # We put this LAST so Proveedores/Consorcios fill the suggestions first.
         # Only searches if we haven't maxed out our 10 suggestions.
-        if len(suggestions) < 10:
+        # Guard: Only search nomenclaturas if the query contains a hyphen and a number
+        looks_like_nom = '-' in query_upper and any(c.isdigit() for c in query_upper)
+        if len(suggestions) < 10 and looks_like_nom:
             try:
                 nom_sql = text("""
                     SELECT DISTINCT TRIM(nomenclatura)
@@ -410,17 +412,18 @@ def get_licitaciones(
             # Detect nomenclature pattern: queries with hyphens (e.g. AS-SM-1-2021, CP-ABR-3...)
             # These should return ONLY exact/prefix nomenclature matches, never fulltext
             is_nomenclatura = '-' in search_clean or (search_clean.upper() == search_clean and any(c.isdigit() for c in search_clean))
-            try:
-                nom_sql = text("""
-                    SELECT id_convocatoria FROM licitaciones_cabecera 
-                    WHERE nomenclatura = :q OR nomenclatura LIKE :qp
-                    LIMIT 20
-                """)
-                nom_ids = db.execute(nom_sql, {"q": search_clean.upper(), "qp": f"{search_clean.upper()}%"}).scalars().all()
-                if nom_ids:
-                    found_ids.update(nom_ids)
-            except Exception as e:
-                print(f"Nom Search Error: {e}")
+            if is_nomenclatura:
+                try:
+                    nom_sql = text("""
+                        SELECT id_convocatoria FROM licitaciones_cabecera 
+                        WHERE nomenclatura = :q OR nomenclatura LIKE :qp
+                        LIMIT 20
+                    """)
+                    nom_ids = db.execute(nom_sql, {"q": search_clean.upper(), "qp": f"{search_clean.upper()}%"}).scalars().all()
+                    if nom_ids:
+                        found_ids.update(nom_ids)
+                except Exception as e:
+                    print(f"Nom Search Error: {e}")
             
             # If it looks like a nomenclature code, skip hybrid/fulltext (avoid false positives)
             if is_nomenclatura and found_ids:
