@@ -7,9 +7,10 @@ import os
 import httpx
 from typing import Optional
 
-MEILI_URL  = os.getenv("MEILI_URL", "http://127.0.0.1:7700")
-MEILI_KEY  = os.getenv("MEILI_KEY", "MEILI_MCQS_JCQ_2026_SECRET")
-INDEX_NAME = "licitaciones"
+MEILI_URL        = os.getenv("MEILI_URL", "http://127.0.0.1:7700")
+MEILI_KEY        = os.getenv("MEILI_KEY", "MEILI_MCQS_JCQ_2026_SECRET")
+INDEX_NAME       = "licitaciones"
+SUGGESTIONS_IDX  = "sugerencias"
 
 # Health check cache — avoid pinging Meilisearch on every request
 _health_cache = {"ok": None, "ts": 0.0}
@@ -160,6 +161,79 @@ def suggest_from_meili(query: str, limit: int = 10) -> Optional[list[dict]]:
         return None
 
 
+def suggest_federated(query: str, limit: int = 8) -> list[dict]:
+    """
+    Federated Search: queries BOTH 'sugerencias' and 'licitaciones' indexes
+    in a SINGLE HTTP call to Meilisearch (multiSearch API).
+
+    Returns a deduplicated list of {value, type} suggestions.
+    Falls back to [] if Meilisearch is unavailable.
+    """
+    if not query or len(query) < 2 or not _is_available():
+        return []
+
+    q = query.strip()
+    # Detect if query looks like a nomenclatura code (e.g. CP-ABR-1-2026)
+    is_nomenclatura = '-' in q and q[0].isalpha()
+
+    queries = [
+        {
+            "indexUid": SUGGESTIONS_IDX,
+            "q": q,
+            "limit": limit,
+            "attributesToRetrieve": ["ruc", "nombre", "tipo"],
+            "matchingStrategy": "all",
+        },
+    ]
+
+    if is_nomenclatura:
+        queries.append({
+            "indexUid": INDEX_NAME,
+            "q": q,
+            "limit": 3,
+            "attributesToRetrieve": ["id_convocatoria", "nomenclatura", "objeto_convocatoria"],
+            "matchingStrategy": "all",
+        })
+
+    try:
+        r = httpx.post(
+            f"{MEILI_URL}/multi-search",
+            json={"queries": queries},
+            headers=_headers(),
+            timeout=2.0,
+        )
+        if r.status_code != 200:
+            return []
+
+        results = r.json().get("results", [])
+        suggestions: list[dict] = []
+        seen: set = set()
+
+        # Process 'sugerencias' index results (Proveedores / Entidades)
+        if results:
+            for hit in results[0].get("hits", []):
+                ruc   = (hit.get("ruc") or "").strip()
+                name  = (hit.get("nombre") or "").strip()
+                tipo  = (hit.get("tipo") or "Entidad").strip()
+                value = f"{ruc} - {name}" if ruc and name else (name or ruc)
+                if value and value not in seen:
+                    seen.add(value)
+                    suggestions.append({"value": value[:90], "type": tipo})
+
+        # Process 'licitaciones' index results (Nomenclaturas)
+        if len(results) > 1:
+            for hit in results[1].get("hits", []):
+                nom = (hit.get("nomenclatura") or "").strip()
+                if nom and nom not in seen:
+                    seen.add(nom)
+                    suggestions.append({"value": nom, "type": "Nomenclatura"})
+
+        return suggestions[:limit]
+
+    except Exception as exc:
+        print(f"[meili_service] suggest_federated error: {exc}")
+        return []
+
 
 def configure_index() -> bool:
     """Apply searchable / filterable / sortable settings to the index."""
@@ -189,9 +263,10 @@ def configure_index() -> bool:
             "rankingRules": [
                 "words", "typo", "proximity", "attribute", "sort", "exactness"
             ],
-            # Disable typo tolerance: precision over fuzzy matching
+            # Disable typo tolerance per-attribute: exact codes (nomenclatura, RUC) should not fuzzy-match
             "typoTolerance": {
-                "enabled": False,
+                "enabled": True,
+                "disableOnAttributes": ["nomenclatura", "ganador_ruc"],
             },
         }
         r = httpx.patch(

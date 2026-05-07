@@ -72,10 +72,23 @@ def get_search_suggestions(
                 if len(label) > 90: label = label[:90] + "..."
                 suggestions.append({"value": label, "type": type_label})
 
-        # ── 1. PROVEEDORES / CONSORCIOS / ENTIDADES via Meilisearch (~1-4ms)
-        # Fallback: MySQL FULLTEXT if Meilisearch is unavailable
+        # ── 1. FEDERATED SEARCH via Meilisearch (~1-4ms)
+        # Queries 'sugerencias' + 'licitaciones' indexes in a single HTTP call.
+        # Fallback: MySQL FULLTEXT if Meilisearch unavailable or index empty.
         meili_used = False
-        if len(query.strip()) >= 3:
+        if len(query.strip()) >= 2:
+            try:
+                from app.services.meili_service import suggest_federated
+                federated_results = suggest_federated(query.strip(), limit=10)
+                if federated_results:
+                    for item in federated_results:
+                        add(item["value"], item["type"])
+                    meili_used = True
+            except Exception as e:
+                print(f"Meili federated suggest error: {e}")
+
+        # Legacy Meilisearch fallback: old suggest_from_meili (for non-sugerencias queries)
+        if not meili_used and len(query.strip()) >= 3:
             try:
                 from app.services.meili_service import suggest_from_meili
                 meili_results = suggest_from_meili(query.strip(), limit=10)
