@@ -211,14 +211,25 @@ def suggest_federated(query: str, limit: int = 8) -> list[dict]:
 
         # Process 'sugerencias' index results (Proveedores / Entidades)
         if results:
+            # Check if query is mostly digits (searching for RUC)
+            q_clean = q.replace(" ", "")
+            is_numeric_query = q_clean.isdigit()
+
             for hit in results[0].get("hits", []):
                 ruc   = (hit.get("ruc") or "").strip()
                 name  = (hit.get("nombre") or "").strip()
                 tipo  = (hit.get("tipo") or "Entidad").strip()
-                value = f"{ruc} - {name}" if ruc and name else (name or ruc)
-                if value and value not in seen:
-                    seen.add(value)
-                    suggestions.append({"value": value[:90], "type": tipo})
+                
+                if is_numeric_query:
+                    # Suggest RUC
+                    if ruc and ruc not in seen:
+                        seen.add(ruc)
+                        suggestions.append({"value": ruc, "type": f"RUC {tipo}"})
+                else:
+                    # Suggest Name
+                    if name and name not in seen:
+                        seen.add(name)
+                        suggestions.append({"value": name[:90], "type": tipo})
 
         # Process 'licitaciones' index results (Nomenclaturas)
         if len(results) > 1:
