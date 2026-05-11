@@ -11,9 +11,14 @@ export function useNotificationWebSocket() {
 
     useEffect(() => {
         const connectWebSocket = () => {
-            const token = localStorage.getItem('token');
-            if (!token) {
-                console.log('No token, skipping WebSocket connection');
+            // Security: Token is now in HttpOnly cookie (not readable by JS).
+            // We check for the csrf_token cookie as a signal that the user is authenticated.
+            const isAuthenticated = document.cookie
+                .split('; ')
+                .some(row => row.startsWith('csrf_token='));
+
+            if (!isAuthenticated) {
+                console.log('No active session, skipping WebSocket connection');
                 return;
             }
 

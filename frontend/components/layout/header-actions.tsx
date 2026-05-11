@@ -161,8 +161,22 @@ export function HeaderActions() {
     };
 
 
-    const confirmLogout = () => {
-        localStorage.clear();
+    const confirmLogout = async () => {
+        try {
+            // Call backend to clear HttpOnly cookie and invalidate server session
+            const csrfToken = document.cookie
+                .split('; ')
+                .find(r => r.startsWith('csrf_token='))
+                ?.split('=')[1] || '';
+            await fetch('/api/auth/logout', {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'X-CSRF-Token': csrfToken }
+            });
+        } catch (e) {
+            console.warn('[Logout] Request failed, clearing local state anyway.');
+        }
+        sessionStorage.removeItem('user_display');
         window.location.href = '/';
     };
 
