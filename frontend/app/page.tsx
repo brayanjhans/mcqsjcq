@@ -8,6 +8,8 @@ import { User, Lock, Eye, EyeOff, X, ArrowRight, ShieldCheck } from 'lucide-reac
 export default function HomePage() {
     const router = useRouter();
     const [showLogin, setShowLogin] = useState(false);
+    const [showTerms, setShowTerms] = useState(false);
+    const [showPrivacy, setShowPrivacy] = useState(false);
     const [imagesLoaded, setImagesLoaded] = useState(false);
 
     useEffect(() => {
@@ -90,13 +92,28 @@ export default function HomePage() {
                 </button>
             </div>
 
+            {/* Global Footer */}
+            <div className={`absolute bottom-6 left-0 w-full text-center z-10 transition-all duration-1000 delay-1000 ${imagesLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+                <div className="flex flex-wrap justify-center items-center gap-4 text-xs md:text-sm font-medium text-white/70 px-4">
+                    <button onClick={() => setShowTerms(true)} className="hover:text-white transition-colors hover:underline">Términos y Condiciones</button>
+                    <span className="opacity-50">|</span>
+                    <button onClick={() => setShowPrivacy(true)} className="hover:text-white transition-colors hover:underline">Política de Privacidad</button>
+                    <span className="opacity-50 hidden sm:inline">|</span>
+                    <span className="block sm:inline w-full sm:w-auto mt-2 sm:mt-0">© {new Date().getFullYear()} MCQS - Todos los derechos reservados</span>
+                </div>
+            </div>
+
             {/* Login Modal */}
-            {showLogin && <LoginModal onClose={() => setShowLogin(false)} />}
+            {showLogin && <LoginModal onClose={() => setShowLogin(false)} onOpenTerms={() => setShowTerms(true)} onOpenPrivacy={() => setShowPrivacy(true)} />}
+
+            {/* Legal Modals */}
+            {showTerms && <TermsModal onClose={() => setShowTerms(false)} />}
+            {showPrivacy && <PrivacyModal onClose={() => setShowPrivacy(false)} />}
         </div>
     );
 }
 
-function LoginModal({ onClose }: { onClose: () => void }) {
+function LoginModal({ onClose, onOpenTerms, onOpenPrivacy }: { onClose: () => void, onOpenTerms: () => void, onOpenPrivacy: () => void }) {
     const router = useRouter();
     const [credentials, setCredentials] = useState({ id_corporativo: '', password: '' });
     const [showPassword, setShowPassword] = useState(false);
@@ -104,10 +121,17 @@ function LoginModal({ onClose }: { onClose: () => void }) {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const [focusedField, setFocusedField] = useState<string | null>(null);
+    const [termsAccepted, setTermsAccepted] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
+
+        if (!termsAccepted) {
+            setError('Debe aceptar los Términos y Condiciones y la Política de Privacidad para continuar.');
+            return;
+        }
+
         setLoading(true);
 
         try {
@@ -308,6 +332,30 @@ function LoginModal({ onClose }: { onClose: () => void }) {
                                 )}
                             </span>
                         </button>
+
+                        <div className="pt-4 pb-2">
+                            <label className="flex items-start gap-3 cursor-pointer group bg-gray-50/50 p-4 rounded-xl border border-gray-100 hover:border-blue-200 transition-colors">
+                                <div className="relative flex items-center mt-0.5">
+                                    <input 
+                                        type="checkbox" 
+                                        checked={termsAccepted}
+                                        onChange={(e) => {
+                                            setTermsAccepted(e.target.checked);
+                                            if (e.target.checked && error.includes('Debe aceptar')) {
+                                                setError('');
+                                            }
+                                        }}
+                                        className="peer sr-only" 
+                                    />
+                                    <div className="w-5 h-5 border-2 border-gray-300 rounded-md peer-checked:bg-[#0F2C4A] peer-checked:border-[#0F2C4A] transition-all bg-white flex items-center justify-center shadow-inner">
+                                        <svg className="w-3.5 h-3.5 text-white opacity-0 peer-checked:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
+                                    </div>
+                                </div>
+                                <span className="text-[13px] text-gray-600 leading-snug">
+                                    He leído y acepto los <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onOpenTerms(); }} className="text-[#0F2C4A] font-bold hover:text-blue-600 hover:underline transition-colors">Términos y Condiciones</button> y la <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onOpenPrivacy(); }} className="text-[#0F2C4A] font-bold hover:text-blue-600 hover:underline transition-colors">Política de Privacidad</button> obligatorios para acceder al sistema.
+                                </span>
+                            </label>
+                        </div>
                     </form>
                 </div>
 
@@ -354,6 +402,252 @@ function LoginModal({ onClose }: { onClose: () => void }) {
                     </div>
                 </div>
             )}
+        </div>
+    );
+}
+
+function TermsModal({ onClose }: { onClose: () => void }) {
+    return (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 sm:p-6 overflow-hidden">
+            {/* Animated Glassmorphism Backdrop */}
+            <div className="absolute inset-0 bg-[#0F2C4A]/60 backdrop-blur-lg transition-opacity duration-500"></div>
+            <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+                <div className="absolute top-[-20%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-blue-500/30 blur-[120px] mix-blend-screen animate-pulse"></div>
+                <div className="absolute bottom-[-20%] right-[-10%] w-[50vw] h-[50vw] rounded-full bg-cyan-400/20 blur-[120px] mix-blend-screen animate-pulse" style={{ animationDelay: '2s' }}></div>
+            </div>
+
+            <div className="relative bg-[#F8FAFC] rounded-[2rem] w-full max-w-5xl h-[90vh] flex flex-col shadow-[0_0_80px_rgba(15,44,74,0.5)] animate-in zoom-in-95 slide-in-from-bottom-10 duration-500 overflow-hidden ring-1 ring-white/20">
+                
+                {/* Premium Corporate Blue Header */}
+                <div className="bg-gradient-to-r from-[#0F2C4A] via-[#1E3A8A] to-[#0F2C4A] px-8 py-5 relative shrink-0 overflow-hidden flex items-center justify-between border-b border-blue-400/30 shadow-md z-10">
+                    <div className="absolute inset-0 bg-[url('/noise.png')] opacity-10 mix-blend-overlay"></div>
+                    <div className="absolute -right-20 -top-20 w-64 h-64 bg-blue-400/20 rounded-full blur-[80px]"></div>
+                    
+                    <div className="relative z-10 flex items-center gap-5">
+                        <div>
+                            <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight drop-shadow-sm">Términos y Condiciones</h2>
+                            <p className="mt-1 text-blue-200 text-xs sm:text-sm font-medium flex items-center gap-2">
+                                <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse shadow-[0_0_10px_rgba(96,165,250,0.8)]"></span>
+                                Acuerdo Legal Corporativo
+                            </p>
+                        </div>
+                    </div>
+
+                    <button onClick={onClose} className="relative z-10 w-10 h-10 flex items-center justify-center text-blue-200 hover:text-white rounded-full hover:bg-white/10 transition-all border border-transparent hover:border-white/20">
+                        <X size={24} />
+                    </button>
+                </div>
+                
+                {/* Structured Content Area */}
+                <div className="p-8 sm:p-10 overflow-y-auto text-base text-slate-600 space-y-6 custom-scrollbar bg-slate-50/50">
+                    
+                    <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-[0_2px_10px_-4px_rgba(15,44,74,0.05)] hover:shadow-[0_4px_20px_-4px_rgba(15,44,74,0.08)] transition-all">
+                        <h3 className="text-sm font-bold text-blue-800 uppercase tracking-widest mb-4 pb-4 border-b border-slate-100">
+                            Preámbulo Legal
+                        </h3>
+                        <p className="text-justify leading-loose text-slate-700">Bienvenido a la plataforma de Inteligencia de Contrataciones. Al acceder, navegar, interactuar o consumir cualquier dato de este sistema, usted establece un contrato legalmente vinculante y acepta someterse a la totalidad de las cláusulas estipuladas en los presentes Términos y Condiciones. Su uso constituye una firma electrónica de aceptación de estos términos.</p>
+                    </div>
+
+                    <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-[0_2px_10px_-4px_rgba(15,44,74,0.05)] hover:shadow-[0_4px_20px_-4px_rgba(15,44,74,0.08)] transition-all">
+                        <h3 className="text-lg font-bold text-slate-800 flex items-center gap-3 mb-4 pb-4 border-b border-slate-100">
+                            <span className="bg-blue-50 text-blue-700 px-3 py-1 rounded-lg text-xs font-black">01</span>
+                            Identidad del Titular y Operador
+                        </h3>
+                        <p className="text-justify leading-loose text-slate-700">La presente plataforma web de inteligencia de negocios (SaaS), sus bases de datos subyacentes, algoritmos de búsqueda federada, dashboards y servicios de consultoría asociados son desarrollados, mantenidos y operados de manera exclusiva por MICHAEL CESAR QUISPE SEBASTIAN, persona natural con negocio, identificado con Registro Único de Contribuyentes (RUC) N° 10423117864, en adelante referido como "El Titular" o "La Empresa".</p>
+                    </div>
+
+                    <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-[0_2px_10px_-4px_rgba(15,44,74,0.05)] hover:shadow-[0_4px_20px_-4px_rgba(15,44,74,0.08)] transition-all">
+                        <h3 className="text-lg font-bold text-slate-800 flex items-center gap-3 mb-4 pb-4 border-b border-slate-100">
+                            <span className="bg-blue-50 text-blue-700 px-3 py-1 rounded-lg text-xs font-black">02</span>
+                            Naturaleza del Servicio
+                        </h3>
+                        <p className="text-justify leading-loose text-slate-700 mb-4">La Plataforma constituye una herramienta avanzada de integración y análisis de datos enfocada en el gasto público peruano y la gestión de riesgos financieros. Permite a usuarios corporativos autorizados visualizar estadísticas de adjudicaciones, evaluar historiales de consorcios e identificar alertas en los procesos de contratación del Estado.</p>
+                        <p className="text-justify leading-loose text-slate-700">El servicio tiene un carácter estrictamente consultivo e informativo, diseñado para apoyar la toma de decisiones empresariales, mas no para sustituir la diligencia debida legal o contable que cada Usuario debe realizar de forma independiente.</p>
+                    </div>
+
+                    <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-[0_2px_10px_-4px_rgba(15,44,74,0.05)] hover:shadow-[0_4px_20px_-4px_rgba(15,44,74,0.08)] transition-all">
+                        <h3 className="text-lg font-bold text-slate-800 flex items-center gap-3 mb-4 pb-4 border-b border-slate-100">
+                            <span className="bg-blue-50 text-blue-700 px-3 py-1 rounded-lg text-xs font-black">03</span>
+                            Credenciales y Seguridad
+                        </h3>
+                        <p className="text-justify leading-loose text-slate-700 mb-4">El acceso a los módulos operativos y reportes estructurados está severamente restringido a usuarios que hayan pasado por un proceso de verificación interna. Respecto a sus credenciales:</p>
+                        <ul className="space-y-3 list-inside list-disc text-justify leading-loose text-slate-700">
+                            <li>La licencia de uso es estrictamente personal, individual e intransferible. Queda prohibido compartir credenciales.</li>
+                            <li>Es responsable de configurar contraseñas criptográficamente fuertes.</li>
+                            <li>La detección de múltiples inicios de sesión simultáneos desde diferentes IPs resultará en la terminación automática del servicio.</li>
+                        </ul>
+                    </div>
+
+                    <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-[0_2px_10px_-4px_rgba(15,44,74,0.05)] hover:shadow-[0_4px_20px_-4px_rgba(15,44,74,0.08)] transition-all">
+                        <h3 className="text-lg font-bold text-slate-800 flex items-center gap-3 mb-4 pb-4 border-b border-slate-100">
+                            <span className="bg-slate-100 text-slate-600 px-3 py-1 rounded-lg text-xs font-black">04</span>
+                            Restricción Estricta Anti-Scraping
+                        </h3>
+                        <p className="text-justify leading-loose text-slate-700 mb-4">El valor central de la Plataforma radica en la estructuración algorítmica de millones de registros. Se prohíbe terminantemente la extracción automatizada o manual a gran escala.</p>
+                        <ul className="space-y-3 list-inside list-disc text-justify leading-loose text-slate-700">
+                            <li>El Usuario acepta explícitamente no utilizar robots, scrapers, crawlers, o scripts de automatización (como Selenium) para extraer datos masivos o copiar la estructura de la base de datos.</li>
+                            <li>El despliegue de firewalls (WAF) bloqueará accesos anómalos. El Titular se reserva el derecho de iniciar procesos judiciales y de indemnización por lucro cesante.</li>
+                        </ul>
+                    </div>
+
+                    <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-[0_2px_10px_-4px_rgba(15,44,74,0.05)] hover:shadow-[0_4px_20px_-4px_rgba(15,44,74,0.08)] transition-all">
+                        <h3 className="text-lg font-bold text-slate-800 flex items-center gap-3 mb-4 pb-4 border-b border-slate-100">
+                            <span className="bg-blue-50 text-blue-700 px-3 py-1 rounded-lg text-xs font-black">05</span>
+                            Exoneración de Responsabilidades Técnicas
+                        </h3>
+                        <p className="text-justify leading-loose text-slate-700 mb-4">La materia prima analizada proviene de fuentes públicas estatales (SEACE, MEF, OSCE). Es indispensable comprender los límites de nuestra responsabilidad:</p>
+                        <ul className="space-y-3 list-inside list-disc text-justify leading-loose text-slate-700">
+                            <li>Procesamos la información "tal como se encuentra". No garantizamos que esté libre de errores tipográficos originados por el Estado.</li>
+                            <li>La interpretación de las alertas recae únicamente en el Usuario. Declinamos responsabilidad por decisiones comerciales erróneas.</li>
+                            <li>La Plataforma puede sufrir caídas temporales por mantenimientos, ataques o fallas en el proveedor de Cloud Hosting (Hostinger VPS).</li>
+                        </ul>
+                    </div>
+
+                    <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-[0_2px_10px_-4px_rgba(15,44,74,0.05)] hover:shadow-[0_4px_20px_-4px_rgba(15,44,74,0.08)] transition-all">
+                        <h3 className="text-lg font-bold text-slate-800 flex items-center gap-3 mb-4 pb-4 border-b border-slate-100">
+                            <span className="bg-blue-50 text-blue-700 px-3 py-1 rounded-lg text-xs font-black">06</span>
+                            Confidencialidad y Propiedad Intelectual
+                        </h3>
+                        <p className="text-justify leading-loose text-slate-700 mb-4">Toda la interfaz, metodologías de cálculo y cruces de datos se consideran secretos comerciales. Queda terminantemente prohibido revender, ceder o distribuir comercialmente la información extraída.</p>
+                        <p className="text-justify leading-loose text-slate-700">Los códigos fuente, interfaces (UI/UX), esquemas de bases de datos y algoritmos de indexación son propiedad exclusiva de El Titular y están amparados bajo las leyes internacionales de Propiedad Intelectual.</p>
+                    </div>
+
+                    <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-[0_2px_10px_-4px_rgba(15,44,74,0.05)] hover:shadow-[0_4px_20px_-4px_rgba(15,44,74,0.08)] transition-all">
+                        <h3 className="text-lg font-bold text-slate-800 flex items-center gap-3 mb-4 pb-4 border-b border-slate-100">
+                            <span className="bg-blue-50 text-blue-700 px-3 py-1 rounded-lg text-xs font-black">07</span>
+                            Modificaciones y Jurisdicción
+                        </h3>
+                        <p className="text-justify leading-loose text-slate-700 mb-4">El Titular podrá revisar unilateralmente estos Términos en cualquier momento. El uso continuado del sistema tras 15 días de su publicación constituye una aceptación irrevocable.</p>
+                        <p className="text-justify leading-loose text-slate-700">Este contrato vinculante se rige por las leyes de la República del Perú. Las partes se someten a la jurisdicción exclusiva de los Jueces y Tribunales del Distrito Judicial de Lima Centro.</p>
+                    </div>
+
+                </div>
+
+                {/* Sleek Blue Footer */}
+                <div className="px-8 py-6 border-t border-slate-200 flex justify-between items-center shrink-0 bg-white z-10 gap-4">
+                    <p className="text-xs text-slate-400 flex-1 hidden sm:block text-right">Al presionar el botón de confirmación, usted firma digitalmente su conformidad con la totalidad de estas cláusulas legales.</p>
+                    <button onClick={onClose} className="w-full sm:w-auto px-10 py-4 bg-gradient-to-r from-[#0F2C4A] to-[#1E3A8A] text-white font-black text-sm uppercase tracking-widest rounded-xl hover:from-[#163A5F] hover:to-[#254BA3] transition-all shadow-[0_10px_20px_-10px_rgba(15,44,74,0.6)] hover:shadow-[0_15px_30px_-10px_rgba(15,44,74,0.8)] hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-3 group shrink-0">
+                        ACEPTO LOS TÉRMINOS
+                        <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function PrivacyModal({ onClose }: { onClose: () => void }) {
+    return (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 sm:p-6 overflow-hidden">
+            {/* Animated Glassmorphism Backdrop */}
+            <div className="absolute inset-0 bg-[#064E3B]/60 backdrop-blur-lg transition-opacity duration-500"></div>
+            <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+                <div className="absolute top-[-20%] right-[-10%] w-[50vw] h-[50vw] rounded-full bg-emerald-500/30 blur-[120px] mix-blend-screen animate-pulse"></div>
+                <div className="absolute bottom-[-20%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-teal-400/20 blur-[120px] mix-blend-screen animate-pulse" style={{ animationDelay: '2s' }}></div>
+            </div>
+
+            <div className="relative bg-[#F8FAFC] rounded-[2rem] w-full max-w-5xl h-[90vh] flex flex-col shadow-[0_0_80px_rgba(6,78,59,0.5)] animate-in zoom-in-95 slide-in-from-bottom-10 duration-500 overflow-hidden ring-1 ring-white/20">
+                
+                {/* Premium Corporate Teal Header */}
+                <div className="bg-gradient-to-r from-[#064E3B] via-[#047857] to-[#064E3B] px-8 py-5 relative shrink-0 overflow-hidden flex items-center justify-between border-b border-emerald-400/30 shadow-md z-10">
+                    <div className="absolute inset-0 bg-[url('/noise.png')] opacity-10 mix-blend-overlay"></div>
+                    <div className="absolute -left-20 -bottom-20 w-64 h-64 bg-emerald-400/20 rounded-full blur-[80px]"></div>
+                    
+                    <div className="relative z-10 flex items-center gap-5">
+                        <div>
+                            <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight drop-shadow-sm">Política de Privacidad</h2>
+                            <p className="mt-1 text-emerald-200 text-xs sm:text-sm font-medium flex items-center gap-2">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_10px_rgba(52,211,153,0.8)]"></span>
+                                Cumplimiento Ley N° 29733 (Perú)
+                            </p>
+                        </div>
+                    </div>
+
+                    <button onClick={onClose} className="relative z-10 w-10 h-10 flex items-center justify-center text-emerald-200 hover:text-white rounded-full hover:bg-white/10 transition-all border border-transparent hover:border-white/20">
+                        <X size={24} />
+                    </button>
+                </div>
+                
+                {/* Structured Content Area */}
+                <div className="p-8 sm:p-10 overflow-y-auto text-base text-slate-600 space-y-6 custom-scrollbar bg-slate-50/50">
+                    
+                    <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-[0_2px_10px_-4px_rgba(6,78,59,0.05)] hover:shadow-[0_4px_20px_-4px_rgba(6,78,59,0.08)] transition-all">
+                        <h3 className="text-sm font-bold text-emerald-800 uppercase tracking-widest mb-4 pb-4 border-b border-slate-100">
+                            Nuestro Compromiso
+                        </h3>
+                        <p className="text-justify leading-loose text-slate-700">En estricto cumplimiento de lo dispuesto por la Ley N° 29733, Ley de Protección de Datos Personales y su Reglamento (DS N° 003-2013-JUS), esta política describe de manera transparente cómo MICHAEL CESAR QUISPE SEBASTIAN recopila, utiliza, almacena, transfiere y protege la información que interactúa con la Plataforma.</p>
+                    </div>
+
+                    {/* Clauses wrapped in cards */}
+                    <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-[0_2px_10px_-4px_rgba(6,78,59,0.05)] hover:shadow-[0_4px_20px_-4px_rgba(6,78,59,0.08)] transition-all">
+                        <h3 className="text-lg font-bold text-slate-800 flex items-center gap-3 mb-4 pb-4 border-b border-slate-100">
+                            <span className="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-lg text-xs font-black">01</span>
+                            Categorización de la Información Tratada
+                        </h3>
+                        <p className="text-justify leading-loose text-slate-700 mb-4">Nuestros sistemas arquitectónicos ingieren y procesan dos esferas documentales claramente delimitadas:</p>
+                        <ul className="space-y-3 list-inside list-disc text-justify leading-loose text-slate-700">
+                            <li>Información de Fuente Pública (No Confidencial): Data transaccional proveniente del SEACE, SUNAT, SBS y MEF. Según el Art. 14° de la Ley 29733, el tratamiento de datos personales en fuentes públicas no requiere consentimiento.</li>
+                            <li>Datos Personales y Corporativos del Usuario: Para otorgarle acceso, recopilamos proactivamente nombres, cargo institucional, empresa, celular, correo corporativo, direcciones IP y logs completos de navegación.</li>
+                        </ul>
+                    </div>
+
+                    <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-[0_2px_10px_-4px_rgba(6,78,59,0.05)] hover:shadow-[0_4px_20px_-4px_rgba(6,78,59,0.08)] transition-all">
+                        <h3 className="text-lg font-bold text-slate-800 flex items-center gap-3 mb-4 pb-4 border-b border-slate-100">
+                            <span className="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-lg text-xs font-black">02</span>
+                            Finalidades Lícitas del Tratamiento
+                        </h3>
+                        <p className="text-justify leading-loose text-slate-700 mb-4">Sus datos, almacenados en el banco "Usuarios y Trazabilidad MQS", son procesados bajo las siguientes finalidades legítimas:</p>
+                        <ol className="space-y-3 list-inside list-decimal text-justify leading-loose text-slate-700">
+                            <li>Verificar su identidad y proveer acceso cifrado.</li>
+                            <li>Prestar los servicios de analítica de datos e inteligencia de riesgos.</li>
+                            <li>Mantener un registro inalterable de acciones (logs) para prevenir fraudes y responder a auditorías externas (como requerimientos de CESCE).</li>
+                            <li>Remitir notificaciones sobre interrupciones o cambios en las políticas.</li>
+                        </ol>
+                    </div>
+
+                    <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-[0_2px_10px_-4px_rgba(6,78,59,0.05)] hover:shadow-[0_4px_20px_-4px_rgba(6,78,59,0.08)] transition-all">
+                        <h3 className="text-lg font-bold text-slate-800 flex items-center gap-3 mb-4 pb-4 border-b border-slate-100">
+                            <span className="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-lg text-xs font-black">03</span>
+                            Flujo Transfronterizo y Cloud Storage
+                        </h3>
+                        <p className="text-justify leading-loose text-slate-700 mb-4">Para garantizar alta disponibilidad (HA) y resiliencia frente a desastres, la infraestructura tecnológica se despliega sobre proveedores globales de Infraestructura como Servicio (IaaS).</p>
+                        <p className="text-justify leading-loose text-slate-700">El Usuario consiente expresamente que sus datos personales y logs de uso son transferidos, alojados y procesados en servidores administrados por Hostinger International Ltd., específicamente mediante instancias de virtualización basada en kernel. Los centros de datos principales asignados a esta plataforma están ubicados físicamente en Brasil (América del Sur), operando bajo estándares internacionales ISO/IEC 27001 de seguridad de la información.</p>
+                    </div>
+
+                    <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-[0_2px_10px_-4px_rgba(6,78,59,0.05)] hover:shadow-[0_4px_20px_-4px_rgba(6,78,59,0.08)] transition-all">
+                        <h3 className="text-lg font-bold text-slate-800 flex items-center gap-3 mb-4 pb-4 border-b border-slate-100">
+                            <span className="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-lg text-xs font-black">04</span>
+                            Medidas de Seguridad Arquitectónicas
+                        </h3>
+                        <p className="text-justify leading-loose text-slate-700 mb-4">Nos tomamos la protección de datos con extrema seriedad. El Titular ha implementado controles exhaustivos:</p>
+                        <ul className="space-y-3 list-inside list-disc text-justify leading-loose text-slate-700">
+                            <li>Cifrado de comunicaciones mediante túneles criptográficos SSL/TLS v1.3.</li>
+                            <li>Cifrado en reposo donde las contraseñas son procesadas mediante algoritmos de hash unidireccional con salting.</li>
+                            <li>Seguridad perimetral mediante firewalls, aislamiento de redes y protección contra inyecciones SQL.</li>
+                        </ul>
+                    </div>
+
+                    <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-[0_2px_10px_-4px_rgba(6,78,59,0.05)] hover:shadow-[0_4px_20px_-4px_rgba(6,78,59,0.08)] transition-all">
+                        <h3 className="text-lg font-bold text-slate-800 flex items-center gap-3 mb-4 pb-4 border-b border-slate-100">
+                            <span className="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-lg text-xs font-black">05</span>
+                            Cookies, Retención y Derechos ARCO
+                        </h3>
+                        <p className="text-justify leading-loose text-slate-700 mb-4">La Plataforma utiliza cookies operativas indispensables para mantener de forma segura su sesión mediante tokens JWT y equilibrar la carga de los servidores.</p>
+                        <p className="text-justify leading-loose text-slate-700 mb-4">Usted tiene garantizado el ejercicio gratuito de sus Derechos ARCO (Acceso, Rectificación, Cancelación y Oposición).</p>
+                        <p className="text-justify leading-loose text-slate-700">Para hacer efectivos estos derechos, envíe una solicitud clara adjuntando copia de su DNI al correo oficial: privacidad@mcqs-jcq.com. Atenderemos las solicitudes dentro de los plazos perentorios del Reglamento de la Ley de Protección de Datos Personales.</p>
+                    </div>
+
+                </div>
+
+                {/* Sleek Teal Footer */}
+                <div className="px-8 py-6 border-t border-slate-200 flex justify-between items-center shrink-0 bg-white z-10 gap-4">
+                    <p className="text-xs text-slate-400 flex-1 hidden sm:block text-right">Sus datos están protegidos por leyes peruanas y estándares internacionales de cifrado.</p>
+                    <button onClick={onClose} className="w-full sm:w-auto px-10 py-4 bg-gradient-to-r from-[#064E3B] to-[#047857] text-white font-black text-sm uppercase tracking-widest rounded-xl hover:from-[#065F46] hover:to-[#059669] transition-all shadow-[0_10px_20px_-10px_rgba(6,78,59,0.6)] hover:shadow-[0_15px_30px_-10px_rgba(6,78,59,0.8)] hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-3 group shrink-0">
+                        ENTENDIDO Y CONFORME
+                        <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                    </button>
+                </div>
+            </div>
         </div>
     );
 }

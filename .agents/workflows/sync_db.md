@@ -23,3 +23,10 @@ Este flujo de trabajo automatiza: (1) La extracción de nueva data del portal OS
 ```
 
 2. Verifica si el script de actualización tiene configurado el año correcto buscando la palabra clave `2026` dentro del archivo `scripts\sync_2026_db.py`. Si se necesita otro año, modifícalo en el script antes de ejecutar.
+
+3. Opcional pero **RECOMENDADO**: Actualiza el motor de búsqueda rápido (Meilisearch) para que los nuevos datos aparezcan instantáneamente en las sugerencias y búsquedas veloces del portal.
+
+// turbo
+```bash
+.\venv\Scripts\python scripts\sync_meilisearch_vps.py
+```

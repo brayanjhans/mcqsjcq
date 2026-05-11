@@ -243,11 +243,11 @@ const CircuitEffect = () => {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    return <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none z-[5]" style={{ opacity: 0.8 }} />;
+    return <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none z-[5]" style={{ opacity: 0.8 }} />;
 };
 
 const FuturisticOverlay = () => (
-    <div className="absolute inset-0 pointer-events-none z-[6] overflow-hidden opacity-30">
+    <div className="fixed inset-0 pointer-events-none z-[6] overflow-hidden opacity-30">
         <div className="absolute top-10 left-10 w-20 h-20 border-t-2 border-l-2 border-blue-400/50 rounded-tl-3xl"></div>
         <div className="absolute top-10 right-10 w-20 h-20 border-t-2 border-r-2 border-blue-400/50 rounded-tr-3xl"></div>
         <div className="absolute bottom-10 left-10 w-20 h-20 border-b-2 border-l-2 border-blue-400/50 rounded-bl-3xl"></div>
@@ -319,7 +319,7 @@ export default function ModulesPage() {
     if (loading || !isAuthenticated) return null;
 
     return (
-        <div className={`login-container season-${season} min-h-screen w-full flex flex-col justify-center items-center relative overflow-hidden transition-all duration-1000 ${visible ? 'opacity-100' : 'opacity-0'}`}>
+        <div className={`login-container season-${season} h-[100dvh] w-full flex flex-col relative overflow-x-hidden overflow-y-auto transition-all duration-1000 ${visible ? 'opacity-100' : 'opacity-0'}`}>
             {/* BACKGROUNDS */}
             <div className={`bg-blur-overlay bg-summer ${season === 'summer' ? 'active' : ''}`}></div>
             <div className={`bg-blur-overlay bg-autumn ${season === 'autumn' ? 'active' : ''}`}></div>
@@ -332,7 +332,7 @@ export default function ModulesPage() {
             {/* FUTURISTIC HUD OVERLAY */}
             <FuturisticOverlay />
 
-            <div className="z-10 w-full max-w-6xl px-6">
+            <div className="z-10 w-full max-w-6xl px-6 py-12 md:py-0 m-auto flex flex-col items-center">
                 <div className="text-center mb-16 animate-in slide-in-from-top-10 duration-700 fade-in fill-mode-backwards delay-100">
                     <h1 className="text-white font-black text-6xl md:text-7xl mb-4 tracking-tight drop-shadow-2xl">
                         SISTEMA <span className="text-transparent bg-clip-text" style={{ backgroundImage: 'linear-gradient(to right, #fff, var(--season-accent))' }}>MCQS</span>
