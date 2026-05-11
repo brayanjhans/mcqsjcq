@@ -39,7 +39,7 @@ export function AddUserModal({ isOpen, onClose, onSuccess }: AddUserModalProps) 
         setLoading(true);
         try {
             // Intentar obtener token de ambas posibles claves
-            const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+            const token = null /*cookie-based: token in HttpOnly cookie*/ || null /*cookie-based: token in HttpOnly cookie*/;
 
             // Debug: verificar que hay token
             if (!token) {

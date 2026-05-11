@@ -423,12 +423,12 @@ function RoleModal({ onClose }: { onClose: () => void }) {
     const [pinError, setPinError] = useState('');
 
     const handleColaboradorClick = () => {
-        // Update role to colaborador in localStorage
-        const userData = localStorage.getItem('user');
-        if (userData) {
-            const user = JSON.parse(userData);
+        // Update selected role in sessionStorage (non-sensitive display data only)
+        const raw = sessionStorage.getItem('user_display');
+        if (raw) {
+            const user = JSON.parse(raw);
             user.role = 'colaborador';
-            localStorage.setItem('user', JSON.stringify(user));
+            sessionStorage.setItem('user_display', JSON.stringify(user));
         }
         router.push('/mqs/obras');
     };
@@ -447,12 +447,15 @@ function RoleModal({ onClose }: { onClose: () => void }) {
         }
 
         try {
-            const token = localStorage.getItem('access_token');
+            // Use cookie-based auth: no Authorization header needed (HttpOnly cookie is sent automatically)
+            // CSRF token is read from cookie and sent as header
+            const csrfToken = document.cookie.split('; ').find(r => r.startsWith('csrf_token='))?.split('=')[1] || '';
             const response = await fetch('/api/auth/verify-pin', {
                 method: 'POST',
+                credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
+                    'X-CSRF-Token': csrfToken
                 },
                 body: JSON.stringify({ pin: pin })
             });
@@ -472,11 +475,12 @@ function RoleModal({ onClose }: { onClose: () => void }) {
                 return;
             }
 
-            const userData = localStorage.getItem('user');
-            if (userData) {
-                const user = JSON.parse(userData);
+            // Update role in sessionStorage (non-sensitive display data only)
+            const raw = sessionStorage.getItem('user_display');
+            if (raw) {
+                const user = JSON.parse(raw);
                 user.role = 'admin';
-                localStorage.setItem('user', JSON.stringify(user));
+                sessionStorage.setItem('user_display', JSON.stringify(user));
             }
             router.push('/mqs/obras');
         } catch (error) {

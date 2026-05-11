@@ -15,7 +15,7 @@ export default function SEACELayout({ children }: { children: React.ReactNode })
     const [user, setUser] = useState<any>(null);
 
     useEffect(() => {
-        const userData = localStorage.getItem('user');
+        const userData = sessionStorage.getItem('user_display');
         if (userData) {
             setUser(JSON.parse(userData));
         }

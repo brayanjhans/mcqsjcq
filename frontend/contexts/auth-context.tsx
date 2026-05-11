@@ -4,16 +4,14 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import api from '@/lib/api';
 
 interface User {
-    id: number;
-    username: string;
-    email: string;
-    role: string;
+    perfil: string;
+    nombre: string;
+    job_title: string;
+    role?: string;
 }
 
 interface AuthContextType {
     user: User | null;
-    token: string | null;
-    login: (username: string, password: string) => Promise<void>;
     logout: () => void;
     isAuthenticated: boolean;
     isAdmin: boolean;
@@ -23,44 +21,46 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
-    const [token, setToken] = useState<string | null>(null);
 
     useEffect(() => {
-        // Load user from localStorage on mount
-        const storedToken = localStorage.getItem('access_token');
-        const storedUser = localStorage.getItem('user');
-
-        if (storedToken && storedUser) {
-            setToken(storedToken);
-            setUser(JSON.parse(storedUser));
+        // Load minimal display data from sessionStorage (no sensitive tokens)
+        const raw = sessionStorage.getItem('user_display');
+        if (raw) {
+            try {
+                setUser(JSON.parse(raw));
+            } catch {
+                sessionStorage.removeItem('user_display');
+            }
         }
     }, []);
 
-    const login = async (username: string, password: string) => {
-        const response = await api.post('/api/auth/login', { username, password });
-        const { access_token, user: userData } = response.data;
-
-        setToken(access_token);
-        setUser(userData);
-
-        localStorage.setItem('access_token', access_token);
-        localStorage.setItem('user', JSON.stringify(userData));
-    };
-
-    const logout = () => {
-        setToken(null);
+    const logout = async () => {
+        try {
+            // Call backend to clear HttpOnly cookie and invalidate server session
+            await fetch('/api/auth/logout', {
+                method: 'POST',
+                credentials: 'include',
+                headers: {
+                    'X-CSRF-Token': document.cookie
+                        .split('; ')
+                        .find(r => r.startsWith('csrf_token='))
+                        ?.split('=')[1] || ''
+                }
+            });
+        } catch (e) {
+            console.warn('[Auth] Logout request failed, clearing local state anyway.');
+        }
         setUser(null);
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('user');
+        sessionStorage.removeItem('user_display');
+        window.location.href = '/';
     };
 
+    const perfilUpper = (user?.perfil || user?.role || '').toUpperCase();
     const value = {
         user,
-        token,
-        login,
         logout,
-        isAuthenticated: !!token,
-        isAdmin: user?.role === 'admin',
+        isAuthenticated: !!user,
+        isAdmin: perfilUpper === 'DIRECTOR' || perfilUpper === 'ADMIN',
     };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

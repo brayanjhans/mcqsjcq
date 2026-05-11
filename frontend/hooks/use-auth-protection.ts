@@ -3,6 +3,17 @@
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 
+/**
+ * Hook de protección de rutas autenticadas.
+ *
+ * Estrategia de seguridad:
+ * - Ya NO verifica localStorage (que era inseguro y falseable).
+ * - Hace un fetch ligero a /api/auth/me con las cookies HttpOnly.
+ * - Si el servidor responde 200 → sesión válida, continúa.
+ * - Si responde 401 → sesión inválida/expirada, redirige al login.
+ * - Este check ocurre en cada navegación/refresh, garantizando que el
+ *   servidor siempre valida el estado real de la sesión.
+ */
 export function useAuthProtection() {
     const router = useRouter();
     const pathname = usePathname();
@@ -16,23 +27,27 @@ export function useAuthProtection() {
             return;
         }
 
-        const checkAuth = () => {
+        const checkAuth = async () => {
             try {
-                const token = localStorage.getItem('access_token');
-                const userStr = localStorage.getItem('user');
+                const response = await fetch('/api/auth/me', {
+                    method: 'GET',
+                    credentials: 'include', // Send HttpOnly cookie automatically
+                    headers: { 'Content-Type': 'application/json' },
+                });
 
-                if (!token || !userStr) {
-                    console.warn(`Unauthorized access attempt to ${pathname}. Redirecting to login.`);
+                if (response.ok) {
+                    // Session is valid — server confirmed it
+                    setIsAuthenticated(true);
+                } else {
+                    // 401 or any error — session invalid or expired
+                    console.warn(`[Auth] Session invalid (${response.status}). Redirecting to login.`);
+                    setIsAuthenticated(false);
                     router.replace('/');
-                    return;
                 }
-
-                // Optional: Check token expiration if JWT logic exists in frontend
-                // For now, presence is enough as a basic guard.
-
-                setIsAuthenticated(true);
             } catch (error) {
-                console.error('Auth check error:', error);
+                // Network error — fail safe: redirect to login
+                console.error('[Auth] Network error during session check:', error);
+                setIsAuthenticated(false);
                 router.replace('/');
             } finally {
                 setLoading(false);

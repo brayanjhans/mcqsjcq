@@ -21,7 +21,7 @@ export function ProfileModal({
 
     useEffect(() => {
         if (open) {
-            const storedUser = localStorage.getItem('user');
+            const storedUser = sessionStorage.getItem('user_display');
             if (storedUser) {
                 setUser(JSON.parse(storedUser));
             }
@@ -131,7 +131,7 @@ function PersonalInfoTab({ user, setUser }: any) {
 
     const handleSave = () => {
         const newUser = { ...user, ...formData };
-        localStorage.setItem('user', JSON.stringify(newUser));
+        sessionStorage.setItem('user_display', JSON.stringify(newUser));
         setUser(newUser);
         window.dispatchEvent(new Event('userUpdated'));
         setIsEditing(false);

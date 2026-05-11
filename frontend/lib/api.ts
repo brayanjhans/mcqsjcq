@@ -1,55 +1,64 @@
 /**
  * API client configuration and utilities.
- * 
- * Uses NEXT_PUBLIC_API_URL environment variable to configure the base URL.
- * In production, this points to https://api.mcqs-jcq.com
- * In development, it can be empty to use Next.js proxy or set to localhost.
+ *
+ * Security upgrade: No longer reads JWT from localStorage.
+ * JWT is stored in HttpOnly cookie (sent automatically by browser).
+ * CSRF token is read from readable cookie and attached as header.
  */
 import axios from 'axios';
 
+// Helper to read csrf_token cookie (readable, not HttpOnly)
+function getCsrfTokenFromCookie(): string {
+    if (typeof document === 'undefined') return '';
+    const match = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('csrf_token='));
+    return match ? match.split('=')[1] : '';
+}
+
 export const api = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_API_URL || '', // Use env variable or empty for proxy
+    baseURL: process.env.NEXT_PUBLIC_API_URL || '',
     headers: {
         'Content-Type': 'application/json',
     },
+    withCredentials: true, // Always send cookies (HttpOnly JWT is attached automatically)
 });
 
-// Request interceptor to add auth token
+// Request interceptor: attach CSRF token for mutating requests
 api.interceptors.request.use(
     (config) => {
-        const token = localStorage.getItem('access_token') || localStorage.getItem('token');
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
+        const method = (config.method || 'get').toUpperCase();
+        const isMutating = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method);
+
+        if (isMutating) {
+            const csrf = getCsrfTokenFromCookie();
+            if (csrf) {
+                config.headers['X-CSRF-Token'] = csrf;
+            }
         }
+
         // Let Axios handle the Content-Type automatically for FormData
         if (config.data instanceof FormData) {
             delete config.headers['Content-Type'];
         }
+
         return config;
     },
-    (error) => {
-        return Promise.reject(error);
-    }
+    (error) => Promise.reject(error)
 );
 
-// Response interceptor for error handling
+// Response interceptor: handle 401 globally (session expired)
 api.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response?.status === 401) {
-            // Exclude endpoints where 401 is a normal error (wrong PIN, etc.)
             const url = error.config?.url || '';
-            console.error(`[API Interceptor] 401 Unauthorized for URL: ${url}`);
-            
             const skipLogoutUrls = ['/api/auth/verify-pin', '/api/auth/login'];
             const shouldSkip = skipLogoutUrls.some(u => url.includes(u));
-            if (!shouldSkip) {
-                // Unauthorized - clear token and redirect to login
-                // TEMPORALMENTE DESHABILITADO PARA DEPURAR EL CIERRE DE SESIÓN LOCAL
-                // localStorage.removeItem('access_token');
-                // localStorage.removeItem('user');
-                // window.location.href = '/';
-                console.warn(`[Auth] Redirección evitada para: ${url}. Si el token expiró, cierra sesión manualmente.`);
+
+            if (!shouldSkip && typeof window !== 'undefined') {
+                console.warn(`[Auth] Sesión expirada. Redirigiendo al login.`);
+                window.location.href = '/';
             }
         }
         return Promise.reject(error);

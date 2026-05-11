@@ -135,12 +135,11 @@ function LoginModal({ onClose, onOpenTerms, onOpenPrivacy }: { onClose: () => vo
         setLoading(true);
 
         try {
-            // Real authentication with backend - always use relative URL for Next.js proxy
+            // Cookie-based login: backend sets HttpOnly cookie automatically
             const response = await fetch('/api/auth/login', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                credentials: 'include', // Required to receive and store cookies
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     id_corporativo: credentials.id_corporativo,
                     password: credentials.password
@@ -148,7 +147,6 @@ function LoginModal({ onClose, onOpenTerms, onOpenPrivacy }: { onClose: () => vo
             });
 
             if (!response.ok) {
-                // Safely parse error body — server might return HTML on 502/timeout
                 let errorMessage = 'Credenciales inválidas';
                 try {
                     const contentType = response.headers.get('content-type') || '';
@@ -168,20 +166,15 @@ function LoginModal({ onClose, onOpenTerms, onOpenPrivacy }: { onClose: () => vo
 
             const data = await response.json();
 
-            // Store token and user data
-            const perfilRaw = data.user?.perfil || 'COLABORADOR';
-            localStorage.setItem('access_token', data.access_token);
-            localStorage.setItem('user', JSON.stringify({
-                id: data.user.id,
-                username: data.user.id_corporativo,
-                email: data.user.email,
-                role: perfilRaw.toLowerCase(),
-                perfil: perfilRaw,
-                nombre: data.user.nombre,
-                job_title: data.user.job_title
+            // SECURITY: No longer store token or sensitive data in localStorage.
+            // JWT is now in HttpOnly cookie (set by backend, invisible to JS).
+            // Only store minimal non-sensitive display data in sessionStorage.
+            sessionStorage.setItem('user_display', JSON.stringify({
+                perfil: data.perfil || 'COLABORADOR',
+                nombre: data.nombre || '',
+                job_title: data.job_title || ''
             }));
 
-            // Use window.location for hard redirect to ensure localStorage is committed
             setLoading(false);
             onClose();
             window.location.href = '/modules';
@@ -191,6 +184,7 @@ function LoginModal({ onClose, onOpenTerms, onOpenPrivacy }: { onClose: () => vo
             setLoading(false);
         }
     };
+
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">

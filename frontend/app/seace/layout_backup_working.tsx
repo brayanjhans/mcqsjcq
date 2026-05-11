@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
@@ -14,7 +14,7 @@ export default function SEACELayout({ children }: { children: React.ReactNode })
     const [user, setUser] = useState<any>(null);
 
     useEffect(() => {
-        const userData = localStorage.getItem('user');
+        const userData = sessionStorage.getItem('user_display');
         if (userData) {
             setUser(JSON.parse(userData));
         }
@@ -29,7 +29,7 @@ export default function SEACELayout({ children }: { children: React.ReactNode })
 
     return (
         <div className="block lg:flex w-full h-screen overflow-hidden bg-white dark:bg-gray-900 transition-colors duration-500">
-            {/* Overlay M├│vil Glassmorphism */}
+            {/* Overlay M+�vil Glassmorphism */}
             {mobileMenuOpen && (
                 <div
                     className="fixed inset-0 z-40 lg:hidden bg-black/20 backdrop-blur-sm transition-all duration-500 ease-in-out"
@@ -66,7 +66,7 @@ export default function SEACELayout({ children }: { children: React.ReactNode })
                     </button>
                 </div>
 
-                {/* Bot├│n Toggle Flotante en el Borde */}
+                {/* Bot+�n Toggle Flotante en el Borde */}
                 <button
                     onClick={() => setCollapsed(!collapsed)}
                     className={`
@@ -78,19 +78,19 @@ export default function SEACELayout({ children }: { children: React.ReactNode })
                         absolute -right-3 top-1/2 -translate-y-1/2 z-[60]
                         cursor-pointer backdrop-blur-md
                     `}
-                    title={collapsed ? "Expandir men├║" : "Colapsar men├║"}
+                    title={collapsed ? "Expandir men+�" : "Colapsar men+�"}
                 >
                     <i className={`fas ${collapsed ? 'fa-chevron-right' : 'fa-chevron-left'} text-[10px]`}></i>
                 </button>
 
-                {/* Men├║ Scrollable */}
+                {/* Men+� Scrollable */}
                 <div className="flex-1 overflow-y-auto px-3 space-y-1 pb-4 scrollbar-hide">
                     <MenuGroup title="Inteligencia SEACE" collapsed={collapsed}>
                         <MenuItem href="/seace/dashboard" icon="fa-chart-pie" label="Dashboard" active={isActive('/seace/dashboard')} collapsed={collapsed} delay={getDelay(1)} />
-                        <MenuItem href="/seace/busqueda" icon="fa-search" label="B├║squeda" active={isActive('/seace/busqueda')} collapsed={collapsed} delay={getDelay(2)} />
+                        <MenuItem href="/seace/busqueda" icon="fa-search" label="B+�squeda" active={isActive('/seace/busqueda')} collapsed={collapsed} delay={getDelay(2)} />
                         <MenuItem href="/seace/notificaciones" icon="fa-database" label="Notificaciones" active={isActive('/seace/notificaciones')} collapsed={collapsed} delay={getDelay(3)} />
                         <MenuItem href="/seace/reportes" icon="fa-chart-bar" label="Reportes" active={isActive('/seace/reportes')} collapsed={collapsed} delay={getDelay(4)} />
-                        <MenuItem href="/seace/gestion-manual" icon="fa-clipboard-list" label="Gesti├│n Manual" active={isActive('/seace/gestion-manual')} collapsed={collapsed} delay={getDelay(5)} />
+                        <MenuItem href="/seace/gestion-manual" icon="fa-clipboard-list" label="Gesti+�n Manual" active={isActive('/seace/gestion-manual')} collapsed={collapsed} delay={getDelay(5)} />
                     </MenuGroup>
                 </div>
 
@@ -115,12 +115,12 @@ export default function SEACELayout({ children }: { children: React.ReactNode })
 
             {/* Main Content */}
             <main className="flex-1 flex flex-col h-screen overflow-hidden relative">
-                {/* Header Actions - Top Right (Visible en M├│vil y Desktop) */}
+                {/* Header Actions - Top Right (Visible en M+�vil y Desktop) */}
                 <div className="relative z-50">
                     <HeaderActions />
                 </div>
 
-                {/* Bot├│n Men├║ M├│vil (Floating Action Button - Fixed Bottom Left) */}
+                {/* Bot+�n Men+� M+�vil (Floating Action Button - Fixed Bottom Left) */}
                 <button
                     onClick={() => setMobileMenuOpen(true)}
                     className="lg:hidden fixed bottom-6 left-6 z-50 w-14 h-14 flex items-center justify-center rounded-full bg-[#0F2C4A] text-white shadow-[0_4px_20px_rgba(15,44,74,0.4)] hover:scale-110 active:scale-95 transition-all backdrop-blur-sm border border-white/20"

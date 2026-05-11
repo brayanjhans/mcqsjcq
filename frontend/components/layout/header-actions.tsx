@@ -45,7 +45,7 @@ export function HeaderActions() {
 
     useEffect(() => {
         const loadUser = () => {
-            const userData = localStorage.getItem('user');
+            const userData = sessionStorage.getItem('user_display');
             if (userData) {
                 const parsedUser = JSON.parse(userData);
                 setUser(parsedUser);

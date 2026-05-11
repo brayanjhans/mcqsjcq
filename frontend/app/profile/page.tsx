@@ -26,7 +26,7 @@ export default function ProfilePage() {
     useEffect(() => {
         if (!isAuthenticated) return;
         // Load user from local storage
-        const storedUser = localStorage.getItem('user');
+        const storedUser = sessionStorage.getItem('user_display');
         if (storedUser) {
             setUser(JSON.parse(storedUser));
         }
@@ -52,7 +52,7 @@ export default function ProfilePage() {
             });
             const updatedUser = { ...user, avatar_url: res.data.url };
             setUser(updatedUser);
-            localStorage.setItem('user', JSON.stringify(updatedUser));
+            sessionStorage.setItem('user_display', JSON.stringify(updatedUser));
             window.dispatchEvent(new Event('userUpdated'));
         } catch (error) {
             console.error('Error uploading avatar:', error);
@@ -68,7 +68,7 @@ export default function ProfilePage() {
             await api.delete('/api/users/me/avatar');
             const updatedUser = { ...user, avatar_url: null };
             setUser(updatedUser);
-            localStorage.setItem('user', JSON.stringify(updatedUser));
+            sessionStorage.setItem('user_display', JSON.stringify(updatedUser));
             window.dispatchEvent(new Event('userUpdated'));
             setShowDeleteAvatarModal(false);
         } catch (error) {
@@ -264,7 +264,7 @@ function PersonalInfoForm({ user, setUser }: any) {
                 // phone not in API?
             });
             const newUser = { ...user, ...response.data };
-            localStorage.setItem('user', JSON.stringify(newUser));
+            sessionStorage.setItem('user_display', JSON.stringify(newUser));
             setUser(newUser);
             window.dispatchEvent(new Event('userUpdated'));
             setSuccess('Información actualizada correctamente');

@@ -18,7 +18,7 @@ export default function MQSLayout({ children }: { children: React.ReactNode }) {
     const [darkMode, setDarkMode] = useState(false);
 
     useEffect(() => {
-        const userData = localStorage.getItem('user');
+        const userData = sessionStorage.getItem('user_display');
         if (userData) {
             setUser(JSON.parse(userData));
         }

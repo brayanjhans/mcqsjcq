@@ -13,7 +13,7 @@ export default function ProfileSelectionPage() {
 
     useEffect(() => {
         if (isAuthenticated) {
-            const userData = localStorage.getItem('user')
+            const userData = sessionStorage.getItem('user_display')
             if (userData) {
                 setUser(JSON.parse(userData))
             }
