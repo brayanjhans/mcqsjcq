@@ -25,6 +25,7 @@ from app.utils.security import (
     verify_admin_pin
 )
 from app.utils.dependencies import get_current_user, get_current_admin_user, verify_csrf_token
+from app.utils.rate_limit import limiter
 
 router = APIRouter(prefix="/api/auth", tags=["Authentication"])
 
@@ -78,6 +79,7 @@ def register_user(
 
 
 @router.post("/login")
+@limiter.limit("5/minute")  # REGLA 1: Anti fuerza bruta — 5 intentos por minuto por IP
 def login(
     credentials: UserLogin,
     request: Request,

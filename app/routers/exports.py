@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, Body
+from fastapi import APIRouter, Depends, HTTPException, Body, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from app.database import get_db
+from app.utils.rate_limit import limiter
 from typing import List, Dict, Optional, Literal, Union, Any
 from pydantic import BaseModel
 import pandas as pd
@@ -122,7 +123,8 @@ def build_query(req: ExportRequest):
     return sql, params
 
 @router.post("")
-def generate_export_file(req: ExportRequest, db: Session = Depends(get_db)):
+@limiter.limit("10/minute")  # REGLA 3: Exportaciones pesadas — máx 10 por minuto por IP
+def generate_export_file(req: ExportRequest, request: Request, db: Session = Depends(get_db)):
     try:
         print(f"Export Request: {req.dict()}") # Debug log
         

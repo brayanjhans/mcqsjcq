@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import func, case, text
 from typing import Optional, List, Any
 from pydantic import BaseModel
 from app.database import get_db
+from app.utils.rate_limit import limiter
 from app.models.seace import LicitacionesCabecera, LicitacionesAdjudicaciones
 from datetime import datetime
 
@@ -26,12 +27,13 @@ class GenerarReporteRequest(BaseModel):
     filtros: ReporteFiltros
 
 @router.post("/generar")
-def generar_reporte(request: GenerarReporteRequest, db: Session = Depends(get_db)):
+@limiter.limit("10/minute")  # REGLA 3: Reportes pesados — máx 10 por minuto por IP
+def generar_reporte(request: Request, body: GenerarReporteRequest, db: Session = Depends(get_db)):
     """
     Genera reportes agrupados según el tipo seleccionado y filtros aplicados.
     """
-    tipo = request.tipo
-    filtros = request.filtros
+    tipo = body.tipo
+    filtros = body.filtros
     
     # Base query components
     query = db.query()
