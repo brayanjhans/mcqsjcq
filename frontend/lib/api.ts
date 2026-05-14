@@ -17,7 +17,10 @@ function getCsrfTokenFromCookie(): string {
 }
 
 export const api = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_API_URL || '',
+    // FIX: Siempre usamos rutas relativas para pasar por el proxy de Next.js.
+    // Si usamos process.env.NEXT_PUBLIC_API_URL y está seteado a 127.0.0.1:8000, 
+    // el navegador considerará la petición como cross-origin y NO enviará la cookie de sesión.
+    baseURL: '',
     headers: {
         'Content-Type': 'application/json',
     },
@@ -57,7 +60,7 @@ api.interceptors.response.use(
             const shouldSkip = skipLogoutUrls.some(u => url.includes(u));
 
             if (!shouldSkip && typeof window !== 'undefined') {
-                console.warn(`[Auth] Sesión expirada. Redirigiendo al login.`);
+                console.warn(`[Auth] Sesión expirada por Axios interceptor. Error original:`, error.config?.url);
                 window.location.href = '/';
             }
         }

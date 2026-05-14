@@ -30,8 +30,8 @@ from app.utils.rate_limit import limiter
 router = APIRouter(prefix="/api/auth", tags=["Authentication"])
 
 # Cookie settings — adjust for local dev vs production
-COOKIE_SECURE = True       # Set False only for local HTTP dev if needed
-COOKIE_SAMESITE = "strict"  # Prevents CSRF from cross-site requests
+COOKIE_SECURE = False       # False para entorno local HTTP, True para producción HTTPS
+COOKIE_SAMESITE = "lax"     # Lax es más seguro para redirecciones locales y nextjs
 COOKIE_MAX_AGE = 86400     # 24 hours in seconds
 
 
@@ -235,11 +235,15 @@ def verify_pin(
 
 
 @router.get("/me", response_model=UserResponse)
-def get_current_user_info(current_user: User = Depends(get_current_user)):
+def get_current_user_info(
+    request: Request,
+    current_user: User = Depends(get_current_user)
+):
     """
     Get current authenticated user information.
     Used by frontend to verify session validity after page refresh.
     """
+    print(f"\n[DEBUG /me] Success for user: {current_user.id_corporativo}")
     return current_user
 
 

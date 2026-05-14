@@ -372,7 +372,7 @@ export const LicitacionCard: React.FC<Props> = ({
                         <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mb-2">
                             {showExtendedDetails ? "Monto Adjudicado" : "Monto Estimado"}
                         </p>
-                        <div className="relative group/amount">
+                        <div className="relative group/amount border-glow rounded-xl">
                             <p className="text-2xl font-black tracking-tighter text-gradient-metallic leading-none py-1">
                                 {formatCurrency(showExtendedDetails && licitacion.monto_total_adjudicado ? licitacion.monto_total_adjudicado : licitacion.monto_estimado, licitacion.moneda)}
                             </p>

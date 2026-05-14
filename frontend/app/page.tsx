@@ -122,6 +122,7 @@ function LoginModal({ onClose, onOpenTerms, onOpenPrivacy }: { onClose: () => vo
     const [loading, setLoading] = useState(false);
     const [focusedField, setFocusedField] = useState<string | null>(null);
     const [termsAccepted, setTermsAccepted] = useState(false);
+    const [rememberMe, setRememberMe] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -276,12 +277,25 @@ function LoginModal({ onClose, onOpenTerms, onOpenPrivacy }: { onClose: () => vo
                             </div>
 
                             <div className="flex items-center justify-between text-sm pt-1 px-1">
-                                <label className="flex items-center gap-2 cursor-pointer group">
-                                    <div className="relative flex items-center">
-                                        <input type="checkbox" className="peer sr-only" />
-                                        <div className="w-5 h-5 border-2 border-gray-300 rounded-md peer-checked:bg-blue-600 peer-checked:border-blue-600 transition-all bg-white"></div>
-                                        <div className="absolute inset-0 text-white opacity-0 peer-checked:opacity-100 flex items-center justify-center transition-opacity pointer-events-none">
-                                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
+                                <label className="flex items-center gap-2 cursor-pointer group" htmlFor="remember-me">
+                                    <div className="relative flex-shrink-0">
+                                        <input
+                                            id="remember-me"
+                                            type="checkbox"
+                                            className="sr-only peer"
+                                            checked={rememberMe}
+                                            onChange={(e) => setRememberMe(e.target.checked)}
+                                        />
+                                        <div className={`w-5 h-5 rounded-md border-2 transition-all duration-200 flex items-center justify-center ${
+                                            rememberMe
+                                                ? 'bg-blue-600 border-blue-600 shadow-md shadow-blue-200'
+                                                : 'bg-white border-gray-300 group-hover:border-blue-400'
+                                        }`}>
+                                            {rememberMe && (
+                                                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3.5" d="M5 13l4 4L19 7" />
+                                                </svg>
+                                            )}
                                         </div>
                                     </div>
                                     <span className="text-gray-500 group-hover:text-blue-700 transition-colors font-medium">Recordar sesión</span>
@@ -328,27 +342,30 @@ function LoginModal({ onClose, onOpenTerms, onOpenPrivacy }: { onClose: () => vo
                         </button>
 
                         <div className="pt-4 pb-2">
-                            <label className="flex items-start gap-3 cursor-pointer group bg-gray-50/50 p-4 rounded-xl border border-gray-100 hover:border-blue-200 transition-colors">
-                                <div className="relative flex items-center mt-0.5">
-                                    <input 
-                                        type="checkbox" 
-                                        checked={termsAccepted}
-                                        onChange={(e) => {
-                                            setTermsAccepted(e.target.checked);
-                                            if (e.target.checked && error.includes('Debe aceptar')) {
-                                                setError('');
-                                            }
-                                        }}
-                                        className="peer sr-only" 
-                                    />
-                                    <div className="w-5 h-5 border-2 border-gray-300 rounded-md peer-checked:bg-[#0F2C4A] peer-checked:border-[#0F2C4A] transition-all bg-white flex items-center justify-center shadow-inner">
-                                        <svg className="w-3.5 h-3.5 text-white opacity-0 peer-checked:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
-                                    </div>
+                            <div className="flex items-start gap-3 cursor-pointer group bg-gray-50/50 p-4 rounded-xl border border-gray-100 hover:border-blue-200 transition-colors">
+                                <div
+                                    onClick={() => {
+                                        setTermsAccepted(!termsAccepted);
+                                        if (!termsAccepted && error.includes('Debe aceptar')) {
+                                            setError('');
+                                        }
+                                    }}
+                                    className={`w-5 h-5 rounded-md border-2 transition-all duration-200 flex items-center justify-center flex-shrink-0 cursor-pointer mt-0.5 ${
+                                        termsAccepted
+                                            ? 'bg-[#0F2C4A] border-[#0F2C4A] shadow-md shadow-blue-200'
+                                            : 'bg-white border-gray-300 hover:border-[#0F2C4A]'
+                                    }`}
+                                >
+                                    {termsAccepted && (
+                                        <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3.5" d="M5 13l4 4L19 7" />
+                                        </svg>
+                                    )}
                                 </div>
                                 <span className="text-[13px] text-gray-600 leading-snug">
                                     He leído y acepto los <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onOpenTerms(); }} className="text-[#0F2C4A] font-bold hover:text-blue-600 hover:underline transition-colors">Términos y Condiciones</button> y la <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onOpenPrivacy(); }} className="text-[#0F2C4A] font-bold hover:text-blue-600 hover:underline transition-colors">Política de Privacidad</button> obligatorios para acceder al sistema.
                                 </span>
-                            </label>
+                            </div>
                         </div>
                     </form>
                 </div>

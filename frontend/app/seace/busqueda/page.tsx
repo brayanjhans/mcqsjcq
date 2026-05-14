@@ -348,16 +348,14 @@ function BusquedaContent() {
     };
 
     return (
-        <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#020617] p-4 sm:p-6 lg:p-8 transition-colors duration-500 relative overflow-hidden">
-            {/* Ambient Background Elements */}
-            <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-500/10 rounded-full blur-[120px] animate-pulse"></div>
-            <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-500/10 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '2s' }}></div>
+        <div className="min-h-screen bg-white dark:bg-[#020617] px-4 sm:px-6 lg:px-8 pt-0 pb-8 transition-colors duration-500 relative overflow-hidden">
+
             
-            <div className="mx-auto max-w-[1700px] space-y-10 relative z-10">
+            <div className="mx-auto w-full max-w-[1920px] space-y-6 relative z-10">
 
                 {/* Main Filter Card */}
-                <div className="relative z-50 rounded-[2.5rem] glass-luxury border-white/40 mb-10">
-                    <div className="p-8 md:p-10">
+                <div className="relative z-50 rounded-[2.5rem] glass-luxury border-white/40">
+                    <div className="p-6 md:px-8 md:pb-8 md:pt-3">
 
                         {/* Header */}
                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
@@ -371,13 +369,17 @@ function BusquedaContent() {
                             </div>
 
                             <div className="flex items-center gap-3">
-                                <button
-                                    onClick={() => setShowFilters(!showFilters)}
-                                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#4F46E5] text-white text-xs font-bold hover:bg-[#4338ca] shadow-lg shadow-indigo-500/30 transition-all"
-                                >
-                                    {showFilters ? 'Menos Filtros' : 'Más Filtros'}
-                                    {showFilters ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                                </button>
+                                <div className="relative">
+                                    {/* Ondas de sombra (Ping animation) */}
+                                    <div className="absolute inset-0 bg-indigo-500 rounded-xl animate-ping-small opacity-30"></div>
+                                    <button
+                                        onClick={() => setShowFilters(!showFilters)}
+                                        className="relative z-10 flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#4F46E5] text-white text-xs font-bold hover:bg-[#4338ca] shadow-lg shadow-indigo-500/30 transition-all"
+                                    >
+                                        {showFilters ? 'Menos Filtros' : 'Más Filtros'}
+                                        {showFilters ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                                    </button>
+                                </div>
                                 <button
                                     onClick={handleClear}
                                     className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-red-50 text-red-600 border border-red-100 text-xs font-bold hover:bg-red-100 transition-all"
@@ -558,7 +560,7 @@ function BusquedaContent() {
                     </div>
                 )}
                 {/* Results Header with Integrated Stats & Enhanced Animations */}
-                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-8 px-2">
+                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-4 px-2">
                     <div className="flex flex-col gap-3 group">
                         <div className="flex items-center gap-3">
                             <div className="w-2.5 h-10 bg-gradient-to-b from-indigo-600 to-blue-600 rounded-full shadow-lg shadow-indigo-500/20 group-hover:scale-y-110 transition-transform duration-500"></div>

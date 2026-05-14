@@ -136,7 +136,7 @@ export default function ETLPage() {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 dark:bg-[#0b122b] p-6 md:p-8 fade-in transition-colors duration-300">
+        <div className="min-h-screen bg-white dark:bg-[#0b122b] p-6 md:p-8 fade-in transition-colors duration-300">
             <div className="mb-8">
                 <h2 className="text-3xl font-bold text-[#0F2C4A] dark:text-white border-b-2 border-[#E2E8F0] dark:border-gray-700 pb-3 inline-block">
                     Motor ETL - Carga de Datos SEACE

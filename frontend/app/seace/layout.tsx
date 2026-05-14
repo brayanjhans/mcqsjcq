@@ -35,7 +35,7 @@ export default function SEACELayout({ children }: { children: React.ReactNode })
     }
 
     return (
-        <div className="block lg:flex w-full h-screen overflow-hidden bg-white dark:bg-gray-900 transition-colors duration-500">
+        <div className="flex flex-col w-full h-screen overflow-hidden bg-white dark:bg-gray-900 transition-colors duration-500">
             {/* Overlay Móvil Glassmorphism */}
             {mobileMenuOpen && (
                 <div
@@ -44,112 +44,150 @@ export default function SEACELayout({ children }: { children: React.ReactNode })
                 ></div>
             )}
 
-            {/* Sidebar Premium SEACE */}
-            <aside
-                className={`
-                    fixed lg:static inset-y-0 left-0 z-50
-                    text-white flex flex-col
-                    transition-all duration-500 cubic-bezier(0.4, 0, 0.2, 1) shadow-2xl lg:shadow-xl
-                    bg-gradient-to-b from-[#0F2C4A] via-[#133657] to-[#081829]
-                    ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-                    ${collapsed ? 'w-[90px]' : 'w-[280px]'}
-                    lg:my-4 lg:ml-4 lg:rounded-3xl border-r-0 lg:border border-white/5
-                    lg:relative
-                `}
-            >
-                <div className="h-[90px] flex items-center justify-between px-6 relative">
-                    <div className={`transition-all duration-500 flex items-center justify-center gap-3 ${collapsed ? 'opacity-0 w-0' : 'opacity-100 flex-1'}`}>
-                        {/* Logo MQS */}
-                        <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-lg backdrop-blur-sm ring-1 ring-white/20 overflow-hidden flex-shrink-0">
-                            <img src="/logo-mqs.png" alt="MQS" className="w-full h-full object-cover" />
+            {/* Header Superior - Portal de Contrataciones (FULL WIDTH) */}
+            <header className="h-[70px] w-full bg-white dark:bg-[#0A192F] flex items-center justify-between px-4 lg:px-8 z-[60] shadow-md relative shrink-0 pt-[12px] pb-[6px]">
+                {/* Línea Superior Texturizada */}
+                <div className="absolute top-0 left-0 w-full h-[12px] bg-gradient-to-r from-[#0F2C4A] from-[35%] via-blue-600 via-[50%] to-amber-500 to-[65%] overflow-hidden">
+                    <div className="absolute inset-0 texture-diamonds mix-blend-overlay opacity-60"></div>
+                </div>
+
+                {/* Línea Inferior Texturizada (Degradado Inverso) */}
+                <div className="absolute bottom-0 left-0 w-full h-[6px] bg-gradient-to-l from-[#0F2C4A] from-[35%] via-blue-600 via-[50%] to-amber-500 to-[65%] overflow-hidden">
+                    <div className="absolute inset-0 texture-diamonds mix-blend-overlay opacity-60"></div>
+                </div>
+
+                <div className="flex items-center gap-1.5 lg:gap-3 flex-shrink-0">
+                    <button 
+                        onClick={() => setMobileMenuOpen(true)}
+                        className="lg:hidden w-10 h-10 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-white"
+                    >
+                        <i className="fas fa-bars"></i>
+                    </button>
+                    <div className="flex items-center gap-1.5 lg:gap-3">
+                        <div className="flex items-center gap-1 lg:gap-2">
+                            <img src="/logo-mqs.png" alt="MQS" className="h-8 lg:h-12 w-auto object-contain mix-blend-multiply" />
+                            <div className="hidden sm:block leading-none">
+                                <p className="text-[9px] lg:text-[11px] font-black text-[#0F2C4A] dark:text-white uppercase tracking-wider">Asesoramiento</p>
+                                <p className="text-[9px] lg:text-[11px] font-black text-[#0F2C4A] dark:text-white uppercase tracking-wider">de Finanzas</p>
+                            </div>
                         </div>
-                        {/* Texto Marca */}
-                        <span className="font-bold text-2xl tracking-tight text-white font-sans drop-shadow-md whitespace-nowrap">
-                            MQS <span className="text-blue-200">JCQ</span>
-                        </span>
-                        {/* Logo JCQ */}
-                        <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-lg backdrop-blur-sm ring-1 ring-white/20 overflow-hidden flex-shrink-0">
-                            <img src="/logo-jcq.png" alt="JCQ" className="w-full h-full object-cover" />
+                        <div className="w-[1px] h-8 lg:h-12 bg-slate-200 dark:bg-white/10 mx-1 lg:mx-2"></div>
+                        <div className="flex items-center gap-1 lg:gap-2">
+                            <img src="/logo-jcq.png" alt="JCQ" className="h-8 lg:h-12 w-auto object-contain mix-blend-multiply" />
+                            <div className="hidden sm:block leading-none">
+                                <p className="text-[9px] lg:text-[11px] font-black text-[#0F2C4A] dark:text-white uppercase tracking-wider">Asesoramiento en</p>
+                                <p className="text-[9px] lg:text-[11px] font-black text-[#0F2C4A] dark:text-white uppercase tracking-wider">Construccion</p>
+                            </div>
                         </div>
                     </div>
+                </div>
 
+                <div className="absolute left-1/2 -translate-x-1/2 hidden lg:flex flex-col items-center pointer-events-none">
+                    <h2 className="text-xl lg:text-2xl font-black text-[#0F2C4A] dark:text-white tracking-[0.2em] uppercase">
+                        PORTAL DE CONTRATACIONES
+                    </h2>
+                </div>
+
+                <div className="flex-shrink-0">
+                    <HeaderActions />
+                </div>
+            </header>
+
+            <div className="flex flex-1 overflow-hidden relative">
+                {/* Sidebar Premium SEACE */}
+            <aside
+                className={`
+                    fixed lg:static inset-y-0 left-0 z-[100]
+                    text-white flex flex-col
+                    transition-all duration-500 cubic-bezier(0.4, 0, 0.2, 1) shadow-2xl lg:shadow-xl
+                    ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+                    ${collapsed ? 'w-[90px]' : 'w-[280px]'}
+                    border-r-0 lg:border-r border-white/5
+                    backdrop-blur-md
+                    bg-[#0A192F] bg-dotted-pattern
+                `}
+            >
+                {/* Collapse Button Area (Desktop) */}
+                <div className="flex items-center justify-between px-6 py-4 relative shrink-0">
+                    <button
+                        onClick={() => setCollapsed(!collapsed)}
+                        className={`
+                            hidden lg:flex items-center justify-center
+                            w-9 h-9 rounded-full
+                            bg-[#132337] border border-white/10 shadow-[0_0_15px_rgba(0,0,0,0.4)]
+                            text-white/80 hover:text-white
+                            hover:bg-gradient-to-r hover:from-blue-600 hover:to-blue-500 hover:border-blue-400/50 
+                            hover:shadow-[0_0_20px_rgba(37,99,235,0.5)] hover:scale-110
+                            transition-all duration-300 ease-out
+                            absolute -right-[18px] top-1/2 -translate-y-1/2 z-[110]
+                            group
+                        `}
+                    >
+                        <i className={`fas ${collapsed ? 'fa-chevron-right' : 'fa-chevron-left'} text-[11px] transition-transform duration-300 group-hover:${collapsed ? 'translate-x-0.5' : '-translate-x-0.5'}`}></i>
+                    </button>
+                    
                     <button
                         onClick={() => setMobileMenuOpen(false)}
-                        className="lg:hidden w-8 h-8 flex items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
+                        className="lg:hidden w-8 h-8 flex items-center justify-center rounded-full bg-white/10 text-white"
                     >
                         <i className="fas fa-times"></i>
                     </button>
                 </div>
 
-                {/* Botón Toggle Flotante en el Borde */}
-                <button
-                    onClick={() => setCollapsed(!collapsed)}
-                    className={`
-                        hidden lg:flex items-center justify-center
-                        w-6 h-12 rounded-full
-                        bg-[#0F2C4A] border border-white/20 shadow-[0_0_15px_rgba(0,0,0,0.3)]
-                        text-blue-200 hover:text-white hover:bg-blue-600
-                        transition-all duration-300 transform hover:scale-110 active:scale-95
-                        absolute -right-3 top-1/2 -translate-y-1/2 z-[60]
-                        cursor-pointer backdrop-blur-md
-                    `}
-                    title={collapsed ? "Expandir menú" : "Colapsar menú"}
-                >
-                    <i className={`fas ${collapsed ? 'fa-chevron-right' : 'fa-chevron-left'} text-[10px]`}></i>
-                </button>
-
                 {/* Menú Scrollable */}
-                <div className="flex-1 overflow-y-auto px-3 space-y-1 pb-4 scrollbar-hide">
+                <div className={`flex-1 px-3 space-y-1 pb-4 scrollbar-hide ${collapsed ? 'overflow-visible' : 'overflow-y-auto'}`}>
                     <MenuGroup title="Inteligencia SEACE" collapsed={collapsed}>
-                        <MenuItem href="/seace/dashboard" icon="fa-chart-pie" label="Dashboard" active={isActive('/seace/dashboard')} collapsed={collapsed} delay={getDelay(1)} />
-                        <MenuItem href="/seace/busqueda" icon="fa-search" label="Búsqueda" active={isActive('/seace/busqueda')} collapsed={collapsed} delay={getDelay(2)} />
-                        <MenuItem href="/seace/notificaciones" icon="fa-database" label="Notificaciones" active={isActive('/seace/notificaciones')} collapsed={collapsed} delay={getDelay(3)} />
-                        <MenuItem href="/seace/reportes" icon="fa-chart-bar" label="Reportes" active={isActive('/seace/reportes')} collapsed={collapsed} delay={getDelay(4)} />
-                        <MenuItem href="/seace/gestion-manual" icon="fa-clipboard-list" label="Gestión Manual" active={isActive('/seace/gestion-manual')} collapsed={collapsed} delay={getDelay(5)} />
+                        <MenuItem href="/seace/dashboard" icon="fa-chart-pie" label="Dashboard" active={isActive('/seace/dashboard')} collapsed={collapsed} delay={getDelay(1)} color="indigo" />
+                        <MenuItem href="/seace/busqueda" icon="fa-search" label="Búsqueda" active={isActive('/seace/busqueda')} collapsed={collapsed} delay={getDelay(2)} color="amber" />
+                        <MenuItem href="/seace/notificaciones" icon="fa-database" label="Notificaciones" active={isActive('/seace/notificaciones')} collapsed={collapsed} delay={getDelay(3)} color="blue" />
+                        <MenuItem href="/seace/reportes" icon="fa-chart-bar" label="Reportes" active={isActive('/seace/reportes')} collapsed={collapsed} delay={getDelay(4)} color="emerald" />
+                        <MenuItem href="/seace/gestion-manual" icon="fa-clipboard-list" label="Gestión Manual" active={isActive('/seace/gestion-manual')} collapsed={collapsed} delay={getDelay(5)} color="rose" />
                     </MenuGroup>
                 </div>
 
-                {/* Footer */}
-                <div className="p-4 mt-auto space-y-3">
+                {/* Footer / User Profile & Volver */}
+                <div className={`p-4 mt-auto border-t border-white/5 space-y-3 ${collapsed ? 'px-2' : ''}`}>
+                    {/* User Profile */}
+                    <div className={`
+                        flex items-center gap-3 p-3 rounded-2xl bg-[#132337] border border-white/10
+                        ${collapsed ? 'justify-center p-2' : ''}
+                    `}>
+                        <div className="relative flex-shrink-0">
+                            <div className="w-10 h-10 rounded-xl bg-[#FF4B63] flex items-center justify-center shadow-lg">
+                                <span className="font-bold text-white text-lg">B</span>
+                            </div>
+                            <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-emerald-500 border-2 border-[#132337] rounded-full"></div>
+                        </div>
+                        {!collapsed && (
+                            <div className="flex flex-col flex-1 min-w-0">
+                                <span className="text-sm font-bold text-white truncate">Brayan Jhans</span>
+                                <span className="text-[9px] font-black text-blue-300 uppercase tracking-widest mt-0.5">Director</span>
+                            </div>
+                        )}
+                    </div>
                     {/* Back Button */}
                     <button
                         onClick={() => router.push('/modules')}
                         className={`
-                            relative overflow-hidden group w-full rounded-2xl transition-all duration-300 border border-blue-500/20
+                            relative overflow-hidden group w-full rounded-2xl transition-all duration-300 border border-white/10
                             ${collapsed
-                                ? 'h-12 bg-blue-500/10 text-blue-400 hover:text-white flex items-center justify-center'
-                                : 'px-4 py-3.5 bg-blue-500/10 hover:bg-blue-500 flex items-center gap-3 text-blue-100 hover:text-white'}
+                                ? 'h-12 bg-[#132337] text-white flex items-center justify-center'
+                                : 'px-4 py-3.5 bg-[#132337] hover:bg-[#1A2C42] flex items-center gap-3 text-white'}
                         `}
                     >
-                        <div className={`absolute inset-0 bg-blue-600 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ${collapsed ? 'rounded-2xl' : ''}`}></div>
-                        <i className="fas fa-arrow-left relative z-10 text-lg transition-transform group-hover:scale-110"></i>
-                        {!collapsed && <span className="font-bold text-base relative z-10 tracking-wide">Volver</span>}
+                        <i className="fas fa-arrow-left text-sm"></i>
+                        {!collapsed && <span className="font-bold text-sm tracking-wide">Volver</span>}
                     </button>
                 </div>
-            </aside>
+                </aside>
 
-            {/* Main Content */}
-            <main className="flex-1 flex flex-col h-screen overflow-hidden relative">
-                {/* Header Actions - Top Right (Visible en Móvil y Desktop) */}
-                <div className="relative z-50">
-                    <HeaderActions />
-                </div>
-
-                {/* Botón Menú Móvil (Floating Action Button - Fixed Bottom Left) */}
-                <button
-                    onClick={() => setMobileMenuOpen(true)}
-                    className="lg:hidden fixed bottom-6 left-6 z-50 w-14 h-14 flex items-center justify-center rounded-full bg-[#0F2C4A] text-white shadow-[0_4px_20px_rgba(15,44,74,0.4)] hover:scale-110 active:scale-95 transition-all backdrop-blur-sm border border-white/20"
-                >
-                    <i className="fas fa-bars text-xl"></i>
-                </button>
-
-                {/* Content */}
-                <div className="flex-1 overflow-y-auto p-2 sm:p-4 lg:p-8 scroll-smooth bg-white dark:bg-gray-900">
-                    <div className="h-full animate-in fade-in duration-700 slide-in-from-bottom-2">
+                {/* Main Content */}
+                <main className="flex-1 overflow-y-auto p-2 sm:p-4 lg:p-6 scroll-smooth bg-white dark:bg-gray-950 relative">
+                    <div className="mx-auto max-w-[1600px] h-full animate-in fade-in duration-700 slide-in-from-bottom-2">
                         {children}
                     </div>
-                </div>
-            </main>
+                </main>
+            </div>
             <ChatbotWidget />
         </div>
     );
@@ -168,27 +206,76 @@ function MenuGroup({ title, children, collapsed, className = "" }: any) {
     );
 }
 
-function MenuItem({ href, icon, label, active, collapsed, delay }: any) {
+function MenuItem({ href, icon, label, active, collapsed, delay, color = "blue" }: any) {
+    const bgGradients: any = {
+        indigo: 'from-indigo-600 to-indigo-500 shadow-indigo-900/40',
+        blue: 'from-blue-600 to-blue-500 shadow-blue-900/40',
+        amber: 'from-amber-500 to-orange-500 shadow-orange-900/40',
+        emerald: 'from-emerald-600 to-teal-500 shadow-emerald-900/40',
+        rose: 'from-rose-600 to-pink-500 shadow-rose-900/40',
+    };
+
+    const hoverColors: any = {
+        indigo: 'hover:bg-gradient-to-r hover:from-indigo-600 hover:to-indigo-500 hover:shadow-indigo-900/40',
+        blue: 'hover:bg-gradient-to-r hover:from-blue-600 hover:to-blue-500 hover:shadow-blue-900/40',
+        amber: 'hover:bg-gradient-to-r hover:from-amber-500 hover:to-orange-500 hover:shadow-orange-900/40',
+        emerald: 'hover:bg-gradient-to-r hover:from-emerald-600 hover:to-teal-500 hover:shadow-emerald-900/40',
+        rose: 'hover:bg-gradient-to-r hover:from-rose-600 hover:to-pink-500 hover:shadow-rose-900/40',
+    };
+
+    const tooltipColors: any = {
+        indigo: 'text-indigo-400',
+        blue: 'text-blue-400',
+        amber: 'text-amber-400',
+        emerald: 'text-emerald-400',
+        rose: 'text-rose-400',
+    };
+
+    const tooltipBorders: any = {
+        indigo: 'border-indigo-500/40 shadow-[0_0_20px_rgba(99,102,241,0.2)]',
+        blue: 'border-blue-500/40 shadow-[0_0_20px_rgba(59,130,246,0.2)]',
+        amber: 'border-amber-500/40 shadow-[0_0_20px_rgba(245,158,11,0.2)]',
+        emerald: 'border-emerald-500/40 shadow-[0_0_20px_rgba(16,185,129,0.2)]',
+        rose: 'border-rose-500/40 shadow-[0_0_20px_rgba(244,63,110,0.2)]',
+    };
+
     return (
         <Link href={href}>
             <div
                 style={{ animationDelay: delay }}
                 className={`
-                    relative mx-2 px-4 py-3.5 rounded-2xl cursor-pointer transition-all duration-300 group flex items-center
+                    relative cursor-pointer transition-all duration-300 group flex items-center
                     ${active
-                        ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-900/40 translate-x-1 scale-[1.02]'
-                        : 'text-white/80 hover:bg-white/10 hover:text-white hover:translate-x-1 hover:shadow-md hover:shadow-black/20'
+                        ? `bg-gradient-to-r text-white scale-[1.02] ${collapsed ? '' : 'translate-x-1'} ${bgGradients[color]}`
+                        : `text-white/80 hover:shadow-lg ${collapsed ? '' : 'hover:translate-x-1'} ${hoverColors[color]}`
                     }
-                    ${collapsed ? 'justify-center px-0 py-3.5 mx-1 !rounded-xl' : ''}
+                    ${collapsed ? 'justify-center w-12 h-12 mx-auto !rounded-[1.25rem]' : 'mx-3 px-4 py-3 rounded-[1.25rem]'}
                     animate-in slide-in-from-left-2 fade-in fill-mode-backwards
                 `}
             >
-                <i className={`fas ${icon} text-xl transition-transform duration-300 group-hover:scale-110 group-active:scale-95 ${collapsed ? '' : 'mr-4 w-6 text-center'} ${active ? 'text-white drop-shadow-md' : 'text-blue-100/70 group-hover:text-white group-hover:drop-shadow-sm'}`}></i>
+                <i className={`fas ${icon} text-[1.1rem] transition-all duration-300 group-hover:scale-110 group-active:scale-95 ${collapsed ? '' : 'mr-4 w-6 text-center'} ${active ? 'text-white drop-shadow-md' : 'group-hover:text-white'}`}></i>
                 {!collapsed && (
-                    <span className={`font-semibold tracking-wide flex-1 drop-shadow-sm ${active ? 'text-[15.5px]' : 'text-[15px]'}`}>{label}</span>
+                    <span className={`font-bold tracking-wide flex-1 transition-all duration-300 drop-shadow-sm ${active ? 'text-[15px] text-white' : 'text-[14.5px] group-hover:text-white'}`}>{label}</span>
                 )}
                 {active && !collapsed && (
-                    <div className="w-2 h-2 rounded-full bg-white shadow-[0_0_10px_rgba(255,255,255,1)] animate-pulse ml-2"></div>
+                    <div className="w-5 h-5 rounded-full bg-black/20 flex items-center justify-center ml-2 border border-black/10">
+                        <div className="w-1.5 h-1.5 rounded-full bg-white shadow-sm"></div>
+                    </div>
+                )}
+                
+                {/* Tooltip Flotante Mejorado */}
+                {collapsed && (
+                    <div className={`
+                        absolute left-[calc(100%+16px)] 
+                        opacity-0 invisible translate-x-2 
+                        group-hover:opacity-100 group-hover:visible group-hover:translate-x-0 
+                        transition-all duration-300 ease-out z-[9999] whitespace-nowrap 
+                        bg-[#0A192F]/95 backdrop-blur-sm border ${tooltipBorders[color]} 
+                        rounded-xl px-4 py-2 flex items-center
+                    `}>
+                        <span className={`text-[13px] font-extrabold tracking-wide drop-shadow-md ${tooltipColors[color]}`}>{label}</span>
+                        <div className={`absolute -left-[5px] top-1/2 -translate-y-1/2 w-[10px] h-[10px] bg-[#0A192F] border-l border-b ${tooltipBorders[color].split(' ')[0]} rotate-45 rounded-sm`}></div>
+                    </div>
                 )}
             </div>
         </Link>

@@ -29,10 +29,19 @@ export function useAuthProtection() {
 
         const checkAuth = async () => {
             try {
-                const response = await fetch('/api/auth/me', {
+                // Se agrega un parámetro de timestamp para evitar que el navegador o Next.js
+                // devuelvan un 401 falso que haya quedado en caché de un intento anterior.
+                const timestamp = new Date().getTime();
+                const response = await fetch(`/api/auth/me?t=${timestamp}`, {
                     method: 'GET',
                     credentials: 'include', // Send HttpOnly cookie automatically
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache',
+                        'Expires': '0'
+                    },
+                    cache: 'no-store'
                 });
 
                 if (response.ok) {

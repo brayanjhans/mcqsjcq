@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import type { SearchFilters } from "@/types/licitacion";
-import { Search, X, Filter } from "lucide-react";
+import { Search, RotateCcw, ChevronDown, SlidersHorizontal } from "lucide-react";
 import { licitacionService } from "@/lib/services/licitacionService";
 
 interface Props {
@@ -150,19 +150,19 @@ export const SearchFiltersComponent: React.FC<Props> = ({
                     </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-4">
                     <button
                         onClick={() => setShowAdvanced(!showAdvanced)}
-                        className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 shadow-md shadow-blue-500/20 transition-all"
+                        className={`flex items-center gap-2 px-6 py-2.5 rounded-2xl bg-indigo-600 text-white text-[13px] font-extrabold hover:bg-indigo-700 hover:-translate-y-0.5 transition-all duration-300 active:scale-95 ${!showAdvanced ? 'btn-soft-pulse' : ''}`}
                     >
-                        {showAdvanced ? "Menos Filtros" : "Más Filtros"}
-                        <Filter className={`w-3.5 h-3.5 transition-transform duration-300 ${showAdvanced ? "rotate-180" : ""}`} />
+                        <span>{showAdvanced ? "Menos Filtros" : "Más Filtros"}</span>
+                        <ChevronDown className={`w-4 h-4 stroke-[3px] transition-transform duration-300 ${showAdvanced ? "rotate-180" : ""}`} />
                     </button>
                     <button
                         onClick={handleClear}
-                        className="group flex items-center gap-2 px-4 py-2 rounded-lg border border-transparent bg-red-50 text-xs font-bold text-red-500 hover:bg-red-100 transition-all dark:bg-red-900/20 dark:text-red-400"
+                        className="group flex items-center gap-2 px-6 py-2.5 rounded-2xl border border-rose-200 bg-rose-50/40 text-[13px] font-extrabold text-rose-500 hover:bg-rose-50 hover:border-rose-300 transition-all duration-300 active:scale-95 dark:border-rose-900/50 dark:hover:bg-rose-900/20 dark:text-rose-400"
                     >
-                        <X className="w-3.5 h-3.5" />
+                        <RotateCcw className="w-4 h-4 stroke-[2.5px] transition-transform duration-500 group-hover:-rotate-180" />
                         <span>Limpiar</span>
                     </button>
                 </div>

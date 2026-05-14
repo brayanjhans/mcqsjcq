@@ -252,58 +252,60 @@ export function HeaderActions() {
         }
     };
 
+    const [isReloading, setIsReloading] = useState(false);
+
     const handleUpdateMefClick = () => {
+        setIsReloading(true);
         window.location.reload();
     };
 
     return (
         <>
-            <div className="w-full h-14 sm:h-16 bg-white dark:bg-[#0b122b] border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-2 sm:px-6 z-40 shrink-0 shadow-sm transition-colors duration-300">
-
-                {/* Left side: Back Button Portal Target */}
-                <div id="portal-header-left" className="flex items-center min-w-0"></div>
-
                 {/* Right side: Actions */}
-                <div className="flex items-center justify-end gap-1 sm:gap-3 shrink-0 ml-auto">
-                    {/* Last Updated Label - Hidden on mobile */}
-                    <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
+                <div className="flex items-center justify-end gap-2 sm:gap-3 shrink-0">
+
+                    {/* 1. FECHA — chip con ícono de reloj */}
+                    <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-[#0F2C4A]/60 border border-slate-200 dark:border-blue-900/40">
+                        <svg className="w-3 h-3 text-blue-500 dark:text-blue-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+                        </svg>
                         {mefLastUpdated || isUpdatingMef ? (
                             isUpdatingMef ? (
-                                <span className="text-xs sm:text-sm text-blue-500 font-medium whitespace-nowrap">
-                                    <i className="fas fa-database fa-fade"></i> Trabajando...
+                                <span className="text-[11px] text-blue-500 font-semibold whitespace-nowrap">
+                                    Trabajando...
                                 </span>
                             ) : (
-                                <span className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium whitespace-nowrap">
-                                    Datos al {mefLastUpdated}
+                                <span className="text-[11px] text-slate-600 dark:text-slate-300 font-semibold whitespace-nowrap">
+                                    {mefLastUpdated}
                                 </span>
                             )
                         ) : null}
                     </div>
 
-                    {/* Refresh Button */}
+                    {/* 2. REFRESCAR — botón premium */}
                     <button
                         onClick={handleUpdateMefClick}
-                        className={`flex h-10 px-4 rounded-full backdrop-blur-md border border-gray-200 dark:border-slate-700 shadow-sm items-center justify-center gap-2 transition-all 
-                            ${isUpdatingMef ? 'bg-blue-50/50 dark:bg-blue-900/30' : 'bg-white hover:bg-slate-50 dark:bg-slate-800/50 dark:hover:bg-slate-800 active:scale-95'} 
-                            text-slate-700 dark:text-blue-300 font-medium text-sm`}
+                        disabled={isReloading}
+                        className={`group flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[11px] font-bold transition-all active:scale-95 border
+                            ${isReloading
+                                ? 'bg-blue-50 border-blue-200 text-blue-400 cursor-not-allowed'
+                                : 'bg-white border-slate-200 text-slate-600 hover:text-[#0F2C4A] hover:border-[#0F2C4A] hover:bg-slate-50 shadow-sm'}`}
                         title="Refrescar vista"
                     >
-                        <i className={`fas fa-sync ${isUpdatingMef ? 'fa-spin text-blue-500' : ''}`}></i>
-                        <span className="hidden md:inline">
-                            Refrescar
-                        </span>
+                        <svg className={`w-3.5 h-3.5 ${isReloading ? 'animate-spin text-blue-500' : 'text-slate-400 group-hover:text-[#0F2C4A] transition-colors'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                        </svg>
+                        <span className="hidden md:inline">Refrescar</span>
                     </button>
 
-                    {/* Portal Target for Page-Specific Actions like Export */}
+                    {/* Portal Target */}
                     <div id="portal-header-actions" className="flex items-center"></div>
 
-                    {/* Vertical line separator */}
-                    <div className="hidden xs:flex h-6 items-center">
-                        <div className="h-6 w-px bg-slate-200 dark:bg-slate-700 mx-1 sm:mx-2"></div>
-                    </div>
+                    {/* Divisor */}
+                    <div className="h-5 w-px bg-slate-200 dark:bg-slate-700"></div>
 
-                    {/* Notifications */}
-                    <div className="flex w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-slate-50 dark:bg-slate-800/50 backdrop-blur-md items-center justify-center transition-all relative shrink-0 dropdown-container">
+                    {/* 3. NOTIFICACIONES — campana con badge */}
+                    <div className="flex items-center justify-center relative shrink-0 dropdown-container">
                         <NotificationDropdown
                             isOpen={activeDropdown === 'notifications'}
                             onToggle={() => setActiveDropdown(activeDropdown === 'notifications' ? null : 'notifications')}
@@ -311,13 +313,13 @@ export function HeaderActions() {
                         />
                     </div>
 
-                    {/* User Profile */}
+                    {/* 4. PERFIL */}
                     <div className="relative shrink-0 dropdown-container">
                         <button
                             onClick={() => setActiveDropdown(isProfileOpen ? null : 'profile')}
-                            className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-slate-100 dark:bg-slate-800/50 backdrop-blur-md flex items-center justify-center text-gray-700 dark:text-gray-200 hover:scale-105 active:scale-95 group p-0"
+                            className="w-8 h-8 sm:w-9 sm:h-9 rounded-full ring-2 ring-blue-500/40 hover:ring-blue-500/80 transition-all hover:scale-105 active:scale-95 p-0 overflow-hidden"
                         >
-                            <div className="w-full h-full rounded-full bg-gradient-to-tr from-blue-600 to-cyan-500 flex items-center justify-center text-white text-lg font-bold shadow-sm overflow-hidden border-2 border-white dark:border-slate-800">
+                            <div className="w-full h-full rounded-full bg-gradient-to-tr from-[#0D1F38] to-blue-500 flex items-center justify-center text-white text-sm font-bold shadow-md">
                                 {user?.avatar_url ? (
                                     <img src={user.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
                                 ) : (
@@ -434,7 +436,6 @@ export function HeaderActions() {
                         )}
                     </div>
                 </div>
-            </div>
 
             {/* Modals */}
             <LogoutModal

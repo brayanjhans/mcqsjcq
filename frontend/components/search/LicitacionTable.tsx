@@ -1,7 +1,7 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { Eye, Search, FileDown, Loader2, FileText, Users } from "lucide-react";
+import { Eye, Search, FileDown, Loader2, FileText, Users, ChevronLeft, ChevronRight } from "lucide-react";
 import type { Licitacion } from "@/types/licitacion";
 import { LOGO_MQS_B64, LOGO_JCQ_B64 } from "@/lib/utils/pdfAssets";
 
@@ -13,6 +13,8 @@ interface Props {
     totalItems?: number;
     ruc?: string;
     entityName?: string;
+    currentPage?: number;
+    pageSize?: number;
 }
 
 export const LicitacionTable: React.FC<Props> = ({
@@ -23,9 +25,72 @@ export const LicitacionTable: React.FC<Props> = ({
     totalItems,
     ruc,
     entityName,
+    currentPage = 1,
+    pageSize = 20,
 }) => {
     const [exporting, setExporting] = useState(false);
     const [exportingExcel, setExportingExcel] = useState(false);
+
+    // ── Scroll horizontal detector y Posición flotante ──
+    const scrollRef = useRef<HTMLDivElement>(null);
+    const tableContainerRef = useRef<HTMLDivElement>(null);
+    const [canScrollLeft, setCanScrollLeft]   = useState(false);
+    const [canScrollRight, setCanScrollRight] = useState(false);
+    const [buttonTop, setButtonTop] = useState(150);
+
+    // Actualiza la visibilidad de los botones según el scroll interno de la tabla
+    const updateScrollState = useCallback(() => {
+        const el = scrollRef.current;
+        if (!el) return;
+        setCanScrollLeft(el.scrollLeft > 8);
+        setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 8);
+    }, []);
+
+    // Actualiza la posición vertical (Y) de los botones para que sigan el scroll de la página
+    const updateButtonPosition = useCallback(() => {
+        if (!tableContainerRef.current) return;
+        const rect = tableContainerRef.current.getBoundingClientRect();
+        const viewportCenter = window.innerHeight / 2;
+
+        // Calcular la posición local dentro del contenedor relative
+        let newTop = viewportCenter - rect.top;
+        
+        // Limitar la posición para que los botones no se salgan del header o del final de la tabla
+        const minTop = 60; // Margen superior
+        const maxTop = Math.max(60, rect.height - 60); // Margen inferior
+        
+        if (newTop < minTop) newTop = minTop;
+        if (newTop > maxTop) newTop = maxTop;
+
+        setButtonTop(newTop);
+    }, []);
+
+    useEffect(() => {
+        const el = scrollRef.current;
+        if (!el) return;
+        
+        updateScrollState();
+        el.addEventListener('scroll', updateScrollState, { passive: true });
+        const ro = new ResizeObserver(updateScrollState);
+        ro.observe(el);
+
+        // Tracking global de scroll para mover los botones
+        window.addEventListener('scroll', updateButtonPosition, true); // true para capturar cualquier scroll
+        window.addEventListener('resize', updateButtonPosition);
+        // Pequeño delay inicial para asegurar que el DOM está renderizado
+        setTimeout(updateButtonPosition, 100);
+
+        return () => { 
+            el.removeEventListener('scroll', updateScrollState); 
+            ro.disconnect(); 
+            window.removeEventListener('scroll', updateButtonPosition, true);
+            window.removeEventListener('resize', updateButtonPosition);
+        };
+    }, [updateScrollState, updateButtonPosition, licitaciones]);
+
+    const scrollTable = (dir: 'left' | 'right') => {
+        scrollRef.current?.scrollBy({ left: dir === 'left' ? -280 : 280, behavior: 'smooth' });
+    };
 
     // FORMATTERS
     const MESES_ES = [
@@ -504,13 +569,60 @@ export const LicitacionTable: React.FC<Props> = ({
                 </div>
             </div>
 
-            {/* Table Container with Glass Effect */}
-            <div className="w-full overflow-x-auto rounded-[2rem] border border-slate-200/60 dark:border-white/10 shadow-2xl bg-white dark:bg-[#0A192F] relative group/table">
+            {/* Table Container with scroll buttons */}
+            <div className="relative" ref={tableContainerRef}>
+
+                {/* Contenedor virtual para los botones */}
+                <div className="absolute inset-0 pointer-events-none z-50 overflow-hidden rounded-[2rem]">
+                    {/* ◀ Button */}
+                    <button
+                        style={{ top: `${buttonTop}px` }}
+                        onClick={() => scrollTable('left')}
+                        disabled={!canScrollLeft}
+                        aria-label="Desplazar tabla a la izquierda"
+                        className={`
+                            absolute left-3 -translate-y-1/2
+                            w-10 h-10 flex items-center justify-center pointer-events-auto
+                            rounded-full bg-blue-600 text-white
+                            border-2 border-white dark:border-[#0F2C4A]
+                            shadow-[0_4px_15px_rgba(37,99,235,0.4)]
+                            transition-all duration-100 ease-out
+                            ${canScrollLeft 
+                                ? 'hover:bg-blue-700 hover:scale-110 active:scale-95 opacity-100 cursor-pointer' 
+                                : 'opacity-50 cursor-not-allowed'}
+                        `}
+                    >
+                        <ChevronLeft className="w-6 h-6" />
+                    </button>
+
+                    {/* ▶ Button */}
+                    <button
+                        style={{ top: `${buttonTop}px` }}
+                        onClick={() => scrollTable('right')}
+                        disabled={!canScrollRight}
+                        aria-label="Desplazar tabla a la derecha"
+                        className={`
+                            absolute right-3 -translate-y-1/2
+                            w-10 h-10 flex items-center justify-center pointer-events-auto
+                            rounded-full bg-blue-600 text-white
+                            border-2 border-white dark:border-[#0F2C4A]
+                            shadow-[0_4px_15px_rgba(37,99,235,0.4)]
+                            transition-all duration-100 ease-out
+                            ${canScrollRight 
+                                ? 'hover:bg-blue-700 hover:scale-110 active:scale-95 opacity-100 cursor-pointer' 
+                                : 'opacity-50 cursor-not-allowed'}
+                        `}
+                    >
+                        <ChevronRight className="w-6 h-6" />
+                    </button>
+                </div>
+
+            <div ref={scrollRef} className="w-full overflow-x-auto rounded-[2rem] border border-slate-200/60 dark:border-white/10 shadow-2xl bg-white dark:bg-[#0A192F] relative group/table">
                 <table className="w-full text-left text-sm text-slate-600 dark:text-slate-300 border-separate border-spacing-0">
                     <thead className="bg-gradient-to-r from-[#1e3a8a] via-[#1e40af] to-[#172554] text-white uppercase font-black text-[10px] tracking-[0.15em] sticky top-0 z-20">
                         <tr>
-                            <th className="px-5 py-6 text-center border-b border-white/10 first:rounded-tl-[2rem]">N°</th>
-                            <th className="px-5 py-6 min-w-[150px] border-b border-white/10">Entidad</th>
+                            <th className="px-5 py-6 text-center sticky left-0 z-30 bg-[#1e3a8a] border-b border-white/10 first:rounded-tl-[2rem] w-[70px] min-w-[70px] max-w-[70px]">N°</th>
+                            <th className="px-5 py-6 min-w-[180px] max-w-[180px] sticky left-[70px] z-30 bg-[#1e3a8a] border-b border-white/10 shadow-[4px_0_8px_-2px_rgba(0,0,0,0.25)]">Entidad</th>
                             <th className="px-5 py-6 min-w-[140px] border-b border-white/10">Nomenclatura</th>
                             <th className="px-5 py-6 min-w-[200px] border-b border-white/10">Descripción</th>
                             <th className="px-5 py-6 min-w-[120px] text-right border-b border-white/10">Monto Est.</th>
@@ -520,7 +632,7 @@ export const LicitacionTable: React.FC<Props> = ({
                             <th className="px-5 py-6 min-w-[120px] border-b border-white/10">Fechas</th>
                             <th className="px-5 py-6 min-w-[120px] border-b border-white/10">Aseguradora</th>
                             <th className="px-5 py-6 min-w-[160px] text-center border-b border-white/10">Documentos</th>
-                            <th className="px-5 py-6 text-center sticky right-0 bg-[#172554] border-b border-white/10 shadow-[-10px_0_20px_-10px_rgba(0,0,0,0.3)] last:rounded-tr-[2rem]">Acciones</th>
+                            <th className="px-5 py-6 text-center sticky right-0 bg-[#172554] border-b border-white/10 shadow-[-10px_0_20px_-10px_rgba(0,0,0,0.3)] last:rounded-tr-[2rem]">Ver Detalles</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-white/5 bg-white dark:bg-transparent">
@@ -530,10 +642,10 @@ export const LicitacionTable: React.FC<Props> = ({
                                 className="group/row hover:bg-blue-50/40 dark:hover:bg-white/[0.03] transition-all duration-300 animate-in fade-in slide-in-from-bottom-2"
                                 style={{ animationDelay: `${index * 50}ms` }}
                             >
-                                <td className="px-5 py-6 text-center font-black text-slate-400 dark:text-slate-500 tabular-nums border-r border-slate-100/50 dark:border-white/5 group-hover/row:text-blue-700 transition-colors">
-                                    {String(index + 1).padStart(2, '0')}
+                                <td className="px-5 py-6 text-center font-black text-slate-400 dark:text-slate-500 tabular-nums sticky left-0 bg-white dark:bg-[#0A192F] border-r border-slate-100/50 dark:border-white/5 group-hover/row:text-blue-700 group-hover/row:bg-[#f4f8ff] dark:group-hover/row:bg-[#0c1e38] transition-colors z-10 w-[70px] min-w-[70px] max-w-[70px]">
+                                    {String((currentPage - 1) * pageSize + index + 1).padStart(2, '0')}
                                 </td>
-                                <td className="px-5 py-6">
+                                <td className="px-5 py-6 sticky left-[70px] bg-white dark:bg-[#0A192F] group-hover/row:bg-[#f4f8ff] dark:group-hover/row:bg-[#0c1e38] transition-colors z-10 shadow-[4px_0_8px_-2px_rgba(0,0,0,0.06)] min-w-[180px] max-w-[180px]">
                                     <div className="text-[11px] font-black text-slate-800 dark:text-white uppercase leading-tight tracking-tight group-hover/row:translate-x-1 transition-transform">
                                         {getHighlightedText(lic.comprador, searchTerm)}
                                     </div>
@@ -691,6 +803,7 @@ export const LicitacionTable: React.FC<Props> = ({
                         )}
                     </tbody>
                 </table>
+            </div>
             </div>
         </div>
     );

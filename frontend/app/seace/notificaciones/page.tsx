@@ -146,7 +146,7 @@ function NotificacionesPageContent() {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 p-6 md:p-8 dark:bg-[#0b122b]">
+        <div className="min-h-screen bg-white p-6 md:p-8 dark:bg-[#0b122b]">
             <div className="mx-auto max-w-7xl space-y-8">
 
                 {/* Header */}

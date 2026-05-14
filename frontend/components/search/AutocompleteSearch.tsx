@@ -176,24 +176,27 @@ export const AutocompleteSearch: React.FC<AutocompleteSearchProps> = ({
     const showDropdown = showHistory || showSuggestions;
 
     return (
-        /* 
-         * The wrapper MUST have `relative` + a high z-index so the absolute dropdown 
+        /*
+         * The wrapper MUST have `relative` + a high z-index so the absolute dropdown
          * paints above the result cards (which use CSS transforms creating new stacking contexts).
          * We use isolation: isolate via the `isolate` class as well.
          */
-        <div ref={wrapperRef} className="relative w-full isolate" style={{ zIndex: 99999 }}>
+        <div ref={wrapperRef} className="relative w-full isolate group/search" style={{ zIndex: 99999 }}>
+            {/* Gradient glow ring on focus — rendered behind the input */}
+            <div className="pointer-events-none absolute -inset-[2px] rounded-[14px] bg-gradient-to-r from-blue-500 to-indigo-500 opacity-0 group-focus-within/search:opacity-100 transition-opacity duration-300 blur-[1px]" />
+
             {/* Search icon */}
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
                 {loading
                     ? <Loader2 className="h-4 w-4 text-indigo-500 animate-spin" />
-                    : <Search className="h-4 w-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+                    : <Search className="h-4 w-4 text-slate-400 group-focus-within/search:text-indigo-500 transition-colors duration-300" />
                 }
             </div>
 
             {/* Input */}
             <input
                 type="text"
-                className="block w-full pl-11 pr-4 py-3.5 rounded-xl border border-slate-200 text-sm font-medium placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all bg-white dark:bg-[#111c44] dark:border-slate-700 dark:text-white"
+                className="relative block w-full pl-11 pr-4 py-3.5 rounded-[13px] border border-slate-200 text-sm font-medium placeholder:text-slate-400 focus:ring-0 focus:border-transparent outline-none transition-all duration-300 bg-white shadow-sm focus:shadow-lg focus:shadow-indigo-500/10 dark:bg-[#111c44] dark:border-slate-700 dark:text-white"
                 placeholder={placeholder}
                 value={query}
                 onChange={e => setQuery(e.target.value)}

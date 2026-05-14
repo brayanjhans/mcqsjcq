@@ -86,8 +86,12 @@ def get_current_user(
     Reads JWT from HttpOnly cookie first, then falls back to Bearer header.
     """
     token = _extract_token_from_request(request, credentials)
+    print(f"\n[DEBUG Auth] Path: {request.url.path}")
+    print(f"[DEBUG Auth] Has token: {bool(token)}")
+    print(f"[DEBUG Auth] Cookies received: {request.cookies.keys()}")
 
     if not token:
+        print("[DEBUG Auth] FAILED: No token found in request")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not authenticated",

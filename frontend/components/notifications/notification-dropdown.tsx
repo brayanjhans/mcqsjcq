@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useNotifications, Notification } from '@/hooks/use-notifications';
 import { useNotificationWebSocket } from '@/hooks/use-notification-websocket';
 import { abbreviateProcedureType } from '@/lib/utils/procedure-abbreviations';
-
+import { Bell, Check, ArrowRight, ChevronRight } from 'lucide-react';
 
 interface NotificationDropdownProps {
     isOpen: boolean;
@@ -77,7 +77,7 @@ export default function NotificationDropdown({ isOpen, onToggle, onClose }: Noti
                 }}
                 className="relative p-2 text-gray-500 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-slate-700 rounded-full transition-all"
             >
-                <i className={`fas fa-bell text-xl ${isOpen ? 'text-slate-800 dark:text-white' : ''}`}></i>
+                <Bell className={`w-5 h-5 ${isOpen ? 'text-slate-800 dark:text-white' : ''}`} />
                 {unreadCount > 0 && (
                     <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[10px] flex items-center justify-center rounded-full font-bold shadow-sm ring-2 ring-white dark:ring-[#0b122b]">
                         {unreadCount > 9 ? '9+' : unreadCount}
@@ -107,7 +107,7 @@ export default function NotificationDropdown({ isOpen, onToggle, onClose }: Noti
                         ) : notifications.length === 0 ? (
                             <div className="p-8 text-center">
                                 <div className="mx-auto w-12 h-12 bg-gray-50 dark:bg-slate-700 rounded-full flex items-center justify-center mb-3">
-                                    <i className="fas fa-check text-gray-400"></i>
+                                    <Check className="w-5 h-5 text-gray-400" />
                                 </div>
                                 <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Estás al día</p>
                                 <p className="text-xs text-gray-400 mt-1">No hay notificaciones nuevas</p>
@@ -185,7 +185,7 @@ export default function NotificationDropdown({ isOpen, onToggle, onClose }: Noti
                                                     {isStateChange && oldState && newState ? (
                                                         <div className="flex flex-wrap items-center gap-2 text-xs font-medium mt-1 bg-gray-50 dark:bg-slate-800/50 p-1.5 rounded-md max-w-full">
                                                             <span className="text-gray-500 break-words">{oldState}</span>
-                                                            <i className="fas fa-arrow-right text-[10px] text-gray-300 shrink-0"></i>
+                                                            <ArrowRight className="w-3 h-3 text-gray-300 shrink-0" />
                                                             <span className={`${newState === 'NULO' || newState === 'DESIERTO' ? 'text-red-600' : 'text-emerald-600'} break-words`}>
                                                                 {newState}
                                                             </span>
@@ -231,7 +231,7 @@ export default function NotificationDropdown({ isOpen, onToggle, onClose }: Noti
                                                             onClick={() => { onClose(); router.push('/seace/notificaciones?tab=unread'); }}
                                                             className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
                                                         >
-                                                            Ver detalles <i className="fas fa-chevron-right text-[9px]"></i>
+                                                            Ver detalles <ChevronRight className="w-3 h-3" />
                                                         </button>
                                                     )}
                                                 </div>

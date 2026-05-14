@@ -338,7 +338,7 @@ export default function GeneradorReportesPage() {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 dark:bg-[#0b122b] p-4 sm:p-6 lg:p-8 transition-colors duration-300">
+        <div className="min-h-screen bg-white dark:bg-[#0b122b] p-4 sm:p-6 lg:p-8 transition-colors duration-300">
             <div className="mx-auto max-w-7xl">
 
                 {/* Main Card Container */}

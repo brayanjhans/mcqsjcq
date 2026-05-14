@@ -290,7 +290,7 @@ export default function EcommerceDashboardPage() {
     const processLabel = filterTipo ? filterTipo : "Procesos";
 
     return (
-        <div className="min-h-screen bg-slate-50 dark:bg-[#0b122b] p-4 text-slate-800 dark:text-slate-200 font-sans fade-in transition-colors duration-300">
+        <div className="min-h-screen bg-white dark:bg-[#0b122b] p-4 text-slate-800 dark:text-slate-200 font-sans fade-in transition-colors duration-300">
             <div className="mx-auto max-w-[1600px] space-y-6">
 
                 {/* --- Display User's Request: Year, Month, Procedure count? --- */}

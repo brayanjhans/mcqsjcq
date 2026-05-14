@@ -339,4 +339,120 @@ body {
 .shimmer-badge {
   background-size: 200% auto;
   animation: shimmer-badge 2s linear infinite;
+}
+
+/* ==========================================================================
+   PREMIUM UI ENHANCEMENTS (Stripe/Linear Inspired)
+   ========================================================================== */
+
+/* 1. Mesh Gradients (Fluid Depth) */
+@keyframes mesh-flow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.bg-mesh-premium {
+  background: radial-gradient(at 0% 0%, rgba(15, 44, 74, 1) 0px, transparent 50%),
+              radial-gradient(at 100% 0%, rgba(13, 31, 56, 1) 0px, transparent 50%),
+              radial-gradient(at 100% 100%, rgba(19, 54, 87, 1) 0px, transparent 50%),
+              radial-gradient(at 0% 100%, rgba(8, 24, 41, 1) 0px, transparent 50%);
+  background-color: #081829;
+  background-size: 200% 200%;
+  animation: mesh-flow 15s ease infinite;
+}
+
+.bg-dotted-pattern {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+
+/* 2. Adaptive Lighting (Mouse Glow) */
+:root {
+  --mouse-x: 50%;
+  --mouse-y: 50%;
+}
+
+.mouse-glow-container {
+  position: relative;
+  overflow: hidden;
+}
+
+.mouse-glow-effect {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(
+    600px circle at var(--mouse-x) var(--mouse-y),
+    rgba(255, 255, 255, 0.06),
+    transparent 40%
+  );
+  pointer-events: none;
+  z-index: 10;
+  transition: opacity 0.3s ease;
+  opacity: 0;
+}
+
+.mouse-glow-container:hover .mouse-glow-effect {
+  opacity: 1;
+}
+
+/* Glowing Border specifically for interactive elements */
+.border-glow {
+  position: relative;
+}
+
+.border-glow::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: radial-gradient(
+    200px circle at var(--mouse-x) var(--mouse-y),
+    rgba(96, 165, 250, 0.5),
+    transparent 40%
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.border-glow:hover::before {
+  opacity: 1;
+}
+
+/* 3. High-Density Typography Utilities */
+.tracking-tight-title {
+  letter-spacing: -0.025em;
+}
+
+.font-mono-data {
+  font-family: var(--font-jetbrains-mono), monospace;
+  letter-spacing: -0.01em;
+}
+
+/* Textura de Diamantes para las líneas corporativas */
+.texture-diamonds {
+  background-image: 
+    linear-gradient(45deg, rgba(255, 255, 255, 0.15) 25%, transparent 25%, transparent 75%, rgba(255, 255, 255, 0.15) 75%, rgba(255, 255, 255, 0.15)),
+    linear-gradient(45deg, rgba(255, 255, 255, 0.15) 25%, transparent 25%, transparent 75%, rgba(255, 255, 255, 0.15) 75%, rgba(255, 255, 255, 0.15));
+  background-size: 6px 6px;
+  background-position: 0 0, 3px 3px;
+}
+
+/* Animación de sonar pequeño */
+@keyframes ping-small {
+  75%, 100% {
+    transform: scale(1.2);
+    opacity: 0;
+  }
+}
+.animate-ping-small {
+  animation: ping-small 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
 }
