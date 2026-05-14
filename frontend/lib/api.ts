@@ -56,7 +56,7 @@ api.interceptors.response.use(
     (error) => {
         if (error.response?.status === 401) {
             const url = error.config?.url || '';
-            const skipLogoutUrls = ['/api/auth/verify-pin', '/api/auth/login'];
+            const skipLogoutUrls = ['/api/auth/verify-pin', '/api/auth/login', '/api/users', '/api/auth/users'];
             const shouldSkip = skipLogoutUrls.some(u => url.includes(u));
 
             if (!shouldSkip && typeof window !== 'undefined') {

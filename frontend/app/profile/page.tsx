@@ -78,158 +78,187 @@ export default function ProfilePage() {
 
     if (loading) return null;
 
-    const isAdminOrDirector = ['admin', 'director', 'DIRECTOR', 'ADMIN'].includes(user?.role);
+    const userRole = user?.role || user?.perfil;
+    const isAdminOrDirector = ['admin', 'director', 'DIRECTOR', 'ADMIN'].includes(userRole);
+    const isAdmin = ['admin', 'director', 'DIRECTOR', 'ADMIN'].includes(userRole);
 
     return (
-        <div className="min-h-screen bg-slate-50 dark:bg-[#0b122b] pb-20 transition-colors duration-300">
-            {/* Header */}
-            <div className="bg-gradient-to-br from-[#0F2C4A] via-[#133657] to-[#0F2C4A] h-72 relative">
-                <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10"></div>
-                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/20"></div>
-                <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(96, 165, 250, 0.1) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(59, 130, 246, 0.08) 0%, transparent 50%)' }}></div>
-                <div className="container mx-auto px-6 h-full flex items-center justify-between relative z-30">
-                    <div className="mt-[-1rem]">
-                        <button
-                            onClick={() => router.back()}
-                            className="flex items-center gap-2 text-white/80 hover:text-white mb-4 transition-colors font-medium text-sm group"
-                        >
-                            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-                            Volver
-                        </button>
-                        <h1 className="text-4xl font-extrabold text-white mb-3 tracking-tight drop-shadow-lg">Mi Perfil</h1>
+        <div className="h-screen bg-slate-50 dark:bg-[#0b122b] flex flex-col overflow-hidden transition-colors duration-300">
+            {/* Header Superior - Portal de Contrataciones (FULL WIDTH) */}
+            <header className="h-[70px] w-full bg-white dark:bg-[#0A192F] flex items-center justify-between px-4 lg:px-8 z-[60] shadow-md relative shrink-0 pt-[12px] pb-[6px]">
+                {/* Línea Superior Texturizada */}
+                <div className="absolute top-0 left-0 w-full h-[12px] bg-gradient-to-r from-[#0F2C4A] from-[35%] via-blue-600 via-[50%] to-amber-500 to-[65%] overflow-hidden">
+                    <div className="absolute inset-0 texture-diamonds mix-blend-overlay opacity-60"></div>
+                </div>
 
-                        <p className="text-blue-100 font-medium text-lg">Gestiona tu información personal y seguridad de la cuenta.</p>
-                    </div>
-                    <div className="hidden md:block">
-                        <HeaderActions />
+                {/* Línea Inferior Texturizada (Degradado Inverso) */}
+                <div className="absolute bottom-0 left-0 w-full h-[6px] bg-gradient-to-l from-[#0F2C4A] from-[35%] via-blue-600 via-[50%] to-amber-500 to-[65%] overflow-hidden">
+                    <div className="absolute inset-0 texture-diamonds mix-blend-overlay opacity-60"></div>
+                </div>
+
+                <div className="flex items-center gap-1.5 lg:gap-3 flex-shrink-0">
+                    <div className="flex items-center gap-1.5 lg:gap-3">
+                        <div className="flex items-center gap-1 lg:gap-2">
+                            <img src="/logo-mqs.png" alt="MQS" className="h-8 lg:h-12 w-auto object-contain mix-blend-multiply" />
+                            <div className="hidden sm:block leading-none">
+                                <p className="text-[9px] lg:text-[11px] font-black text-[#0F2C4A] dark:text-white uppercase tracking-wider">Asesoramiento</p>
+                                <p className="text-[9px] lg:text-[11px] font-black text-[#0F2C4A] dark:text-white uppercase tracking-wider">de Finanzas</p>
+                            </div>
+                        </div>
+                        <div className="w-[1px] h-8 lg:h-12 bg-slate-200 dark:bg-white/10 mx-1 lg:mx-2"></div>
+                        <div className="flex items-center gap-1 lg:gap-2">
+                            <img src="/logo-jcq.png" alt="JCQ" className="h-8 lg:h-12 w-auto object-contain mix-blend-multiply" />
+                            <div className="hidden sm:block leading-none">
+                                <p className="text-[9px] lg:text-[11px] font-black text-[#0F2C4A] dark:text-white uppercase tracking-wider">Asesoramiento en</p>
+                                <p className="text-[9px] lg:text-[11px] font-black text-[#0F2C4A] dark:text-white uppercase tracking-wider">Construccion</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div className="container mx-auto px-6 -mt-24 relative z-40">
-                <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
-                    {/* Sidebar / Profile Card */}
-                    <div className="w-full lg:w-[320px] flex-shrink-0">
-                        <div className="bg-white dark:bg-[#111c44] rounded-3xl shadow-2xl overflow-hidden border border-slate-200/50 dark:border-white/5 backdrop-blur-sm">
-                            <div className="p-8 flex flex-col items-center border-b border-slate-100 dark:border-white/5">
-                                <div className="w-36 h-36 rounded-full bg-gradient-to-br from-blue-100 to-cyan-100 dark:from-slate-700 dark:to-slate-600 p-2 shadow-2xl relative group mb-5 ring-4 ring-white dark:ring-slate-800 transition-all duration-300 group-hover:ring-blue-200 dark:group-hover:ring-blue-900/50">
-                                    <div className="w-full h-full rounded-full overflow-hidden border-2 border-white dark:border-slate-600 bg-white">
-                                        {user?.avatar_url ? (
-                                            <img src={user.avatar_url} alt="Profile" className="w-full h-full object-cover" />
-                                        ) : (
-                                            <div className="w-full h-full flex items-center justify-center bg-gradient-to-tr from-blue-600 to-cyan-500 text-white text-4xl font-bold">
-                                                {user?.nombre?.charAt(0).toUpperCase() || 'U'}
-                                            </div>
-                                        )}
+                <div className="absolute left-1/2 -translate-x-1/2 hidden lg:flex flex-col items-center pointer-events-none">
+                    <h2 className="text-xl lg:text-2xl font-black text-[#0F2C4A] dark:text-white tracking-[0.2em] uppercase">
+                        PORTAL DE CONTRATACIONES
+                    </h2>
+                </div>
+
+                <div className="flex-shrink-0">
+                    <HeaderActions />
+                </div>
+            </header>
+
+            <div className="flex flex-1 overflow-hidden relative">
+                {/* Sidebar Premium SEACE Estilo - Altura Completa */}
+                <aside className="hidden lg:flex w-[280px] bg-[#0A192F] bg-dotted-pattern flex-col border-r border-white/5 shadow-2xl relative z-50">
+                    {/* Big Avatar en la parte superior */}
+                    <div className="pt-8 pb-5 flex flex-col items-center border-b border-white/5 shrink-0 relative">
+                        <div className="w-28 h-28 rounded-full bg-[#132337] p-2 shadow-[0_0_25px_rgba(0,0,0,0.5)] relative group mb-4 border border-white/10 transition-all duration-300 hover:border-blue-500/30">
+                            <div className="w-full h-full rounded-full overflow-hidden border-2 border-slate-700 bg-[#0A192F]">
+                                {user?.avatar_url ? (
+                                    <img src={user.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-tr from-blue-600 to-indigo-600 text-white text-4xl font-black shadow-[inset_0_2px_10px_rgba(0,0,0,0.3)]">
+                                        {user?.nombre?.charAt(0).toUpperCase() || 'U'}
                                     </div>
-                                    <button
-                                        onClick={handleAvatarClick}
-                                        className="absolute bottom-1 right-1 p-2 bg-blue-600 rounded-full text-white shadow-lg border-2 border-white dark:border-slate-800 hover:bg-blue-700 transition-colors transform hover:scale-105"
-                                        title="Cambiar foto"
-                                    >
-                                        <Camera className="w-4 h-4" />
-                                    </button>
-                                    {user?.avatar_url && (
-                                        <button
-                                            onClick={handleDeleteAvatarClick}
-                                            className="absolute bottom-1 left-1 p-2 bg-red-600 rounded-full text-white shadow-lg border-2 border-white dark:border-slate-800 hover:bg-red-700 transition-colors transform hover:scale-105"
-                                            title="Eliminar foto"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
-                                    )}
-
-                                    <input
-                                        type="file"
-                                        ref={fileInputRef}
-                                        className="hidden"
-                                        accept="image/*"
-                                        onChange={handleAvatarChange}
-                                    />
-                                </div>
+                                )}
                             </div>
-                            <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white text-center mb-2 tracking-tight">{user?.nombre || 'Usuario'}</h2>
-                            <p className="text-slate-500 dark:text-slate-400 text-sm mb-4 text-center">{user?.email}</p>
-                            <div className="flex justify-center w-full mb-2">
-                                <span className={cn(
-                                    "px-4 py-1.5 rounded-full text-xs font-extrabold uppercase tracking-widest shadow-sm",
-                                    isAdminOrDirector ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300" : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
-                                )}>
-                                    {user?.role || 'Colaborador'}
-                                </span>
-                            </div>
-
-                        </div>
-                        <div className="p-5">
-                            <nav className="space-y-2">
+                            <button
+                                onClick={handleAvatarClick}
+                                className="absolute bottom-0 right-0 w-8 h-8 flex items-center justify-center bg-blue-600 rounded-full text-white shadow-lg border-2 border-[#132337] hover:bg-blue-500 transition-colors transform hover:scale-110"
+                                title="Cambiar foto"
+                            >
+                                <Camera className="w-4 h-4" />
+                            </button>
+                            {user?.avatar_url && (
                                 <button
-                                    onClick={() => setActiveSection('info')}
-                                    className={cn(
-                                        "w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all font-semibold text-sm group",
-                                        activeSection === 'info'
-                                            ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/30"
-                                            : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/5 hover:translate-x-1"
-                                    )}
+                                    onClick={handleDeleteAvatarClick}
+                                    className="absolute bottom-0 left-0 w-8 h-8 flex items-center justify-center bg-red-600 rounded-full text-white shadow-lg border-2 border-[#132337] hover:bg-red-500 transition-colors transform hover:scale-110"
+                                    title="Eliminar foto"
                                 >
-                                    <User className={cn("w-5 h-5 transition-transform group-hover:scale-110", activeSection === 'info' ? "text-white" : "")} />
-                                    Información Personal
-                                    <ChevronRight className={cn("w-4 h-4 ml-auto transition-transform", activeSection === 'info' ? "translate-x-1" : "opacity-40")} />
+                                    <Trash2 className="w-4 h-4" />
                                 </button>
-                                {isAdminOrDirector && (
-                                    <button
-                                        onClick={() => setActiveSection('security')}
-                                        className={cn(
-                                            "w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all font-semibold text-sm group",
-                                            activeSection === 'security'
-                                                ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/30"
-                                                : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/5 hover:translate-x-1"
-                                        )}
-                                    >
-                                        <Shield className={cn("w-5 h-5 transition-transform group-hover:scale-110", activeSection === 'security' ? "text-white" : "")} />
-                                        Seguridad y Contraseña
-                                        <ChevronRight className={cn("w-4 h-4 ml-auto transition-transform", activeSection === 'security' ? "translate-x-1" : "opacity-40")} />
-                                    </button>
-                                )}
-
-                                {isAdminOrDirector && (
-                                    <button
-                                        onClick={() => setActiveSection('admin')}
-                                        className={cn(
-                                            "w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all font-semibold text-sm mt-4 border-t border-slate-100 dark:border-white/5 pt-5 group",
-                                            activeSection === 'admin'
-                                                ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/30"
-                                                : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/5 hover:translate-x-1"
-                                        )}
-                                    >
-                                        <ShieldAlert className={cn("w-5 h-5 transition-transform group-hover:scale-110", activeSection === 'admin' ? "text-white" : "")} />
-                                        Administración
-                                        <ChevronRight className={cn("w-4 h-4 ml-auto transition-transform", activeSection === 'admin' ? "translate-x-1" : "opacity-40")} />
-                                    </button>
-                                )}
-                            </nav>
+                            )}
+                            <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleAvatarChange} />
                         </div>
+                        <h2 className="text-lg font-black text-white text-center mb-1 tracking-wider uppercase px-4 truncate w-full">{user?.nombre || 'Usuario'}</h2>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-blue-400">
+                            {userRole || 'Colaborador'}
+                        </span>
                     </div>
 
-                    {/* Main Content */}
-                    <div className="flex-1 relative z-20">
-                        <div className="bg-white dark:bg-[#111c44] rounded-3xl shadow-2xl border border-slate-200/50 dark:border-white/5 p-8 md:p-10 min-h-[500px] max-h-[85vh] overflow-y-auto backdrop-blur-sm">
+                    {/* Título Sidebar */}
+                    <div className="px-6 py-4 shrink-0 flex items-center gap-3">
+                        <div className="w-4 h-[2px] bg-indigo-500 rounded-full"></div>
+                        <span className="text-[10px] font-black tracking-widest text-white/60 uppercase">
+                            GESTIÓN DE PERFIL
+                        </span>
+                    </div>
+
+                    {/* Menú de Navegación */}
+                    <div className="px-3 space-y-1.5 flex-1 overflow-y-auto scrollbar-hide">
+                        {/* Botón 1: Azul / Indigo */}
+                        <button
+                            onClick={() => setActiveSection('info')}
+                            className={cn(
+                                "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm group relative overflow-hidden",
+                                activeSection === 'info'
+                                    ? "bg-indigo-600 text-white shadow-[0_0_15px_rgba(79,70,229,0.4)] border border-indigo-500"
+                                    : "text-slate-400 hover:bg-indigo-600 hover:text-white border border-transparent"
+                            )}
+                        >
+                            <User className={cn("w-5 h-5 transition-transform group-hover:scale-110", activeSection === 'info' ? "text-white" : "text-indigo-400 group-hover:text-white")} />
+                            Información Personal
+                            {activeSection === 'info' && <div className="absolute right-4 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,1)] ring-2 ring-white/30"></div>}
+                        </button>
+                        
+                        {/* Botón 2: Verde / Emerald */}
+                        {isAdminOrDirector && (
+                            <button
+                                onClick={() => setActiveSection('security')}
+                                className={cn(
+                                    "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm group relative overflow-hidden",
+                                    activeSection === 'security'
+                                        ? "bg-emerald-600 text-white shadow-[0_0_15px_rgba(16,185,129,0.4)] border border-emerald-500"
+                                        : "text-slate-400 hover:bg-emerald-600 hover:text-white border border-transparent"
+                                )}
+                            >
+                                <Shield className={cn("w-5 h-5 transition-transform group-hover:scale-110", activeSection === 'security' ? "text-white" : "text-emerald-400 group-hover:text-white")} />
+                                Seguridad y Contraseña
+                                {activeSection === 'security' && <div className="absolute right-4 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,1)] ring-2 ring-white/30"></div>}
+                            </button>
+                        )}
+
+                        {/* Botón 3: Naranja / Amber */}
+                        {isAdminOrDirector && (
+                            <button
+                                onClick={() => setActiveSection('admin')}
+                                className={cn(
+                                    "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm group relative overflow-hidden",
+                                    activeSection === 'admin'
+                                        ? "bg-amber-600 text-white shadow-[0_0_15px_rgba(245,158,11,0.4)] border border-amber-500"
+                                        : "text-slate-400 hover:bg-amber-600 hover:text-white border border-transparent"
+                                )}
+                            >
+                                <ShieldAlert className={cn("w-5 h-5 transition-transform group-hover:scale-110", activeSection === 'admin' ? "text-white" : "text-amber-500 group-hover:text-white")} />
+                                Administración
+                                {activeSection === 'admin' && <div className="absolute right-4 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,1)] ring-2 ring-white/30"></div>}
+                            </button>
+                        )}
+                    </div>
+
+                    {/* Footer del Sidebar: Botón Volver */}
+                    <div className="p-4 mt-auto border-t border-white/5 shrink-0">
+                        {/* Botón Volver (Gris / Slate) */}
+                        <button
+                            onClick={() => router.back()}
+                            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white hover:shadow-[0_0_15px_rgba(255,255,255,0.05)] border border-slate-700 transition-all font-bold text-sm group"
+                        >
+                            <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
+                            Volver
+                        </button>
+                    </div>
+                </aside>
+
+                {/* Main Content */}
+                <main className="flex-1 relative bg-[#F4F7FE] dark:bg-[#0b122b] overflow-y-auto p-4 lg:p-8">
+                    <div className="max-w-5xl mx-auto">
+                        <div className="bg-white dark:bg-[#111c44] rounded-2xl shadow-xl border border-slate-200 dark:border-white/5 p-6 md:p-8 min-h-[500px]">
                             {activeSection === 'info' && <PersonalInfoForm user={user} setUser={setUser} />}
                             {activeSection === 'security' && isAdminOrDirector && <SecuritySettings />}
                             {activeSection === 'admin' && isAdminOrDirector && <UserManagement currentUser={user} />}
                         </div>
                     </div>
-                </div>
+                </main>
             </div>
-            {
-                showDeleteAvatarModal && (
-                    <DeleteAvatarModal
-                        isOpen={showDeleteAvatarModal}
-                        onClose={() => setShowDeleteAvatarModal(false)}
-                        onConfirm={confirmDeleteAvatar}
-                    />
-                )
-            }
-        </div >
+            
+            {showDeleteAvatarModal && (
+                <DeleteAvatarModal
+                    isOpen={showDeleteAvatarModal}
+                    onClose={() => setShowDeleteAvatarModal(false)}
+                    onConfirm={confirmDeleteAvatar}
+                />
+            )}
+        </div>
     );
 }
 
@@ -294,19 +323,19 @@ function PersonalInfoForm({ user, setUser }: any) {
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="flex items-center justify-between mb-8 pb-6 border-b border-slate-100 dark:border-white/5">
                 <div>
-                    <h3 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">Información Personal</h3>
+                    <h3 className="text-[22px] font-extrabold text-slate-900 dark:text-white tracking-tight">Información Personal</h3>
                     <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Actualiza tus datos de contacto y perfil público.</p>
                 </div>
                 {!isEditing ? (
-                    <Button onClick={() => setIsEditing(true)} variant="outline" className="gap-2 rounded-xl border-2 hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all">
+                    <Button onClick={() => setIsEditing(true)} variant="outline" className="gap-2 rounded-[14px] border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all text-sm font-bold text-slate-600 dark:text-slate-300 shadow-sm px-5 py-2.5 h-auto">
                         <PenLine className="w-4 h-4" /> Editar
                     </Button>
                 ) : (
                     <div className="flex gap-3">
-                        <Button variant="ghost" onClick={() => setIsEditing(false)} className="rounded-xl hover:bg-slate-100 dark:hover:bg-white/5" disabled={loading}>Cancelar</Button>
-                        <Button onClick={handleSave} className="gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white shadow-lg shadow-blue-500/30 transition-all" disabled={loading}>
+                        <Button variant="ghost" onClick={() => setIsEditing(false)} className="rounded-[14px] hover:bg-slate-100 dark:hover:bg-white/5 font-bold text-slate-500 px-5 py-2.5 h-auto" disabled={loading}>Cancelar</Button>
+                        <Button onClick={handleSave} className="gap-2 rounded-[14px] bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/20 transition-all font-bold px-5 py-2.5 h-auto" disabled={loading}>
                             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                            {loading ? 'Guardando...' : 'Guardar Cambios'}
+                            {loading ? 'Guardando...' : 'Guardar'}
                         </Button>
                     </div>
                 )}
@@ -325,62 +354,62 @@ function PersonalInfoForm({ user, setUser }: any) {
                 </div>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2.5">
-                    <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider ml-1">Nombre Completo</label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                <div className="space-y-2">
+                    <label className="text-[10px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-widest ml-1">Nombre Completo</label>
                     <div className="relative group">
-                        <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5 transition-colors" />
+                        <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-[18px] h-[18px] transition-colors" />
                         <input
                             name="nombre"
                             value={formData.nombre}
                             onChange={handleChange}
                             disabled={!isEditing}
-                            className="w-full pl-11 pr-4 py-3.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all disabled:bg-slate-100 dark:disabled:bg-slate-800/50 disabled:border-slate-100 dark:disabled:border-slate-800 disabled:text-slate-600 dark:disabled:text-slate-400 font-medium placeholder:text-slate-400"
+                            className="w-full pl-12 pr-4 py-3.5 rounded-[16px] bg-[#F8FAFC] dark:bg-[#0F2C4A]/30 border-2 border-transparent text-slate-700 dark:text-slate-300 font-semibold focus:bg-white dark:focus:bg-[#0F2C4A]/50 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all disabled:bg-[#F1F5F9] dark:disabled:bg-[#0A192F]/50 disabled:text-slate-500 disabled:opacity-100 disabled:cursor-default placeholder:text-slate-400"
                             placeholder="Ingresa tu nombre completo"
                         />
                     </div>
                 </div>
 
-                <div className="space-y-2.5">
-                    <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider ml-1">Nombre de Usuario</label>
+                <div className="space-y-2">
+                    <label className="text-[10px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-widest ml-1">Nombre de Usuario</label>
                     <div className="relative group">
-                        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold w-5 h-5 text-center flex items-center justify-center">@</span>
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold w-[18px] h-[18px] flex items-center justify-center">@</span>
                         <input
                             name="username"
                             value={formData.username}
                             onChange={handleChange}
                             disabled={!isEditing}
-                            className="w-full pl-11 pr-4 py-3.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all disabled:bg-slate-100 dark:disabled:bg-slate-800/50 disabled:border-slate-100 dark:disabled:border-slate-800 disabled:text-slate-600 dark:disabled:text-slate-400 font-medium placeholder:text-slate-400"
+                            className="w-full pl-12 pr-4 py-3.5 rounded-[16px] bg-[#F8FAFC] dark:bg-[#0F2C4A]/30 border-2 border-transparent text-slate-700 dark:text-slate-300 font-semibold focus:bg-white dark:focus:bg-[#0F2C4A]/50 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all disabled:bg-[#F1F5F9] dark:disabled:bg-[#0A192F]/50 disabled:text-slate-500 disabled:opacity-100 disabled:cursor-default placeholder:text-slate-400"
                             placeholder="Tu nombre de usuario"
                         />
                     </div>
                 </div>
 
-                <div className="space-y-2.5">
-                    <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider ml-1">Correo Electrónico</label>
+                <div className="space-y-2">
+                    <label className="text-[10px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-widest ml-1">Correo Electrónico</label>
                     <div className="relative group">
-                        <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5 transition-colors" />
+                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-[18px] h-[18px] transition-colors" />
                         <input
                             name="email"
                             value={formData.email}
                             onChange={handleChange}
                             disabled={!isEditing}
-                            className="w-full pl-11 pr-4 py-3.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all disabled:bg-slate-100 dark:disabled:bg-slate-800/50 disabled:border-slate-100 dark:disabled:border-slate-800 disabled:text-slate-600 dark:disabled:text-slate-400 font-medium placeholder:text-slate-400"
+                            className="w-full pl-12 pr-4 py-3.5 rounded-[16px] bg-[#F8FAFC] dark:bg-[#0F2C4A]/30 border-2 border-transparent text-slate-700 dark:text-slate-300 font-semibold focus:bg-white dark:focus:bg-[#0F2C4A]/50 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all disabled:bg-[#F1F5F9] dark:disabled:bg-[#0A192F]/50 disabled:text-slate-500 disabled:opacity-100 disabled:cursor-default placeholder:text-slate-400"
                             placeholder="tu@email.com"
                         />
                     </div>
                 </div>
 
-                <div className="space-y-2.5">
-                    <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider ml-1">Cargo / Puesto</label>
+                <div className="space-y-2">
+                    <label className="text-[10px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-widest ml-1">Cargo / Puesto</label>
                     <div className="relative group">
-                        <Briefcase className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5 transition-colors" />
+                        <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-[18px] h-[18px] transition-colors" />
                         <input
                             name="job_title"
                             value={formData.job_title}
                             onChange={handleChange}
                             disabled={!isEditing}
-                            className="w-full pl-11 pr-4 py-3.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all disabled:bg-slate-100 dark:disabled:bg-slate-800/50 disabled:border-slate-100 dark:disabled:border-slate-800 disabled:text-slate-600 dark:disabled:text-slate-400 font-medium placeholder:text-slate-400"
+                            className="w-full pl-12 pr-4 py-3.5 rounded-[16px] bg-[#F8FAFC] dark:bg-[#0F2C4A]/30 border-2 border-transparent text-slate-700 dark:text-slate-300 font-semibold focus:bg-white dark:focus:bg-[#0F2C4A]/50 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all disabled:bg-[#F1F5F9] dark:disabled:bg-[#0A192F]/50 disabled:text-slate-500 disabled:opacity-100 disabled:cursor-default placeholder:text-slate-400"
                             placeholder="Ej: Analista de Datos"
                         />
                     </div>
@@ -445,11 +474,14 @@ function UserManagement({ currentUser }: { currentUser: any }) {
     const [editingUser, setEditingUser] = useState<any>(null);
     const [resettingPasswordUser, setResettingPasswordUser] = useState<any>(null);
 
+    const userRole = currentUser?.role || currentUser?.perfil;
+    const isAdmin = ['admin', 'director', 'DIRECTOR', 'ADMIN'].includes(userRole);
+
     const fetchUsers = async () => {
         setLoading(true);
         try {
             // Try fetch from primary users endpoint (directors)
-            let response = await api.get('/api/users/');
+            let response = await api.get('/api/users');
             setUsers(response.data);
         } catch (error: any) {
             console.error("Failed to fetch from /api/users/", error);
@@ -599,36 +631,41 @@ function UserManagement({ currentUser }: { currentUser: any }) {
                                     </div>
                                 </td>
                                 <td className="p-4 text-right pr-6">
-                                    <DropdownMenu.Root>
-                                        <DropdownMenu.Trigger asChild>
-                                            <button className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors text-slate-400 hover:text-slate-600 dark:hover:text-white outline-none ring-offset-2 focus:ring-2 focus:ring-blue-500">
-                                                <MoreVertical className="w-5 h-5" />
-                                            </button>
-                                        </DropdownMenu.Trigger>
-                                        <DropdownMenu.Portal>
-                                            <DropdownMenu.Content className="min-w-[180px] bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 p-1.5 animate-in zoom-in-95 duration-200 z-50 mr-8">
-                                                <DropdownMenu.Item
-                                                    onSelect={() => setEditingUser(user)}
-                                                    className="flex items-center gap-2 px-3 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg cursor-pointer outline-none font-medium transition-colors"
-                                                >
-                                                    <Edit className="w-4 h-4 text-blue-500" /> Editar información
-                                                </DropdownMenu.Item>
-                                                <DropdownMenu.Item
-                                                    onSelect={() => setResettingPasswordUser(user)}
-                                                    className="flex items-center gap-2 px-3 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg cursor-pointer outline-none font-medium transition-colors"
-                                                >
-                                                    <Key className="w-4 h-4 text-amber-500" /> Restablecer clave
-                                                </DropdownMenu.Item>
-                                                <div className="h-px bg-slate-100 dark:bg-slate-700 my-1" />
-                                                <DropdownMenu.Item
-                                                    onSelect={() => handleDeleteClick(user)}
-                                                    className="flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg cursor-pointer outline-none font-bold transition-colors"
-                                                >
-                                                    <Trash2 className="w-4 h-4" /> Eliminar usuario
-                                                </DropdownMenu.Item>
-                                            </DropdownMenu.Content>
-                                        </DropdownMenu.Portal>
-                                    </DropdownMenu.Root>
+                                    {isAdmin && (
+                                        <DropdownMenu.Root>
+                                            <DropdownMenu.Trigger asChild>
+                                                <button className="w-8 h-8 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center text-slate-400 transition-colors">
+                                                    <MoreVertical className="w-4 h-4" />
+                                                </button>
+                                            </DropdownMenu.Trigger>
+                                            <DropdownMenu.Portal>
+                                                <DropdownMenu.Content className="min-w-[160px] bg-white dark:bg-slate-800 rounded-xl p-1.5 shadow-xl border border-slate-100 dark:border-slate-700 animate-in fade-in zoom-in-95 z-50">
+                                                    <DropdownMenu.Item
+                                                        onSelect={() => setEditingUser(user)}
+                                                        className="flex items-center gap-2 px-3 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg cursor-pointer outline-none font-medium transition-colors"
+                                                    >
+                                                        <Edit className="w-4 h-4 text-blue-500" />
+                                                        Editar Usuario
+                                                    </DropdownMenu.Item>
+                                                    <DropdownMenu.Item
+                                                        onSelect={() => setResettingPasswordUser(user)}
+                                                        className="flex items-center gap-2 px-3 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg cursor-pointer outline-none font-medium transition-colors"
+                                                    >
+                                                        <Key className="w-4 h-4 text-amber-500" />
+                                                        Cambiar Contraseña
+                                                    </DropdownMenu.Item>
+                                                    <DropdownMenu.Separator className="h-px bg-slate-100 dark:bg-slate-700 my-1 mx-2" />
+                                                    <DropdownMenu.Item
+                                                        onSelect={() => handleDeleteClick(user)}
+                                                        className="flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg cursor-pointer outline-none font-medium transition-colors"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                        Eliminar
+                                                    </DropdownMenu.Item>
+                                                </DropdownMenu.Content>
+                                            </DropdownMenu.Portal>
+                                        </DropdownMenu.Root>
+                                    )}
                                 </td>
                             </tr>
                         ))}

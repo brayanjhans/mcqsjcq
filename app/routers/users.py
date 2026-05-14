@@ -17,14 +17,14 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-@router.get("/", response_model=List[UserProfile])
+@router.get("", response_model=List[UserProfile])
 async def list_users(
     skip: int = 0,
     limit: int = 100,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    if current_user.perfil != 'DIRECTOR':
+    if current_user.perfil not in ['DIRECTOR', 'ADMIN', 'admin']:
         raise HTTPException(status_code=403, detail="No autorizado")
     return db.query(User).offset(skip).limit(limit).all()
 
@@ -230,8 +230,8 @@ async def update_user_admin(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    if current_user.perfil != 'DIRECTOR':
-        raise HTTPException(status_code=403, detail="No autorizado")
+    if current_user.perfil not in ['DIRECTOR', 'ADMIN', 'admin']:
+        raise HTTPException(status_code=403, detail="No autorizado. Solo los directores pueden editar usuarios.")
     
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
@@ -269,8 +269,8 @@ async def delete_user(
     Requires DIRECTOR role. Cannot delete yourself.
     """
     # Check admin permission
-    if current_user.perfil != 'DIRECTOR':
-        raise HTTPException(status_code=403, detail="No autorizado. Solo administradores pueden eliminar usuarios.")
+    if current_user.perfil not in ['DIRECTOR', 'ADMIN', 'admin']:
+        raise HTTPException(status_code=403, detail="No autorizado. Solo los directores pueden eliminar usuarios.")
     
     # Prevent self-deletion
     if user_id == current_user.id:
