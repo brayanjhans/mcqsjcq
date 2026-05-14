@@ -4,6 +4,7 @@ FastAPI main application for MQS Garantías - SEACE monitoring system.
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from dotenv import load_dotenv
@@ -30,6 +31,11 @@ app = FastAPI(
     description="Sistema completo para gestión de garantías y análisis SEACE",
     version="3.0.0"
 )
+
+# Servir archivos estáticos (Subidas/Avatares)
+uploads_path = os.path.join(BASE_DIR, "frontend", "public", "uploads")
+os.makedirs(uploads_path, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=uploads_path), name="uploads")
 
 # ====== Rate Limiting Setup ======
 # Attach limiter state to the app so slowapi middleware can access it
