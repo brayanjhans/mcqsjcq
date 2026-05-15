@@ -83,7 +83,14 @@ export default function SEACELayout({ children }: { children: React.ReactNode })
                 </div>
 
                 <div className="absolute left-1/2 -translate-x-1/2 hidden lg:flex flex-col items-center pointer-events-none">
-                    <h2 className="text-xl lg:text-2xl font-black text-[#0F2C4A] dark:text-white tracking-[0.2em] uppercase">
+                    <h2
+                        className="text-3xl lg:text-4xl uppercase select-none text-[#0F2C4A] dark:text-white"
+                        style={{
+                            fontFamily: 'var(--font-bebas), sans-serif',
+                            letterSpacing: '0.48em',
+                            textShadow: '0 1px 0 #4a7dab, 0 2px 0 #2c5f8a, 0 3px 0 #1a4a6e, 0 4px 6px rgba(0,0,0,0.25), 0 -1px 0 rgba(255,255,255,0.5)',
+                        }}
+                    >
                         PORTAL DE CONTRATACIONES
                     </h2>
                 </div>

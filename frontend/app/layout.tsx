@@ -1,11 +1,12 @@
 import type { Metadata, Viewport } from "next";
-import { Montserrat } from "next/font/google";
+import { Montserrat, Bebas_Neue } from "next/font/google";
 import "./globals.css";
 import Script from "next/script";
 import { Providers } from "./providers";
 import MouseTracker from "@/components/layout/mouse-tracker";
 
 const montserrat = Montserrat({ subsets: ["latin"], weight: ["300", "400", "500", "600", "700", "800"] });
+const bebasNeue = Bebas_Neue({ subsets: ["latin"], weight: "400", variable: "--font-bebas" });
 
 export const metadata: Metadata = {
     metadataBase: new URL('https://mcqs-jcq.com'),
@@ -61,7 +62,7 @@ export default function RootLayout({
             <head>
                 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
             </head>
-            <body className={`${montserrat.className} bg-[#0b122b]`}>
+            <body className={`${montserrat.className} ${bebasNeue.variable} bg-[#0b122b]`}>
                 <MouseTracker />
                 <Providers>
                     {children}
