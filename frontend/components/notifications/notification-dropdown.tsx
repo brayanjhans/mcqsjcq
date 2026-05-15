@@ -70,17 +70,46 @@ export default function NotificationDropdown({ isOpen, onToggle, onClose }: Noti
 
     return (
         <div className="relative" ref={dropdownRef}>
+            {/* Estilos CSS para animación swing de la campana */}
+            <style>{`
+                @keyframes bell-swing {
+                    0%   { transform: rotate(0deg); }
+                    15%  { transform: rotate(18deg); }
+                    30%  { transform: rotate(-14deg); }
+                    45%  { transform: rotate(10deg); }
+                    60%  { transform: rotate(-6deg); }
+                    75%  { transform: rotate(3deg); }
+                    100% { transform: rotate(0deg); }
+                }
+                .bell-btn:hover .bell-icon {
+                    animation: bell-swing 0.6s ease-in-out;
+                    transform-origin: top center;
+                }
+            `}</style>
             <button
                 onClick={(e) => {
                     e.stopPropagation();
                     onToggle();
                 }}
-                className="relative p-2 text-gray-500 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-slate-700 rounded-full transition-all"
+                className={`bell-btn group relative flex items-center justify-center w-9 h-9 rounded-xl transition-all duration-300 border
+                    ${isOpen
+                        ? 'bg-[#0F2C4A] border-blue-500/60 shadow-[0_0_16px_rgba(59,130,246,0.5)] text-white'
+                        : 'bg-slate-100 dark:bg-[#0F2C4A]/60 border-slate-200 dark:border-blue-900/40 text-slate-500 dark:text-slate-300 hover:bg-[#0F2C4A] hover:border-blue-500/50 hover:text-white hover:shadow-[0_0_14px_rgba(59,130,246,0.35)]'
+                    }
+                `}
+                title="Notificaciones"
             >
-                <Bell className={`w-5 h-5 ${isOpen ? 'text-slate-800 dark:text-white' : ''}`} />
+                {/* Halo de brillo al hover */}
+                <span className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-blue-500/10 blur-md" />
+                <Bell className={`bell-icon relative z-10 w-[18px] h-[18px] transition-colors duration-300 ${isOpen ? 'text-white' : 'text-slate-500 dark:text-blue-300 group-hover:text-white'}`} />
                 {unreadCount > 0 && (
-                    <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[10px] flex items-center justify-center rounded-full font-bold shadow-sm ring-2 ring-white dark:ring-[#0b122b]">
-                        {unreadCount > 9 ? '9+' : unreadCount}
+                    <span className="absolute -top-1 -right-1 flex h-4 w-4">
+                        {/* Ping externo animado */}
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-60" />
+                        {/* Badge principal */}
+                        <span className="relative inline-flex items-center justify-center w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-black shadow-lg ring-2 ring-white dark:ring-[#0A192F]">
+                            {unreadCount > 9 ? '9+' : unreadCount}
+                        </span>
                     </span>
                 )}
             </button>

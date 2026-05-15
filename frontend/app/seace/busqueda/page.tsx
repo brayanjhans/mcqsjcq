@@ -361,7 +361,7 @@ function BusquedaContent() {
                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
                             <div>
                                 <h1 className="text-4xl font-black text-slate-900 dark:text-white tracking-tighter">
-                                    Búsqueda Inteligente
+                                    BÚSQUEDA INTELIGENTE
                                 </h1>
                                 <p className="mt-2 text-sm font-medium text-slate-500 dark:text-slate-400">
                                     Explora el ecosistema de contrataciones del estado en tiempo real
@@ -565,7 +565,7 @@ function BusquedaContent() {
                         <div className="flex items-center gap-3">
                             <div className="w-2.5 h-10 bg-gradient-to-b from-indigo-600 to-blue-600 rounded-full shadow-lg shadow-indigo-500/20 group-hover:scale-y-110 transition-transform duration-500"></div>
                             <h2 className="text-3xl font-black text-[#0A192F] dark:text-white uppercase tracking-tighter transition-all duration-300 group-hover:translate-x-1">
-                                Resultados de búsqueda
+                                REGISTROS ENCONTRADOS
                             </h2>
                         </div>
                         {!loading && totalItems > 0 && (

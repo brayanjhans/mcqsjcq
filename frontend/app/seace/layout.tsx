@@ -139,7 +139,7 @@ export default function SEACELayout({ children }: { children: React.ReactNode })
                     <MenuGroup title="Inteligencia SEACE" collapsed={collapsed}>
                         <MenuItem href="/seace/dashboard" icon="fa-chart-pie" label="Dashboard" active={isActive('/seace/dashboard')} collapsed={collapsed} delay={getDelay(1)} color="indigo" />
                         <MenuItem href="/seace/busqueda" icon="fa-search" label="Búsqueda" active={isActive('/seace/busqueda')} collapsed={collapsed} delay={getDelay(2)} color="amber" />
-                        <MenuItem href="/seace/notificaciones" icon="fa-database" label="Notificaciones" active={isActive('/seace/notificaciones')} collapsed={collapsed} delay={getDelay(3)} color="blue" />
+                        <MenuItem href="/seace/notificaciones" icon="fa-bell" label="Notificaciones" active={isActive('/seace/notificaciones')} collapsed={collapsed} delay={getDelay(3)} color="blue" />
                         <MenuItem href="/seace/reportes" icon="fa-chart-bar" label="Reportes" active={isActive('/seace/reportes')} collapsed={collapsed} delay={getDelay(4)} color="emerald" />
                         <MenuItem href="/seace/gestion-manual" icon="fa-clipboard-list" label="Gestión Manual" active={isActive('/seace/gestion-manual')} collapsed={collapsed} delay={getDelay(5)} color="rose" />
                     </MenuGroup>
