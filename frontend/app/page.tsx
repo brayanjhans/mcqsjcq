@@ -173,7 +173,8 @@ function LoginModal({ onClose, onOpenTerms, onOpenPrivacy }: { onClose: () => vo
             sessionStorage.setItem('user_display', JSON.stringify({
                 perfil: data.perfil || 'COLABORADOR',
                 nombre: data.nombre || '',
-                job_title: data.job_title || ''
+                job_title: data.job_title || '',
+                avatar_url: data.avatar_url || null
             }));
 
             setLoading(false);

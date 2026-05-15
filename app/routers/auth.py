@@ -172,7 +172,8 @@ def login(
         "ok": True,
         "perfil": perfil_value,
         "nombre": user.nombre,
-        "job_title": user.job_title or ""
+        "job_title": user.job_title or "",
+        "avatar_url": user.avatar_url
     }
 
 
