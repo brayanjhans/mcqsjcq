@@ -7,6 +7,20 @@ import { HeaderActions } from '@/components/layout/header-actions';
 import ChatbotWidget from '@/components/chatbot/ChatbotWidget';
 import { useAuthProtection } from '@/hooks/use-auth-protection';
 
+function getAvatarColor(name: string): string {
+    const colors = [
+        'from-violet-500 to-purple-600',
+        'from-blue-500 to-indigo-600',
+        'from-emerald-500 to-teal-600',
+        'from-rose-500 to-pink-600',
+        'from-amber-500 to-orange-600',
+        'from-cyan-500 to-blue-600',
+    ];
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    return colors[Math.abs(hash) % colors.length];
+}
+
 export default function SEACELayout({ children }: { children: React.ReactNode }) {
     const router = useRouter();
     const pathname = usePathname();
@@ -33,6 +47,11 @@ export default function SEACELayout({ children }: { children: React.ReactNode })
     if (loading || !isAuthenticated) {
         return null; // Or a loading spinner
     }
+
+    const userName = user?.nombre || 'Usuario';
+    const userInitial = userName.charAt(0).toUpperCase();
+    const userRole = user?.perfil || user?.cargo || user?.role || 'Colaborador';
+    const avatarGradient = getAvatarColor(userName);
 
     return (
         <div className="flex flex-col w-full h-screen overflow-hidden bg-white dark:bg-gray-900 transition-colors duration-500">
@@ -160,15 +179,17 @@ export default function SEACELayout({ children }: { children: React.ReactNode })
                         ${collapsed ? 'justify-center p-2' : ''}
                     `}>
                         <div className="relative flex-shrink-0">
-                            <div className="w-10 h-10 rounded-xl bg-[#FF4B63] flex items-center justify-center shadow-lg">
-                                <span className="font-bold text-white text-lg">B</span>
+                            <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${avatarGradient} flex items-center justify-center shadow-lg font-black text-white text-lg`}>
+                                {userInitial}
                             </div>
-                            <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-emerald-500 border-2 border-[#132337] rounded-full"></div>
+                            <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-emerald-500 border-2 border-[#132337] rounded-full">
+                                <span className="absolute inset-0 bg-emerald-400 rounded-full animate-ping opacity-75" />
+                            </div>
                         </div>
                         {!collapsed && (
                             <div className="flex flex-col flex-1 min-w-0">
-                                <span className="text-sm font-bold text-white truncate">Brayan Jhans</span>
-                                <span className="text-[9px] font-black text-blue-300 uppercase tracking-widest mt-0.5">Director</span>
+                                <span className="text-sm font-bold text-white truncate">{userName}</span>
+                                <span className="text-[9px] font-black text-blue-300 uppercase tracking-widest mt-0.5">{userRole}</span>
                             </div>
                         )}
                     </div>
