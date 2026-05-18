@@ -26,7 +26,13 @@ def _call_apiperu(endpoint: str, ruc: str) -> dict | None:
     """Call an apiperu.dev endpoint. Returns parsed JSON data or None on error."""
     try:
         url = f"{APIPERU_BASE}/{endpoint}"
+        # Try POST first
         resp = requests.post(url, json={"ruc": ruc}, headers=_apiperu_headers(), timeout=15)
+        if resp.status_code != 200:
+            # Try GET
+            url_get = f"{url}/{ruc}"
+            resp = requests.get(url_get, headers=_apiperu_headers(), timeout=15)
+        
         if resp.status_code == 200:
             body = resp.json()
             if body.get("success"):
@@ -61,8 +67,6 @@ def get_ruc_info(ruc: str, db: Session, force_refresh: bool = False) -> dict:
         return {"error": "No se pudo obtener datos de SUNAT", "encontrado": False, "ruc": ruc}
 
     print(f"[SUNAT DEBUG] RUC {ruc} Keys: {list(ruc_data.keys())}")
-    print(f"[SUNAT DEBUG] Address: {ruc_data.get('direccion')}, Completa: {ruc_data.get('direccion_completa')}")
-    print(f"[SUNAT DEBUG] Loc: {ruc_data.get('distrito')} / {ruc_data.get('provincia')} / {ruc_data.get('departamento')}")
 
     deuda_data = _call_apiperu("ruc-deuda-coactiva", ruc)
     repr_data = _call_apiperu("ruc-representantes", ruc)
@@ -73,18 +77,55 @@ def get_ruc_info(ruc: str, db: Session, force_refresh: bool = False) -> dict:
             if "periodo_tibutario" in d:
                 d["periodo_tributario"] = d["periodo_tibutario"]
             if "fecha_inicio_cobranza" not in d and "fecha_inicio" in d:
-                d["fecha_inicio_cobranza"] = d["fecha_inicio"]
+                d["fecha_inicio_cobranza"] = d["fecha_inicio"]    # 3. Fallback to Scraper if missing detailed data
+    if not ruc_data.get("fecha_inscripcion") or not ruc_data.get("actividad_economica"):
+        try:
+            from app.services.sunat_scraper import SunatScraper
+            print(f"[SUNAT] Missing details in API. Launching manual scraper for RUC {ruc}...")
+            scraper = SunatScraper()
+            scraped_data = scraper.get_ruc_details(ruc)
+            
+            if scraped_data and "error" not in scraped_data:
+                # Merge data
+                ruc_data["fecha_inscripcion"] = scraped_data.get("fecha_inscripcion")
+                ruc_data["fecha_inicio_actividades"] = scraped_data.get("fecha_inicio_actividades")
+                ruc_data["actividad_economica"] = scraped_data.get("actividades_economicas")
+                ruc_data["sistema_emision"] = scraped_data.get("sistema_emision")
+                ruc_data["sistema_contabilidad"] = scraped_data.get("sistema_contabilidad")
+                ruc_data["actividad_comercio_exterior"] = scraped_data.get("actividad_comercio_exterior")
+                ruc_data["emisor_electronico_desde"] = scraped_data.get("emisor_electronico_desde")
+                
+                # Merge newly added scraper fields if empty
+                if not ruc_data.get("tipo_contribuyente") and scraped_data.get("tipo_contribuyente"):
+                    ruc_data["tipo_contribuyente"] = scraped_data.get("tipo_contribuyente")
+                if not ruc_data.get("nombre_comercial") and scraped_data.get("nombre_comercial"):
+                    ruc_data["nombre_comercial"] = scraped_data.get("nombre_comercial")
+                
+                print(f"[SUNAT] Scraper success for RUC {ruc}")
+        except Exception as e:
+            print(f"[SUNAT] Scraper failed: {e}")
 
-    # 3. Build result
+    # 4. Process and Normalize
     result = {
-        "encontrado": True,
         "ruc": ruc,
-        "razon_social": ruc_data.get("nombre_o_razon_social", ""),
+        "razon_social": ruc_data.get("nombre_o_razon_social") or ruc_data.get("razon_social", ""),
         "tipo_contribuyente": ruc_data.get("tipo_contribuyente", ""),
         "nombre_comercial": ruc_data.get("nombre_comercial", ""),
         "estado_contribuyente": ruc_data.get("estado", ""),
         "condicion_contribuyente": ruc_data.get("condicion", ""),
-        "domicilio_fiscal": ruc_data.get("direccion_completa") or ruc_data.get("direccion", ""),
+        "domicilio_fiscal": ruc_data.get("direccion", ""),
+        "actividades_economicas": ruc_data.get("actividad_economica", []),
+        "comprobantes_pago": ruc_data.get("comprobantes_pago", ""),
+        "sistema_emision": ruc_data.get("sistema_emision", ""),
+        "sistema_contabilidad": ruc_data.get("sistema_contabilidad", ""),
+        "actividad_comercio_exterior": ruc_data.get("actividad_comercio_exterior", ""),
+        "sistema_emision_electronica": ruc_data.get("sistema_emision_electronica", ""),
+        "fecha_inscripcion": ruc_data.get("fecha_inscripcion", ""),
+        "fecha_inicio_actividades": ruc_data.get("fecha_inicio_actividades", ""),
+        "emisor_electronico_desde": ruc_data.get("emisor_electronico_desde", ""),
+        "padrones": ruc_data.get("padrones", ""),
+        "deuda_coactiva": json.dumps(deuda_data) if deuda_data else "[]",
+        "representantes_legales": json.dumps(repr_data) if repr_data else "[]"
     }
 
     # Fallback to manual concatenation if address is too short (missing location)
@@ -111,6 +152,10 @@ def get_ruc_info(ruc: str, db: Session, force_refresh: bool = False) -> dict:
         "deuda_coactiva": deuda_data if deuda_data else [],
         "representantes_legales": repr_data if repr_data else [],
         "fecha_consulta": datetime.now().isoformat(),
+        "departamento": ruc_data.get("departamento", ""),
+        "provincia": ruc_data.get("provincia", ""),
+        "distrito": ruc_data.get("distrito", ""),
+        "ubigeo": ruc_data.get("ubigeo")[-1] if isinstance(ruc_data.get("ubigeo"), list) and ruc_data.get("ubigeo") else (ruc_data.get("ubigeo_sunat") or ruc_data.get("ubigeo") or ""),
     })
 
     # 4. Save to cache
@@ -265,6 +310,32 @@ def _get_from_cache(ruc: str, db: Session) -> dict | None:
         "fecha_consulta": str(fecha_consulta) if fecha_consulta else "",
         "fuente": "cache",
     }
+
+    # Reconstruct location from domicilio_fiscal
+    domicilio = result["domicilio_fiscal"]
+    distrito = ""
+    provincia = ""
+    departamento = ""
+    if ", " in domicilio:
+        parts = domicilio.rsplit(", ", 1)
+        if len(parts) > 1:
+            loc_parts = parts[1].split(" - ")
+            if len(loc_parts) == 3:
+                departamento = loc_parts[0].strip()
+                provincia = loc_parts[1].strip()
+                distrito = loc_parts[2].strip()
+            elif len(loc_parts) == 2:
+                provincia = loc_parts[0].strip()
+                distrito = loc_parts[1].strip()
+            elif len(loc_parts) == 1:
+                distrito = loc_parts[0].strip()
+
+    result.update({
+        "distrito": distrito,
+        "provincia": provincia,
+        "departamento": departamento,
+        "ubigeo": "" # Ubigeo can be empty or parsed if needed
+    })
 
     # Parse JSON
     for json_field in ["actividades_economicas", "comprobantes_pago", "deuda_coactiva", "representantes_legales"]:

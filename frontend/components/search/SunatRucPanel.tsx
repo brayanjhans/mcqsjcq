@@ -45,6 +45,10 @@ interface SunatData {
     nombre_en_bd?: string;
     fuente_busqueda?: string;
     error?: string;
+    distrito?: string;
+    provincia?: string;
+    departamento?: string;
+    ubigeo?: string;
 }
 
 interface Props {
@@ -467,63 +471,71 @@ function SingleRucPanel({
                         <CondicionBadge condicion={data.condicion_contribuyente} />
                     </div>
                     <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                        RUC: <span className="font-bold text-slate-700 dark:text-slate-300">{data.ruc}</span>
+                        <span className="font-black text-slate-900 dark:text-white mr-1">RUC:</span> 
+                        <span className="font-black text-slate-900 dark:text-white">{data.ruc}</span>
                         {data.tipo_contribuyente && (
-                            <> · <span className="text-slate-600 dark:text-slate-400">{data.tipo_contribuyente}</span></>
-                        )}
-                        {data.fuente === "cache" && (
-                            <span className="ml-2 text-xs text-slate-400">(caché)</span>
+                            <> · <span className="text-slate-600 dark:text-slate-400 font-medium">{data.tipo_contribuyente}</span></>
                         )}
                     </p>
-                    {data.nombre_en_bd && (
-                        <p className="mt-0.5 text-xs text-indigo-600 dark:text-indigo-400">
-                            Encontrado en BD como: {data.nombre_en_bd} ({data.fuente_busqueda})
-                        </p>
-                    )}
                 </div>
                 {onRefresh && (
                     <div className="flex items-center gap-2">
                          <button
                             onClick={handleExportPDF}
                             disabled={isExporting}
-                            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#1e3a8a] hover:bg-[#1e40af] text-[11px] font-black text-white transition-all shadow-lg shadow-indigo-900/10 disabled:opacity-50 active:scale-95 uppercase tracking-wider"
+                            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#450a0a] to-[#991b1b] hover:brightness-110 text-[11px] font-black text-white transition-all disabled:opacity-50 active:scale-95 uppercase tracking-wider relative overflow-hidden active:translate-y-0.5"
+                            style={{ 
+                                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2), 0 4px 0 #450a0a, 0 8px 15px rgba(0,0,0,0.3)',
+                            }}
                         >
-                            {isExporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileDown className="w-4 h-4" />}
-                            EXPORTAR PDF
+                            <span className="relative z-10 flex items-center gap-2">
+                                {isExporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileDown className="w-4 h-4" />}
+                                EXPORTAR PDF
+                            </span>
                         </button>
                         <button
                             onClick={() => onRefresh(data.ruc)}
                             disabled={isRefreshing}
-                            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-700 hover:bg-indigo-800 text-[11px] font-black text-white transition-all shadow-lg shadow-indigo-900/10 disabled:opacity-50 active:scale-95 uppercase tracking-wider"
+                            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#0f172a] to-[#1e3a8a] hover:brightness-110 text-[11px] font-black text-white transition-all disabled:opacity-50 active:scale-95 uppercase tracking-wider relative overflow-hidden active:translate-y-0.5"
+                            style={{ 
+                                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2), 0 4px 0 #0f172a, 0 8px 15px rgba(0,0,0,0.3)',
+                            }}
                         >
-                            <RefreshCw className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`} />
-                            ACTUALIZAR
+                            <span className="relative z-10 flex items-center gap-2">
+                                <RefreshCw className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`} />
+                                ACTUALIZAR
+                            </span>
                         </button>
                     </div>
                 )}
             </div>
 
-            {/* Tabs */}
-            <div className="flex gap-2 mb-6 bg-slate-100 dark:bg-white/5 p-1.5 rounded-2xl">
+            {/* Tabs - Pill/Capsule Design with Sliding Animation */}
+            <div className="flex mb-8 bg-slate-100/80 dark:bg-white/5 p-1 rounded-full border border-slate-200 dark:border-white/10 shadow-inner relative w-auto mx-4">
+                {/* Sliding Pill Background */}
+                <div 
+                    className="absolute h-[calc(100%-8px)] transition-all duration-500 ease-in-out bg-gradient-to-r from-[#0f172a] to-[#1e3a8a] rounded-full shadow-lg shadow-indigo-900/20"
+                    style={{ 
+                        width: `calc(${100 / TABS.length}% - 4px)`,
+                        left: `calc(${(TABS.findIndex(t => t.id === activeTab) * 100) / TABS.length}% + 2px)`,
+                        top: '4px'
+                    }}
+                />
+
                 {TABS.map((tab) => {
                     const isActive = activeTab === tab.id;
                     return (
                         <button
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
-                            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black transition-all flex-1 justify-center relative overflow-hidden group ${
-                                isActive
-                                    ? `bg-gradient-to-br ${tab.gradient} text-white shadow-lg shadow-indigo-500/20`
-                                    : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/10"
+                            className={`flex items-center gap-3 px-8 py-2.5 rounded-full text-xs font-black transition-colors duration-300 flex-1 justify-center relative z-10 group active:scale-95 ${
+                                isActive ? "text-white" : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white"
                             }`}
                         >
-                            <span className={`${isActive ? "text-white" : tab.color}`}>
+                            <span className={`${isActive ? "text-white" : tab.color} transition-colors duration-300`}>
                                 {tab.icon}
                             </span>
-                            <span className="hidden sm:inline uppercase tracking-tighter">{tab.label}</span>
-                            {isActive && (
-                                <div className="absolute inset-0 bg-white/10 animate-pulse pointer-events-none" />
-                            )}
+                            <span className="hidden sm:inline uppercase tracking-widest">{tab.label}</span>
                         </button>
                     );
                 })}
@@ -532,40 +544,64 @@ function SingleRucPanel({
             {/* Tab Content */}
             <div className="animate-in fade-in duration-200">
                 {activeTab === "datos" && (
-                    <div className="space-y-0">
-                        <InfoRow label="Número de RUC" value={data.ruc} />
-                        <InfoRow label="Razón Social" value={data.razon_social} />
-                        <InfoRow 
-                            label="Estado" 
-                            value={
-                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${
-                                    data.estado_contribuyente === 'ACTIVO' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'
-                                }`}>
-                                    {data.estado_contribuyente || "-"}
-                                </span>
-                            } 
-                        />
-                        <InfoRow 
-                            label="Condición" 
-                            value={
-                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${
-                                    data.condicion_contribuyente === 'HABIDO' ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-600'
-                                }`}>
-                                    {data.condicion_contribuyente || "-"}
-                                </span>
-                            } 
-                        />
-                        <InfoRow
-                            label="Domicilio Fiscal"
-                            value={
-                                data.domicilio_fiscal ? (
-                                    <span className="flex items-start gap-1.5 leading-relaxed font-medium">
-                                        <MapPin className="w-4 h-4 text-indigo-500 shrink-0 mt-0.5" />
-                                        {data.domicilio_fiscal}
-                                    </span>
-                                ) : "-"
-                            }
-                        />
+                    <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-white/10 shadow-sm">
+                        <table className="w-full text-sm">
+                            <thead>
+                                <tr className="bg-slate-50 dark:bg-white/5">
+                                    <th className="px-4 py-3 text-left text-[12px] font-black uppercase text-slate-500 dark:text-slate-400 tracking-wider">Número de RUC</th>
+                                    <th className="px-4 py-3 text-left text-[12px] font-black uppercase text-slate-500 dark:text-slate-400 tracking-wider">Razón Social</th>
+                                    <th className="px-4 py-3 text-left text-[12px] font-black uppercase text-slate-500 dark:text-slate-400 tracking-wider">Tipo Contribuyente</th>
+                                    <th className="px-4 py-3 text-left text-[12px] font-black uppercase text-slate-500 dark:text-slate-400 tracking-wider">Ubicación / Distrito</th>
+                                    <th className="px-4 py-3 text-left text-[12px] font-black uppercase text-slate-500 dark:text-slate-400 tracking-wider">Nombre Comercial</th>
+                                    <th className="px-4 py-3 text-left text-[12px] font-black uppercase text-slate-500 dark:text-slate-400 tracking-wider">Domicilio Fiscal</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 dark:divide-white/5">
+                                <tr className="hover:bg-slate-50/50 dark:hover:bg-white/[0.02] transition-colors">
+                                    <td className="px-4 py-5 font-mono text-[14px] font-bold text-slate-900 dark:text-white">
+                                        {data.ruc}
+                                    </td>
+                                    <td className="px-4 py-5 font-black text-[14px] text-slate-900 dark:text-white max-w-[240px]">
+                                        {data.razon_social || "-"}
+                                    </td>
+                                    <td className="px-4 py-5 text-[12px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide max-w-[200px] leading-snug">
+                                        {data.tipo_contribuyente || "-"}
+                                    </td>
+                                    <td className="px-4 py-5 text-[12px] text-slate-700 dark:text-slate-300">
+                                        <div className="flex flex-col gap-0.5">
+                                            <span className="font-bold text-slate-900 dark:text-white uppercase tracking-wide">
+                                                {data.distrito || "-"}
+                                            </span>
+                                            {data.ubigeo && (
+                                                <span className="text-[10px] text-indigo-500 dark:text-indigo-400 font-mono">
+                                                    Ubigeo: {data.ubigeo}
+                                                </span>
+                                            )}
+                                            {data.provincia && data.departamento && (
+                                                <span className="text-[10px] text-slate-400 dark:text-slate-500">
+                                                    {data.provincia} - {data.departamento}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </td>
+                                    <td className="px-4 py-5 text-[12px] text-slate-700 dark:text-slate-300 max-w-[200px]">
+                                        {data.nombre_comercial ? (
+                                            <span className="italic font-semibold text-slate-800 dark:text-slate-200">
+                                                "{data.nombre_comercial}"
+                                            </span>
+                                        ) : (
+                                            <span className="opacity-40">-</span>
+                                        )}
+                                    </td>
+                                    <td className="px-4 py-5 text-[13px] text-slate-700 dark:text-slate-300 min-w-[300px]">
+                                        <div className="flex items-start gap-1.5 leading-relaxed">
+                                            <MapPin className="w-3.5 h-3.5 text-indigo-500 shrink-0 mt-0.5" />
+                                            {data.domicilio_fiscal || "-"}
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 )}
 
@@ -576,17 +612,19 @@ function SingleRucPanel({
                                 <table className="w-full text-sm">
                                     <thead>
                                         <tr className="bg-slate-50 dark:bg-white/5">
-                                            <th className="px-4 py-3 text-left text-[13px] font-extrabold uppercase text-slate-600 dark:text-slate-300">Monto</th>
+                                            <th className="px-4 py-3 text-left text-[13px] font-extrabold uppercase text-slate-600 dark:text-slate-300">Entidad</th>
                                             <th className="px-4 py-3 text-left text-[13px] font-extrabold uppercase text-slate-600 dark:text-slate-300">Período</th>
                                             <th className="px-4 py-3 text-left text-[13px] font-extrabold uppercase text-slate-600 dark:text-slate-300">Fecha Inicio</th>
-                                            <th className="px-4 py-3 text-left text-[13px] font-extrabold uppercase text-slate-600 dark:text-slate-300">Entidad</th>
+                                            <th className="px-4 py-3 text-left text-[13px] font-extrabold uppercase text-slate-600 dark:text-slate-300">Monto</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100 dark:divide-white/5">
                                         {deudas.map((d: any, i: number) => (
                                             <tr key={i} className="hover:bg-slate-50/50 dark:hover:bg-white/[0.02]">
-                                                <td className="px-4 py-3 text-[14px] font-bold text-slate-900 dark:text-white">
-                                                    {d.monto ? `S/ ${Number(d.monto).toLocaleString("es-PE", { minimumFractionDigits: 2 })}` : "-"}
+                                                <td className="px-4 py-3">
+                                                    <span className="px-2.5 py-1 rounded-full text-[12px] font-bold bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">
+                                                        {d.entidad_asociada || d.entidad || "-"}
+                                                    </span>
                                                 </td>
                                                 <td className="px-4 py-3 text-[14px] text-slate-800 dark:text-slate-200">
                                                     {d.periodo_tributario || d.periodo || d.codigo || "-"}
@@ -594,14 +632,23 @@ function SingleRucPanel({
                                                 <td className="px-4 py-3 text-[13px] text-slate-700 dark:text-slate-300 text-nowrap">
                                                     {d.fecha_inicio_cobranza || d.fecha_inicio || d.fecha || "-"}
                                                 </td>
-                                                <td className="px-4 py-3">
-                                                    <span className="px-2.5 py-1 rounded-full text-[12px] font-bold bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">
-                                                        {d.entidad_asociada || d.entidad || "-"}
-                                                    </span>
+                                                <td className="px-4 py-3 text-[14px] font-bold text-slate-900 dark:text-white">
+                                                    {d.monto ? `S/ ${Number(d.monto).toLocaleString("es-PE", { minimumFractionDigits: 2 })}` : "-"}
                                                 </td>
                                             </tr>
                                         ))}
                                     </tbody>
+                                    <tfoot className="border-t-2 border-slate-200 dark:border-white/10">
+                                        <tr className="bg-slate-50/50 dark:bg-white/[0.02]">
+                                            <td className="px-4 py-4 text-left text-[12px] font-black uppercase text-slate-900 dark:text-white tracking-wider">
+                                                Suma Total
+                                            </td>
+                                            <td colSpan={2}></td>
+                                            <td className="px-4 py-4 text-[16px] font-black text-indigo-600 dark:text-indigo-400">
+                                                S/ {deudas.reduce((acc: number, d: any) => acc + (Number(d.monto) || 0), 0).toLocaleString("es-PE", { minimumFractionDigits: 2 })}
+                                            </td>
+                                        </tr>
+                                    </tfoot>
                                 </table>
                             </div>
                         ) : (
@@ -611,20 +658,6 @@ function SingleRucPanel({
                                 <p className="text-[13px] text-slate-500 dark:text-slate-400 mt-1">
                                     Este contribuyente no presenta deudas en cobranza coactiva
                                 </p>
-                            </div>
-                        )}
-
-                        {deudas.length > 0 && (
-                            <div className="mt-6 flex justify-end">
-                                <div className="bg-gradient-to-br from-blue-500 to-cyan-600 rounded-2xl px-8 py-4 shadow-xl shadow-blue-500/20 border border-white/10 ring-1 ring-white/20">
-                                    <p className="text-[11px] font-black text-blue-100 uppercase tracking-widest mb-1">
-                                        Suma total de los montos de la deuda
-                                    </p>
-                                    <p className="text-2xl font-black text-white flex items-baseline gap-2">
-                                        <span className="text-sm font-bold opacity-80 italic text-cyan-100">S/</span>
-                                        {deudas.reduce((acc: number, d: any) => acc + (Number(d.monto) || 0), 0).toLocaleString("es-PE", { minimumFractionDigits: 2 })}
-                                    </p>
-                                </div>
                             </div>
                         )}
                     </div>
@@ -711,29 +744,29 @@ export const SunatRucPanel: React.FC<Props> = ({ data, onClose, onRefresh, isRef
     return (
         <div className="rounded-2xl border border-slate-200 bg-white shadow-lg shadow-slate-900/5 dark:border-slate-800 dark:bg-[#111c44] overflow-hidden">
             {/* Tab Content Header */}
-            <div className="flex items-center justify-between p-4 mb-4 border-b border-white/10 bg-[#1e3a8a] text-white shadow-xl shadow-blue-900/10">
-                <div className="flex items-center gap-3">
+            <div className="flex items-center justify-between p-4 mb-4 border-b border-white/10 bg-gradient-to-r from-[#0f172a] to-[#1e3a8a] text-white shadow-xl shadow-blue-900/10 relative overflow-hidden">
+                <div className="flex items-center gap-3 relative z-10">
                     <div className="p-2 bg-white/10 rounded-xl">
                         <Building2 className="w-5 h-5 text-white" />
                     </div>
                     <div>
-                        <div className="text-[10px] font-black text-white/70 uppercase tracking-widest">Consulta RUC</div>
-                        <div className="text-sm font-black whitespace-nowrap">SUNAT OFICIAL</div>
+                        <div className="text-[10px] font-black text-white uppercase tracking-widest opacity-90">Consulta RUC</div>
+                        <div className="text-sm font-black whitespace-nowrap text-white">SUNAT OFICIAL</div>
                     </div>
                 </div>
                 
-                <div className="hidden md:block h-8 w-px bg-white/20 mx-4"></div>
+                <div className="hidden md:block h-8 w-px bg-white/20 mx-4 relative z-10"></div>
 
-                <div className="flex-1">
-                    <div className="text-[10px] font-black text-white/50 uppercase tracking-widest">Última Consulta</div>
-                    <div className="text-[11px] font-bold">{currentItem.fecha_consulta ? new Date(currentItem.fecha_consulta).toLocaleString("es-PE") : "-"}</div>
+                <div className="flex-1 relative z-10">
+                    <div className="text-[10px] font-black text-white uppercase tracking-widest opacity-70">Última Consulta</div>
+                    <div className="text-sm font-black text-white">{currentItem.fecha_consulta ? new Date(currentItem.fecha_consulta).toLocaleString("es-PE") : "-"}</div>
                 </div>
 
                 <button 
                     onClick={onClose}
-                    className="p-2 hover:bg-white/10 rounded-xl transition-colors group"
+                    className="ml-4 p-2 bg-white text-red-600 hover:bg-red-600 hover:text-white rounded-full transition-all duration-300 group relative z-10 shadow-lg border-2 border-white/50 hover:border-white hover:rotate-90"
                 >
-                    <X className="w-5 h-5 text-white/70 group-hover:text-white transition-colors" />
+                    <X className="w-5 h-5 font-black group-hover:scale-110 transition-transform" />
                 </button>
             </div>
 
@@ -751,13 +784,14 @@ export const SunatRucPanel: React.FC<Props> = ({ data, onClose, onRefresh, isRef
                                     if (onSelectedIndexChange) onSelectedIndexChange(idx); 
                                     setActiveTab("datos"); 
                                 }}
-                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
+                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 relative overflow-hidden active:translate-y-0.5 ${
                                     idx === selectedIndex
-                                        ? "bg-indigo-600 text-white shadow-sm"
+                                        ? "bg-gradient-to-r from-[#0f172a] to-[#1e3a8a] text-white shadow-sm"
                                         : "bg-white text-slate-600 border border-slate-200 hover:border-indigo-300 dark:bg-white/5 dark:text-slate-300 dark:border-white/10"
                                 }`}
+                                style={idx === selectedIndex ? { boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2), 0 3px 0 #0f172a, 0 6px 12px rgba(0,0,0,0.2)' } : {}}
                             >
-                                <div className="flex flex-col items-start gap-0.5">
+                                <div className="flex flex-col items-start gap-0.5 relative z-10">
                                     <div className="flex items-center gap-2">
                                         <SourceBadge source={item.fuente_busqueda} />
                                         <span>{item.razon_social ? item.razon_social.substring(0, 35) + (item.razon_social.length > 35 ? "..." : "") : item.ruc}</span>

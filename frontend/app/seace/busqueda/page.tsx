@@ -374,17 +374,23 @@ function BusquedaContent() {
                                     <div className="absolute inset-0 bg-indigo-500 rounded-xl animate-ping-small opacity-30"></div>
                                     <button
                                         onClick={() => setShowFilters(!showFilters)}
-                                        className="relative z-10 flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#4F46E5] text-white text-xs font-bold hover:bg-[#4338ca] shadow-lg shadow-indigo-500/30 transition-all"
+                                        className="relative z-10 flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#0f172a] to-[#1e3a8a] text-white text-[12px] font-black hover:brightness-110 transition-all active:scale-95 active:translate-y-0.5 uppercase tracking-wider relative overflow-hidden"
+                                        style={{ 
+                                            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2), 0 4px 0 #0f172a, 0 8px 15px rgba(0,0,0,0.3)',
+                                        }}
                                     >
                                         {showFilters ? 'Menos Filtros' : 'Más Filtros'}
-                                        {showFilters ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                                        {showFilters ? <ChevronUp className="w-4 h-4 stroke-[3px]" /> : <ChevronDown className="w-4 h-4 stroke-[3px]" />}
                                     </button>
                                 </div>
                                 <button
                                     onClick={handleClear}
-                                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-red-50 text-red-600 border border-red-100 text-xs font-bold hover:bg-red-100 transition-all"
+                                    className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#450a0a] to-[#991b1b] text-white text-[12px] font-black hover:brightness-110 transition-all active:scale-95 active:translate-y-0.5 uppercase tracking-wider relative overflow-hidden"
+                                    style={{ 
+                                        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2), 0 4px 0 #450a0a, 0 8px 15px rgba(0,0,0,0.3)',
+                                    }}
                                 >
-                                    <RotateCcw className="w-3.5 h-3.5" />
+                                    <RotateCcw className="w-4 h-4 stroke-[3px]" />
                                     Limpiar
                                 </button>
                             </div>
@@ -549,14 +555,23 @@ function BusquedaContent() {
                 {/* SUNAT Search Button (for text searches, not RUC) */}
                 {searchTerm.trim().length >= 3 && !/^\d{11}$/.test(searchTerm.trim()) && !sunatVisible && (
                     <div className="flex justify-center">
-                        <button
-                            onClick={handleSunatNameSearch}
-                            disabled={sunatLoading}
-                            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 text-white text-sm font-bold hover:from-indigo-700 hover:to-blue-700 shadow-lg shadow-indigo-500/20 transition-all disabled:opacity-50"
-                        >
-                            <Building2 className="w-4 h-4" />
-                            Consultar SUNAT
-                        </button>
+                        <div className="relative group">
+                            {/* Shadow Waves (Pulse Effect) */}
+                            <div className="absolute inset-0 bg-indigo-500/40 rounded-xl animate-ping-small"></div>
+                            <div className="absolute inset-0 bg-indigo-400/20 rounded-xl animate-pulse scale-110"></div>
+                            
+                            <button
+                                onClick={handleSunatNameSearch}
+                                disabled={sunatLoading}
+                                className="relative z-10 flex items-center gap-2 px-8 py-3 rounded-xl bg-gradient-to-r from-[#0f172a] to-[#1e3a8a] text-white text-[12px] font-black hover:brightness-110 transition-all active:scale-95 active:translate-y-0.5 uppercase tracking-widest overflow-hidden"
+                                style={{ 
+                                    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2), 0 4px 0 #0f172a, 0 8px 20px rgba(79, 70, 229, 0.4)',
+                                }}
+                            >
+                                <Building2 className="w-4 h-4 transition-transform group-hover:scale-110" />
+                                Consultar SUNAT
+                            </button>
+                        </div>
                     </div>
                 )}
                 {/* Results Header with Integrated Stats & Enhanced Animations */}

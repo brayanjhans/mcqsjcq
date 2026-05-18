@@ -153,16 +153,22 @@ export const SearchFiltersComponent: React.FC<Props> = ({
                 <div className="flex items-center gap-4">
                     <button
                         onClick={() => setShowAdvanced(!showAdvanced)}
-                        className={`flex items-center gap-2 px-6 py-2.5 rounded-2xl bg-indigo-600 text-white text-[13px] font-extrabold hover:bg-indigo-700 hover:-translate-y-0.5 transition-all duration-300 active:scale-95 ${!showAdvanced ? 'btn-soft-pulse' : ''}`}
+                        className={`flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#0f172a] to-[#1e3a8a] text-white text-[12px] font-black hover:brightness-110 transition-all active:scale-95 active:translate-y-0.5 uppercase tracking-wider relative overflow-hidden`}
+                        style={{ 
+                            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2), 0 4px 0 #0f172a, 0 8px 15px rgba(0,0,0,0.3)',
+                        }}
                     >
                         <span>{showAdvanced ? "Menos Filtros" : "Más Filtros"}</span>
                         <ChevronDown className={`w-4 h-4 stroke-[3px] transition-transform duration-300 ${showAdvanced ? "rotate-180" : ""}`} />
                     </button>
                     <button
                         onClick={handleClear}
-                        className="group flex items-center gap-2 px-6 py-2.5 rounded-2xl border border-rose-200 bg-rose-50/40 text-[13px] font-extrabold text-rose-500 hover:bg-rose-50 hover:border-rose-300 transition-all duration-300 active:scale-95 dark:border-rose-900/50 dark:hover:bg-rose-900/20 dark:text-rose-400"
+                        className="group flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#450a0a] to-[#991b1b] text-white text-[12px] font-black hover:brightness-110 transition-all active:scale-95 active:translate-y-0.5 uppercase tracking-wider relative overflow-hidden"
+                        style={{ 
+                            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2), 0 4px 0 #450a0a, 0 8px 15px rgba(0,0,0,0.3)',
+                        }}
                     >
-                        <RotateCcw className="w-4 h-4 stroke-[2.5px] transition-transform duration-500 group-hover:-rotate-180" />
+                        <RotateCcw className="w-4 h-4 stroke-[3px] transition-transform duration-500 group-hover:-rotate-180" />
                         <span>Limpiar</span>
                     </button>
                 </div>
