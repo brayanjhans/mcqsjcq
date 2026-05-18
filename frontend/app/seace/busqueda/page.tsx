@@ -343,6 +343,11 @@ function BusquedaContent() {
         setDistritoOptions([]);
         setCurrentPage(1);
 
+        // Clear SUNAT states as well
+        setSunatData(null);
+        setSunatVisible(false);
+        setSelectedSunatIndex(0);
+
         // Clear URL immediately
         router.replace(pathname, { scroll: false });
     };
