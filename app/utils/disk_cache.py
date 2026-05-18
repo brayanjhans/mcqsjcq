@@ -24,6 +24,8 @@ def get_disk_cache_path(key: str) -> str:
     return os.path.join(CACHE_DIR, f"dash_{h}.json")
 
 def disk_cache_get(key: str):
+    if os.getenv("DISABLE_CACHE") == "true":
+        return None
     full_key = f"{get_window_prefix()}_{key}"
     path = get_disk_cache_path(full_key)
     if os.path.exists(path):

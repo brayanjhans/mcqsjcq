@@ -7,9 +7,10 @@ import { DistributionRadialChart } from "@/components/ecommerce/DistributionRadi
 import { SalesAreaChart } from "@/components/ecommerce/SalesAreaChart";
 import { PeruInteractiveMap } from "@/components/ecommerce/PeruInteractiveMap";
 import { FinancialEntitiesTable } from "@/components/ecommerce/FinancialEntitiesTable";
+import { ActivityRadar } from "@/components/ecommerce/ActivityRadar";
 import { licitacionService } from "@/lib/services/licitacionService";
 import { DEFAULT_TIPOS_PROCEDIMIENTO } from "@/lib/constants/procedimientos";
-import { ChevronDown, Filter, RotateCcw } from "lucide-react";
+import { ChevronDown, Filter, RotateCcw, SlidersHorizontal, Calendar, CalendarDays, FileText, Sparkles } from "lucide-react";
 
 export default function EcommerceDashboardPage() {
     // --- Data States ---
@@ -135,7 +136,7 @@ export default function EcommerceDashboardPage() {
                 setKpisLic(res);
                 setKpisMonto({
                     ...res,
-                    monto_total_adjudicado: parseFloat(res?.monto_total_estimado || "0")
+                    monto_total_adjudicado: parseFloat(res?.monto_total_adjudicado || res?.monto_total_estimado || "0")
                 });
             } catch (e) {
                 console.error("KPI error", e);
@@ -256,6 +257,8 @@ export default function EcommerceDashboardPage() {
     }, [getQueryParams]);
 
 
+
+
     // Map click updates local state
     const handleDepartmentClick = useCallback((dept: string | null) => setSelectedMapDept(dept || ""), []);
 
@@ -268,7 +271,7 @@ export default function EcommerceDashboardPage() {
 
     if (loadingKpis && !kpisLic) {
         return (
-            <div className="min-h-screen bg-slate-50 dark:bg-[#0b122b] p-4 sm:p-6 lg:p-8 flex items-center justify-center">
+            <div className="min-h-screen bg-white dark:bg-[#0b122b] p-4 sm:p-6 lg:p-8 flex items-center justify-center">
                 <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500"></div>
             </div>
         );
@@ -290,71 +293,100 @@ export default function EcommerceDashboardPage() {
     const processLabel = filterTipo ? filterTipo : "Procesos";
 
     return (
-        <div className="min-h-screen bg-white dark:bg-[#0b122b] p-4 text-slate-800 dark:text-slate-200 font-sans fade-in transition-colors duration-300">
-            <div className="mx-auto max-w-[1600px] space-y-6">
+        <div className="min-h-screen bg-white dark:bg-[#0b122b] bg-[radial-gradient(#e2e8f0_1.2px,transparent_1.2px)] dark:bg-[radial-gradient(#ffffff03_1.2px,transparent_1.2px)] [background-size:20px_20px] p-4 text-slate-800 dark:text-slate-200 font-sans fade-in transition-colors duration-300 relative overflow-hidden">
+            {/* Ambient Background Glow Orbs */}
+            <div className="absolute top-1/4 left-[10%] w-96 h-96 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute top-2/3 right-[10%] w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl pointer-events-none" />
+
+            <div className="mx-auto max-w-[1600px] space-y-6 relative z-10">
 
                 {/* --- Display User's Request: Year, Month, Procedure count? --- */}
-                {/* --- Filter Bar (Modified) --- */}
-                <div className="bg-white dark:bg-[#111c44] rounded-2xl p-4 shadow-sm border border-slate-200 dark:border-white/5">
-                    <div className="flex flex-col md:flex-row items-center gap-4">
-                        <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 font-bold text-sm min-w-max">
-                            <Filter size={18} />
-                            Filtros:
+                {/* --- Filter Bar (Modified to Peak Premium with 3D Relief) --- */}
+                <div className="bg-white/95 dark:bg-[#111c44]/95 backdrop-blur-md rounded-2xl p-4 shadow-[0_12px_32px_rgba(0,0,0,0.06),_0_2px_4px_rgba(0,0,0,0.02)] border border-slate-300/80 border-t-white/80 dark:border-slate-800/80 dark:border-t-white/10 transition-all duration-300 relative overflow-hidden">
+                    {/* Glowing background highlights */}
+                    <div className="absolute -top-10 -left-10 w-40 h-40 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none" />
+                    <div className="absolute top-0 right-0 w-32 h-[1px] bg-gradient-to-r from-transparent via-indigo-500/40 to-transparent" />
+                    
+                    {/* Decorative Star/Sparkle for high-end feel */}
+                    <div className="absolute top-1/2 right-6 -translate-y-1/2 pointer-events-none opacity-20 animate-pulse hidden xl:block">
+                        <Sparkles className="w-5 h-5 text-indigo-400 animate-spin [animation-duration:12s]" />
+                    </div>
+
+                    <div className="flex flex-col xl:flex-row items-center gap-4 relative z-10">
+                        {/* Title Badge (Debossed/Sunken Relief style) */}
+                        <div className="flex items-center gap-2.5 px-4 py-2 rounded-full bg-gradient-to-r from-indigo-500/10 via-purple-500/5 to-transparent border border-indigo-500/20 dark:border-indigo-400/30 text-indigo-600 dark:text-indigo-400 font-black text-[10px] tracking-widest uppercase flex-shrink-0 shadow-[inset_0_2px_4px_rgba(0,0,0,0.03)] dark:shadow-[inset_0_2px_4px_rgba(0,0,0,0.2)]">
+                            <span className="relative flex h-2.5 w-2.5">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                            </span>
+                            <SlidersHorizontal size={12} className="animate-pulse text-indigo-500" />
+                            Filtros Inteligentes
                         </div>
 
-                        {/* 1. Procedimiento ("Recuento de cada proceso") - MOVED TO FIRST */}
-                        <div className="relative w-full md:w-auto flex-1">
-                            <select
-                                className="w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-4 pr-10 text-xs font-bold text-slate-700 focus:border-[#4F46E5] focus:ring-4 focus:ring-[#4F46E5]/10 outline-none transition-all dark:bg-[#0b122b] dark:border-slate-700 dark:text-white"
-                                value={filterTipo}
-                                onChange={(e) => setFilterTipo(e.target.value)}
-                            >
-                                <option value="">Todos los Procedimientos</option>
-                                {options.tipos && options.tipos.map((t: string) => (
-                                    <option key={t} value={t}>{t}</option>
-                                ))}
-                            </select>
-                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                        {/* Filter Inputs Grid */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full flex-1">
+                            {/* 1. Procedimiento select (Tactile Beveled 3D style) */}
+                            <div className="relative w-full group">
+                                <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center pointer-events-none z-10 transition-colors duration-300">
+                                    <FileText className="h-4 w-4 text-indigo-500 dark:text-indigo-400 group-hover:scale-110 transition-transform duration-300" />
+                                </div>
+                                <select
+                                    className="w-full appearance-none rounded-xl border-l-[3px] border-l-indigo-500 border-y border-r border-slate-200/90 bg-gradient-to-b from-white to-slate-100/90 dark:from-[#111c44] dark:to-[#0b122b]/80 py-3 pl-12 pr-10 text-xs font-black text-slate-700 hover:border-indigo-500/30 dark:hover:border-indigo-500/20 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 outline-none transition-all duration-300 dark:border-white/5 dark:text-slate-200 cursor-pointer shadow-[0_2px_4px_rgba(0,0,0,0.04),_inset_0_1px_0_rgba(255,255,255,0.6)] dark:shadow-[0_2px_4px_rgba(0,0,0,0.2),_inset_0_1px_0_rgba(255,255,255,0.05)] hover:shadow-[0_4px_8px_rgba(0,0,0,0.06),_inset_0_1px_0_rgba(255,255,255,0.8)] hover:-translate-y-[1px]"
+                                    value={filterTipo}
+                                    onChange={(e) => setFilterTipo(e.target.value)}
+                                >
+                                    <option value="">Todos los Procedimientos</option>
+                                    {options.tipos && options.tipos.map((t: string) => (
+                                        <option key={t} value={t}>{t}</option>
+                                    ))}
+                                </select>
+                                <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                            </div>
+
+                            {/* 2. Año select (Tactile Beveled 3D style) */}
+                            <div className="relative w-full group">
+                                <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center pointer-events-none z-10 transition-colors duration-300">
+                                    <Calendar className="h-4 w-4 text-violet-500 dark:text-violet-400 group-hover:scale-110 transition-transform duration-300" />
+                                </div>
+                                <select
+                                    className="w-full appearance-none rounded-xl border-l-[3px] border-l-violet-500 border-y border-r border-slate-200/90 bg-gradient-to-b from-white to-slate-100/90 dark:from-[#111c44] dark:to-[#0b122b]/80 py-3 pl-12 pr-10 text-xs font-black text-slate-700 hover:border-indigo-500/30 dark:hover:border-indigo-500/20 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 outline-none transition-all duration-300 dark:border-white/5 dark:text-slate-200 cursor-pointer shadow-[0_2px_4px_rgba(0,0,0,0.04),_inset_0_1px_0_rgba(255,255,255,0.6)] dark:shadow-[0_2px_4px_rgba(0,0,0,0.2),_inset_0_1px_0_rgba(255,255,255,0.05)] hover:shadow-[0_4px_8px_rgba(0,0,0,0.06),_inset_0_1px_0_rgba(255,255,255,0.8)] hover:-translate-y-[1px]"
+                                    value={filterAnio}
+                                    onChange={(e) => setFilterAnio(Number(e.target.value))}
+                                >
+                                    <option value="0">Todos los Años</option>
+                                    {options.anios && options.anios.map((y: any) => (
+                                        <option key={y} value={y}>{y}</option>
+                                    ))}
+                                </select>
+                                <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                            </div>
+
+                            {/* 3. Mes select (Tactile Beveled 3D style) */}
+                            <div className="relative w-full group">
+                                <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center pointer-events-none z-10 transition-colors duration-300">
+                                    <CalendarDays className="h-4 w-4 text-emerald-500 dark:text-emerald-400 group-hover:scale-110 transition-transform duration-300" />
+                                </div>
+                                <select
+                                    className="w-full appearance-none rounded-xl border-l-[3px] border-l-emerald-500 border-y border-r border-slate-200/90 bg-gradient-to-b from-white to-slate-100/90 dark:from-[#111c44] dark:to-[#0b122b]/80 py-3 pl-12 pr-10 text-xs font-black text-slate-700 hover:border-indigo-500/30 dark:hover:border-indigo-500/20 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 outline-none transition-all duration-300 dark:border-white/5 dark:text-slate-200 cursor-pointer shadow-[0_2px_4px_rgba(0,0,0,0.04),_inset_0_1px_0_rgba(255,255,255,0.6)] dark:shadow-[0_2px_4px_rgba(0,0,0,0.2),_inset_0_1px_0_rgba(255,255,255,0.05)] hover:shadow-[0_4px_8px_rgba(0,0,0,0.06),_inset_0_1px_0_rgba(255,255,255,0.8)] hover:-translate-y-[1px]"
+                                    value={filterMes}
+                                    onChange={(e) => setFilterMes(Number(e.target.value))}
+                                >
+                                    <option value="0">Todos los Meses</option>
+                                    {options.meses.map((m) => (
+                                        <option key={m.id} value={m.id}>{m.name}</option>
+                                    ))}
+                                </select>
+                                <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                            </div>
                         </div>
 
-                        {/* 2. Año - MOVED TO SECOND */}
-                        <div className="relative w-full md:w-40">
-                            <select
-                                className="w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-4 pr-10 text-xs font-bold text-slate-700 focus:border-[#4F46E5] focus:ring-4 focus:ring-[#4F46E5]/10 outline-none transition-all dark:bg-[#0b122b] dark:border-slate-700 dark:text-white"
-                                value={filterAnio}
-                                onChange={(e) => setFilterAnio(Number(e.target.value))}
-                            >
-                                <option value="0">Todos los Años</option>
-                                {options.anios && options.anios.map((y: any) => (
-                                    <option key={y} value={y}>{y}</option>
-                                ))}
-                            </select>
-                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-                        </div>
-
-                        {/* 3. Mes - MOVED TO THIRD */}
-                        <div className="relative w-full md:w-40">
-                            <select
-                                className="w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-4 pr-10 text-xs font-bold text-slate-700 focus:border-[#4F46E5] focus:ring-4 focus:ring-[#4F46E5]/10 outline-none transition-all dark:bg-[#0b122b] dark:border-slate-700 dark:text-white"
-                                value={filterMes}
-                                onChange={(e) => setFilterMes(Number(e.target.value))}
-                            >
-                                <option value="0">Todos los Meses</option>
-                                {options.meses.map((m) => (
-                                    <option key={m.id} value={m.id}>{m.name}</option>
-                                ))}
-                            </select>
-                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-                        </div>
-
-
-
+                        {/* Action Button (Elevated physical click style) */}
                         <button
                             onClick={handleClearFilters}
-                            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-red-50 text-red-600 border border-red-100 text-xs font-bold hover:bg-red-100 transition-all ml-auto"
+                            className="flex items-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-rose-500/10 to-pink-500/5 hover:from-rose-500 hover:to-pink-500 text-rose-600 hover:text-white border border-rose-500/20 hover:border-transparent text-xs font-black transition-all duration-300 w-full xl:w-auto justify-center shadow-[0_3px_6px_rgba(244,63,94,0.1)] hover:shadow-[0_6px_16px_rgba(244,63,94,0.25)] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.15)] active:translate-y-[1px] active:scale-98"
                         >
                             <RotateCcw className="w-3.5 h-3.5" />
-                            Limpiar
+                            Limpiar Filtros
                         </button>
                     </div>
                 </div>
@@ -367,19 +399,22 @@ export default function EcommerceDashboardPage() {
                         <EcommerceMetrics
                             licitaciones={kpisLic?.total_licitaciones}
                             monto={kpisMonto?.monto_total_adjudicado}
-                            // Pass Global Filter State (could be overridden by local controls inside component if implemented, but here we just pass props)
                             yearLic={filterAnio}
                             onYearLicChange={(y) => setFilterAnio(y)}
                             yearMonto={filterAnio}
                             onYearMontoChange={(y) => setFilterAnio(y)}
                             label={processLabel}
+                            totalGarantias={kpisLic?.total_garantias}
+                            garantiasActivas={kpisLic?.garantias_activas}
+                            garantiasPorVencer={kpisLic?.garantias_por_vencer}
+                            garantiasVencidas={kpisLic?.garantias_vencidas}
                         />
                     </div>
 
                     {/* ROW 2: Charts (Trend + Distribution) */}
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
                         {/* Left: Monthly Trend (Main Chart) */}
-                        <div className="lg:col-span-8 h-[500px]">
+                        <div className="lg:col-span-8 h-[320px]">
                             <SalesAreaChart
                                 data={monthlyTrend}
                                 selectedYear={filterAnio}
@@ -389,7 +424,7 @@ export default function EcommerceDashboardPage() {
                         </div>
 
                         {/* Right: Distribution (Radial) */}
-                        <div className="lg:col-span-4 h-[500px]">
+                        <div className="lg:col-span-4 h-[320px]">
                             <DistributionRadialChart
                                 data={distribution}
                                 selectedYear={filterAnio}
@@ -399,10 +434,10 @@ export default function EcommerceDashboardPage() {
                         </div>
                     </div>
 
-                    {/* ROW 3: Detailed Tables */}
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                        {/* Left: Peru Interactive Map (Narrower) */}
-                        <div className="lg:col-span-5">
+                    {/* ROW 3: Detailed Tables (Bento Grid Style) */}
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+                        {/* Left: Peru Interactive Map Heatmap */}
+                        <div className="lg:col-span-4">
                             <PeruInteractiveMap
                                 departmentRanking={finalDeptRanking}
                                 provinceRanking={provinceRanking}
@@ -413,13 +448,18 @@ export default function EcommerceDashboardPage() {
                             />
                         </div>
 
-                        {/* Right: Financial Entities (Wider) */}
-                        <div className="lg:col-span-7">
+                        {/* Middle: Financial & Contratistas Leaderboards */}
+                        <div className="lg:col-span-4">
                             <FinancialEntitiesTable
                                 data={financialEntities}
                                 selectedYear={filterAnio}
                                 onYearChange={(y) => setFilterAnio(y)}
                             />
+                        </div>
+
+                        {/* Right: Real-time Activity Radar Feed */}
+                        <div className="lg:col-span-4">
+                            <ActivityRadar />
                         </div>
                     </div>
 

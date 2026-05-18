@@ -78,6 +78,64 @@ def get_dashboard_kpis(
         result = db.execute(sql_kpis, params).fetchone()
         monto_total = float(result[0]) if result[0] else 0
         total_licitaciones = result[1] or 0
+
+        # 2. Calcular KPIs de Adjudicaciones y Garantías (Semáforo de Riesgo)
+        where_clauses_adj = []
+        params_adj = {
+            'today_date': '2026-05-18',
+            'expiring_soon_date': '2026-06-18'
+        }
+        
+        if year and year > 0:
+            if mes and mes > 0:
+                import calendar
+                last_day = calendar.monthrange(year, mes)[1]
+                where_clauses_adj.append("c.fecha_publicacion >= :date_start AND c.fecha_publicacion <= :date_end")
+                params_adj['date_start'] = f"{year}-{mes:02d}-01"
+                params_adj['date_end'] = f"{year}-{mes:02d}-{last_day}"
+            else:
+                where_clauses_adj.append("c.fecha_publicacion >= :date_start AND c.fecha_publicacion <= :date_end")
+                params_adj['date_start'] = f"{year}-01-01"
+                params_adj['date_end'] = f"{year}-12-31"
+        elif mes and mes > 0:
+            where_clauses_adj.append("MONTH(c.fecha_publicacion) = :mes")
+            params_adj['mes'] = mes
+            
+        if estado:
+            where_clauses_adj.append("c.estado_proceso = :estado")
+            params_adj['estado'] = estado
+        if tipo_procedimiento:
+            where_clauses_adj.append("c.tipo_procedimiento = :tipo_proc")
+            params_adj['tipo_proc'] = tipo_procedimiento
+        if categoria:
+            where_clauses_adj.append("c.categoria = :categoria")
+            params_adj['categoria'] = categoria
+        if departamento:
+            where_clauses_adj.append("c.departamento = :departamento")
+            params_adj['departamento'] = departamento
+            
+        where_sql_adj = "WHERE " + " AND ".join(where_clauses_adj) if where_clauses_adj else ""
+
+        sql_adj_kpis = text(f"""
+            SELECT 
+                COUNT(*) as total_adjudicadas,
+                COALESCE(SUM(monto_adjudicado), 0) as monto_adjudicado_total,
+                COALESCE(SUM(CASE WHEN tipo_garantia IS NOT NULL AND tipo_garantia != 'SIN_GARANTIA' THEN 1 ELSE 0 END), 0) as total_garantias,
+                COALESCE(SUM(CASE WHEN tipo_garantia IS NOT NULL AND tipo_garantia != 'SIN_GARANTIA' AND fecha_fin_contrato >= :today_date THEN 1 ELSE 0 END), 0) as garantias_activas,
+                COALESCE(SUM(CASE WHEN tipo_garantia IS NOT NULL AND tipo_garantia != 'SIN_GARANTIA' AND fecha_fin_contrato >= :today_date AND fecha_fin_contrato <= :expiring_soon_date THEN 1 ELSE 0 END), 0) as garantias_por_vencer,
+                COALESCE(SUM(CASE WHEN tipo_garantia IS NOT NULL AND tipo_garantia != 'SIN_GARANTIA' AND (fecha_fin_contrato < :today_date OR fecha_fin_contrato IS NULL) THEN 1 ELSE 0 END), 0) as garantias_vencidas
+            FROM licitaciones_adjudicaciones a
+            JOIN licitaciones_cabecera c ON a.id_convocatoria = c.id_convocatoria
+            {where_sql_adj}
+        """)
+        
+        result_adj = db.execute(sql_adj_kpis, params_adj).fetchone()
+        total_adjudicadas = result_adj[0] or 0
+        monto_adjudicado_total = float(result_adj[1]) if result_adj[1] else 0
+        total_garantias = result_adj[2] or 0
+        garantias_activas = result_adj[3] or 0
+        garantias_por_vencer = result_adj[4] or 0
+        garantias_vencidas = result_adj[5] or 0
         
         top_departamentos = []
         top_entidades = []
@@ -90,7 +148,13 @@ def get_dashboard_kpis(
             "top_departamentos": top_departamentos,
             "top_entidades": top_entidades,
             "distribucion_categorias": distribucion_categorias,
-            "distribucion_estados": distribucion_estados
+            "distribucion_estados": distribucion_estados,
+            "total_adjudicadas": total_adjudicadas,
+            "monto_total_adjudicado": str(Decimal(str(monto_adjudicado_total))),
+            "total_garantias": total_garantias,
+            "garantias_activas": garantias_activas,
+            "garantias_por_vencer": garantias_por_vencer,
+            "garantias_vencidas": garantias_vencidas
         }
         disk_cache_set(cache_key, ans)
         return ans
@@ -103,7 +167,13 @@ def get_dashboard_kpis(
             "total_licitaciones": 0,
             "top_departamentos": [],
             "top_entidades": [],
-            "distribucion_estados": []
+            "distribucion_estados": [],
+            "total_adjudicadas": 0,
+            "monto_total_adjudicado": "0",
+            "total_garantias": 0,
+            "garantias_activas": 0,
+            "garantias_por_vencer": 0,
+            "garantias_vencidas": 0
         }
 
 @router.get("/distribution-by-type")
@@ -608,3 +678,135 @@ def get_province_ranking(
         return {"data": data}
     except Exception as e:
         return {"data": [], "error": str(e)}
+
+@router.get("/adjudication-speed")
+def get_adjudication_speed(
+    year: Optional[int] = Query(None),
+    mes: Optional[str] = Query(None),
+    tipo_procedimiento: Optional[str] = Query(None),
+    categoria: Optional[str] = Query(None),
+    departamento: Optional[str] = Query(None),
+    db: Session = Depends(get_db)
+):
+    cache_key = f"adj_speed_{year}_{mes}_{tipo_procedimiento}_{categoria}_{departamento}"
+    cached_data = disk_cache_get(cache_key)
+    if cached_data is not None:
+        return cached_data
+
+    try:
+        # Robust mes parsing
+        mes_val = None
+        if mes is not None:
+            try:
+                mes_val = int(mes)
+            except ValueError:
+                mes_val = None
+
+        where_clauses = [
+            "a.fecha_adjudicacion IS NOT NULL",
+            "c.fecha_publicacion IS NOT NULL",
+            "TIMESTAMPDIFF(DAY, c.fecha_publicacion, a.fecha_adjudicacion) >= 0"
+        ]
+        params = {}
+        
+        if year and year > 0:
+            if mes_val and mes_val > 0:
+                import calendar
+                last_day = calendar.monthrange(year, mes_val)[1]
+                where_clauses.append("c.fecha_publicacion >= :date_start AND c.fecha_publicacion <= :date_end")
+                params['date_start'] = f"{year}-{mes_val:02d}-01"
+                params['date_end'] = f"{year}-{mes_val:02d}-{last_day}"
+            else:
+                where_clauses.append("c.fecha_publicacion >= :date_start AND c.fecha_publicacion <= :date_end")
+                params['date_start'] = f"{year}-01-01"
+                params['date_end'] = f"{year}-12-31"
+        elif mes_val and mes_val > 0:
+            where_clauses.append("MONTH(c.fecha_publicacion) = :mes")
+            params['mes'] = mes_val
+            
+        if tipo_procedimiento:
+            where_clauses.append("c.tipo_procedimiento = :tipo_proc")
+            params['tipo_proc'] = tipo_procedimiento
+        if categoria:
+            where_clauses.append("c.categoria = :categoria")
+            params['categoria'] = categoria
+        if departamento:
+            where_clauses.append("c.departamento = :departamento")
+            params['departamento'] = departamento
+            
+        where_sql = "WHERE " + " AND ".join(where_clauses)
+        
+        # Query overall speed
+        sql_overall = text(f"""
+            SELECT 
+                AVG(TIMESTAMPDIFF(DAY, c.fecha_publicacion, a.fecha_adjudicacion)) as avg_days,
+                COUNT(*) as count
+            FROM licitaciones_adjudicaciones a
+            JOIN licitaciones_cabecera c ON a.id_convocatoria = c.id_convocatoria
+            {where_sql}
+        """)
+        res_overall = db.execute(sql_overall, params).fetchone()
+        avg_overall = float(res_overall[0]) if res_overall and res_overall[0] is not None else 0.0
+        count_overall = res_overall[1] if res_overall else 0
+        
+        # Query by category
+        sql_categories = text(f"""
+            SELECT 
+                c.categoria,
+                AVG(TIMESTAMPDIFF(DAY, c.fecha_publicacion, a.fecha_adjudicacion)) as avg_days,
+                COUNT(*) as count
+            FROM licitaciones_adjudicaciones a
+            JOIN licitaciones_cabecera c ON a.id_convocatoria = c.id_convocatoria
+            {where_sql}
+            GROUP BY c.categoria
+        """)
+        res_categories = db.execute(sql_categories, params).fetchall()
+        
+        # Normalize and organize category results
+        categories_data = {}
+        for row in res_categories:
+            raw_cat = row[0]
+            avg_days = float(row[1]) if row[1] is not None else 0.0
+            count = row[2] or 0
+            
+            if not raw_cat:
+                continue
+            cat_norm = raw_cat.upper()
+            if "BIEN" in cat_norm:
+                key = "BIEN"
+            elif "SERVICIO" in cat_norm:
+                key = "SERVICIO"
+            elif "OBRA" in cat_norm:
+                key = "OBRA"
+            else:
+                key = cat_norm
+                
+            categories_data[key] = {
+                "avg_days": round(avg_days, 2),
+                "count": count
+            }
+            
+        for k in ["BIEN", "SERVICIO", "OBRA"]:
+            if k not in categories_data:
+                categories_data[k] = {"avg_days": 0.0, "count": 0}
+                
+        ans = {
+            "overall": round(avg_overall, 2),
+            "total_count": count_overall,
+            "categories": categories_data
+        }
+        
+        disk_cache_set(cache_key, ans)
+        return ans
+    except Exception as e:
+        return {
+            "overall": 0.0,
+            "total_count": 0,
+            "categories": {
+                "BIEN": {"avg_days": 0.0, "count": 0},
+                "SERVICIO": {"avg_days": 0.0, "count": 0},
+                "OBRA": {"avg_days": 0.0, "count": 0}
+            },
+            "error": str(e)
+        }
+
