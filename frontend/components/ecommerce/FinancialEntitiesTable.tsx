@@ -7,6 +7,7 @@ interface FinancialEntitiesTableProps {
     data: Array<{ name: string; garantias: number; monto: number; depts: string; cobertura: string }>;
     selectedYear?: number;
     onYearChange?: (year: number) => void;
+    selectedDepartment?: string;
 }
 
 const MOCK_CONTRATISTAS = [
@@ -44,89 +45,91 @@ const getEntityInitials = (name: string) => {
 export const FinancialEntitiesTable: React.FC<FinancialEntitiesTableProps> = React.memo(({
     data = [],
     selectedYear = 2024,
-    onYearChange = () => { }
+    onYearChange = () => { },
+    selectedDepartment = ""
 }) => {
     const [activeTab, setActiveTab] = useState<"emisoras" | "contratistas">("emisoras");
-    const [showAll, setShowAll] = useState(false);
 
     const currentList = activeTab === "emisoras" ? data : MOCK_CONTRATISTAS;
     const maxMonto = Math.max(...currentList.map(d => d.monto), 1);
 
-    const itemsToDisplay = showAll ? currentList.length : 10;
-    const displayData = currentList.slice(0, itemsToDisplay);
-
     return (
-        <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-[#111c44] p-6 shadow-md border border-slate-300/80 dark:border-slate-800 h-full transition-all duration-300 flex flex-col justify-between">
+        <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-[#111c44] p-5 shadow-md border border-slate-300/80 dark:border-slate-800 h-full transition-all duration-300 flex flex-col justify-start gap-4">
             {/* Header & Tabs */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 flex-shrink-0">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-1 gap-3 flex-shrink-0">
                 <div>
-                    <h3 className="text-lg font-black text-slate-900 dark:text-white">Clasificación de Líderes</h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 font-bold mt-0.5">Top actores clave del mercado</p>
+                    <h3 className="text-base font-black text-slate-900 dark:text-white">Clasificación de Líderes</h3>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold mt-0.5">
+                        {selectedDepartment ? `Top actores en ${selectedDepartment.toUpperCase()}` : "Top actores clave del mercado"}
+                    </p>
                 </div>
 
                 {/* Tabs selector */}
-                <div className="flex items-center p-1 bg-slate-100 dark:bg-[#0A192F] rounded-xl border border-slate-200/50 dark:border-white/5">
+                <div className="flex items-center p-0.5 bg-slate-100 dark:bg-[#0A192F] rounded-lg border border-slate-200/50 dark:border-white/5">
                     <button
                         onClick={() => setActiveTab("emisoras")}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black transition-all duration-300 ${
+                        className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-black transition-all duration-300 ${
                             activeTab === "emisoras"
                                 ? "bg-white dark:bg-[#111c44] text-indigo-500 dark:text-white shadow-sm"
                                 : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white"
                         }`}
                     >
-                        <Landmark className="w-3.5 h-3.5" />
+                        <Landmark className="w-3 h-3" />
                         Emisoras
                     </button>
                     <button
                         onClick={() => setActiveTab("contratistas")}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black transition-all duration-300 ${
+                        className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-black transition-all duration-300 ${
                             activeTab === "contratistas"
                                 ? "bg-white dark:bg-[#111c44] text-indigo-500 dark:text-white shadow-sm"
                                 : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white"
                         }`}
                     >
-                        <Award className="w-3.5 h-3.5" />
+                        <Award className="w-3 h-3" />
                         Contratistas
                     </button>
                 </div>
             </div>
 
-            {/* List ranking container */}
-            <div className="flex-1 space-y-4">
-                {displayData.map((item, index) => {
+            {/* Dynamic Flex list container that automatically fills available stretched height */}
+            <div className="flex-grow overflow-y-auto pr-1.5 space-y-1.5 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-slate-200 dark:[&::-webkit-scrollbar-thumb]:bg-slate-800 [&::-webkit-scrollbar-thumb]:rounded-full h-0 min-h-[640px]">
+                {currentList.map((item, index) => {
                     const ratio = item.monto / maxMonto;
                     const progressPercent = Math.round(ratio * 100);
 
                     return (
-                        <div key={index} className="group/leader flex flex-col gap-2 p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-[#0A192F]/30 border border-transparent hover:border-slate-100 dark:hover:border-white/5 transition-all duration-300">
+                        <div key={index} className="group/leader flex flex-col gap-1.5 p-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-[#0A192F]/30 border border-transparent hover:border-slate-100 dark:hover:border-white/5 transition-all duration-300">
                             <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-2.5">
                                     {/* Rank number badge */}
-                                    <div className="flex-shrink-0 w-6 h-6 rounded bg-slate-100 dark:bg-[#0A192F] text-slate-600 dark:text-slate-400 flex items-center justify-center font-black text-[10px] group-hover/leader:bg-indigo-500 group-hover/leader:text-white shadow-inner transition-all duration-300">
+                                    <div className="flex-shrink-0 w-5.5 h-5.5 rounded bg-slate-100 dark:bg-[#0A192F] text-slate-600 dark:text-slate-400 flex items-center justify-center font-black text-[9px] group-hover/leader:bg-indigo-500 group-hover/leader:text-white shadow-inner transition-all duration-300">
                                         #{index + 1}
                                     </div>
                                     
                                     {/* Avatar circle with dynamic gradient */}
-                                    <div className={`w-9 h-9 rounded-full bg-gradient-to-br ${getEntityColor(item.name)} flex items-center justify-center text-white text-[10px] font-black shadow-sm group-hover/leader:scale-105 transition-transform duration-300`}>
+                                    <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${getEntityColor(item.name)} flex items-center justify-center text-white text-[9px] font-black shadow-sm group-hover/leader:scale-105 transition-transform duration-300`}>
                                         {getEntityInitials(item.name)}
                                     </div>
 
                                     <div>
-                                        <p className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-tight group-hover/leader:text-indigo-500 dark:group-hover/leader:text-indigo-400 transition-colors duration-300">
+                                        <p className="text-[11px] font-black text-slate-800 dark:text-slate-200 uppercase tracking-tight group-hover/leader:text-indigo-500 dark:group-hover/leader:text-indigo-400 transition-colors duration-300">
                                             {item.name}
                                         </p>
-                                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-0.5">
-                                            {item.depts} • {item.garantias} garantizados
+                                        <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 mt-0.5">
+                                            {item.depts}
                                         </p>
                                     </div>
                                 </div>
 
                                 <div className="text-right flex flex-col items-end">
-                                    <span className="text-xs font-black text-slate-800 dark:text-white flex items-center gap-1">
+                                    <span className="text-[11px] font-black text-slate-800 dark:text-white flex items-center gap-1">
                                         {new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(item.monto)}
-                                        <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
+                                        <TrendingUp className="w-3 h-3 text-emerald-500" />
                                     </span>
-                                    <span className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[8px] font-extrabold tracking-wider mt-1 ${
+                                    <span className="text-[9px] font-black text-indigo-500 dark:text-indigo-400 mt-0.5">
+                                        {item.garantias} garantías
+                                    </span>
+                                    <span className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[7px] font-extrabold tracking-wider mt-0.5 ${
                                         item.cobertura === 'Nacional' 
                                             ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' 
                                             : 'bg-blue-500/10 text-blue-500 border border-blue-500/20'
@@ -137,7 +140,7 @@ export const FinancialEntitiesTable: React.FC<FinancialEntitiesTableProps> = Rea
                             </div>
 
                             {/* Thin progress bar */}
-                            <div className="h-1 w-full bg-slate-100 dark:bg-[#0A192F] rounded-full overflow-hidden ml-9" style={{ width: 'calc(100% - 2.25rem)' }}>
+                            <div className="h-0.5 w-full bg-slate-100 dark:bg-[#0A192F] rounded-full overflow-hidden ml-8" style={{ width: 'calc(100% - 2rem)' }}>
                                 <div
                                     className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-700"
                                     style={{ width: `${progressPercent}%` }}
@@ -149,16 +152,10 @@ export const FinancialEntitiesTable: React.FC<FinancialEntitiesTableProps> = Rea
             </div>
 
             {/* Footer */}
-            <div className="mt-4 pt-4 border-t border-slate-100 dark:border-white/5 flex items-center justify-between flex-shrink-0">
+            <div className="mt-1 pt-3 border-t border-slate-100 dark:border-white/5 flex items-center justify-between flex-shrink-0">
                 <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500">
-                    Mostrando {displayData.length} de {currentList.length} registros
+                    Total: {currentList.length} registros líderes
                 </p>
-                <button
-                    onClick={() => setShowAll(!showAll)}
-                    className="text-[10px] font-black text-indigo-500 dark:text-indigo-400 hover:underline uppercase tracking-wider"
-                >
-                    {showAll ? 'Ver menos' : 'Ver todos'}
-                </button>
             </div>
         </div>
     );

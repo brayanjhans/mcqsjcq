@@ -5,12 +5,17 @@ import { EcommerceMetrics } from "@/components/ecommerce/EcommerceMetrics";
 import { DistributionRadialChart } from "@/components/ecommerce/DistributionRadialChart";
 
 import { SalesAreaChart } from "@/components/ecommerce/SalesAreaChart";
-import { PeruInteractiveMap } from "@/components/ecommerce/PeruInteractiveMap";
+import dynamic from "next/dynamic";
 import { FinancialEntitiesTable } from "@/components/ecommerce/FinancialEntitiesTable";
 import { ActivityRadar } from "@/components/ecommerce/ActivityRadar";
 import { licitacionService } from "@/lib/services/licitacionService";
 import { DEFAULT_TIPOS_PROCEDIMIENTO } from "@/lib/constants/procedimientos";
 import { ChevronDown, Filter, RotateCcw, SlidersHorizontal, Calendar, CalendarDays, FileText, Sparkles } from "lucide-react";
+
+const PeruInteractiveMap = dynamic(
+    () => import("@/components/ecommerce/PeruInteractiveMap").then(mod => mod.PeruInteractiveMap),
+    { ssr: false }
+);
 
 export default function EcommerceDashboardPage() {
     // --- Data States ---
@@ -437,7 +442,7 @@ export default function EcommerceDashboardPage() {
                     {/* ROW 3: Detailed Tables (Bento Grid Style) */}
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
                         {/* Left: Peru Interactive Map Heatmap */}
-                        <div className="lg:col-span-4">
+                        <div className="lg:col-span-6">
                             <PeruInteractiveMap
                                 departmentRanking={finalDeptRanking}
                                 provinceRanking={provinceRanking}
@@ -449,16 +454,17 @@ export default function EcommerceDashboardPage() {
                         </div>
 
                         {/* Middle: Financial & Contratistas Leaderboards */}
-                        <div className="lg:col-span-4">
+                        <div className="lg:col-span-3">
                             <FinancialEntitiesTable
                                 data={financialEntities}
                                 selectedYear={filterAnio}
                                 onYearChange={(y) => setFilterAnio(y)}
+                                selectedDepartment={selectedMapDept}
                             />
                         </div>
 
                         {/* Right: Real-time Activity Radar Feed */}
-                        <div className="lg:col-span-4">
+                        <div className="lg:col-span-3">
                             <ActivityRadar />
                         </div>
                     </div>
