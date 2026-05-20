@@ -622,7 +622,7 @@ export const LicitacionTable: React.FC<Props> = ({
                     <thead className="bg-gradient-to-r from-[#1e3a8a] via-[#1e40af] to-[#172554] text-white uppercase font-black text-[10px] tracking-[0.15em] sticky top-0 z-20">
                         <tr>
                             <th className="px-5 py-6 text-center sticky left-0 z-30 bg-[#1e3a8a] border-b border-white/10 first:rounded-tl-[2rem] w-[70px] min-w-[70px] max-w-[70px]">N°</th>
-                            <th className="px-5 py-6 min-w-[180px] max-w-[180px] sticky left-[70px] z-30 bg-[#1e3a8a] border-b border-white/10 shadow-[4px_0_8px_-2px_rgba(0,0,0,0.25)]">Entidad</th>
+                            <th className="px-5 py-6 min-w-[180px] max-w-[180px] lg:sticky lg:left-[70px] z-20 lg:z-30 bg-[#1e3a8a] border-b border-white/10 lg:shadow-[4px_0_8px_-2px_rgba(0,0,0,0.25)]">Entidad</th>
                             <th className="px-5 py-6 min-w-[140px] border-b border-white/10">Nomenclatura</th>
                             <th className="px-5 py-6 min-w-[200px] border-b border-white/10">Descripción</th>
                             <th className="px-5 py-6 min-w-[120px] text-right border-b border-white/10">Monto Est.</th>
@@ -632,7 +632,7 @@ export const LicitacionTable: React.FC<Props> = ({
                             <th className="px-5 py-6 min-w-[120px] border-b border-white/10">Fechas</th>
                             <th className="px-5 py-6 min-w-[120px] border-b border-white/10">Aseguradora</th>
                             <th className="px-5 py-6 min-w-[160px] text-center border-b border-white/10">Documentos</th>
-                            <th className="px-5 py-6 text-center sticky right-0 bg-[#172554] border-b border-white/10 shadow-[-10px_0_20px_-10px_rgba(0,0,0,0.3)] last:rounded-tr-[2rem]">Ver Detalles</th>
+                            <th className="px-5 py-6 text-center lg:sticky lg:right-0 bg-[#172554] border-b border-white/10 lg:shadow-[-10px_0_20px_-10px_rgba(0,0,0,0.3)] last:rounded-tr-[2rem]">Ver Detalles</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-white/5 bg-white dark:bg-transparent">
@@ -645,7 +645,7 @@ export const LicitacionTable: React.FC<Props> = ({
                                 <td className="px-5 py-6 text-center font-black text-slate-400 dark:text-slate-500 tabular-nums sticky left-0 bg-white dark:bg-[#0A192F] border-r border-slate-100/50 dark:border-white/5 group-hover/row:text-blue-700 group-hover/row:bg-[#f4f8ff] dark:group-hover/row:bg-[#0c1e38] transition-colors z-10 w-[70px] min-w-[70px] max-w-[70px]">
                                     {String((currentPage - 1) * pageSize + index + 1).padStart(2, '0')}
                                 </td>
-                                <td className="px-5 py-6 sticky left-[70px] bg-white dark:bg-[#0A192F] group-hover/row:bg-[#f4f8ff] dark:group-hover/row:bg-[#0c1e38] transition-colors z-10 shadow-[4px_0_8px_-2px_rgba(0,0,0,0.06)] min-w-[180px] max-w-[180px]">
+                                <td className="px-5 py-6 lg:sticky lg:left-[70px] bg-white dark:bg-[#0A192F] group-hover/row:bg-[#f4f8ff] dark:group-hover/row:bg-[#0c1e38] transition-colors z-0 lg:z-10 lg:shadow-[4px_0_8px_-2px_rgba(0,0,0,0.06)] min-w-[180px] max-w-[180px]">
                                     <div className="text-[11px] font-black text-slate-800 dark:text-white uppercase leading-tight tracking-tight group-hover/row:translate-x-1 transition-transform">
                                         {getHighlightedText(lic.comprador, searchTerm)}
                                     </div>
@@ -772,7 +772,7 @@ export const LicitacionTable: React.FC<Props> = ({
                                         )}
                                     </div>
                                 </td>
-                                <td className="px-5 py-6 text-center sticky right-0 bg-white dark:bg-[#0A192F] shadow-[-10px_0_20px_-10px_rgba(0,0,0,0.05)] border-l border-slate-100 dark:border-white/5 transition-colors group-hover/row:bg-blue-50/50 dark:group-hover/row:bg-white/[0.05]">
+                                <td className="px-5 py-6 text-center lg:sticky lg:right-0 bg-white dark:bg-[#0A192F] lg:shadow-[-10px_0_20px_-10px_rgba(0,0,0,0.05)] border-l border-slate-100 dark:border-white/5 transition-colors group-hover/row:bg-blue-50/50 dark:group-hover/row:bg-white/[0.05]">
                                     <Link
                                         href={`${basePath}/${lic.id_convocatoria}`}
                                         className="inline-flex items-center justify-center w-10 h-10 bg-gradient-to-br from-[#1e3a8a] to-[#172554] hover:from-[#1e40af] hover:to-[#1e3a8a] text-white rounded-xl transition-all duration-300 hover:rotate-12 shadow-lg hover:shadow-blue-900/40"

@@ -75,7 +75,7 @@ export default function SEACELayout({ children }: { children: React.ReactNode })
                     <div className="absolute inset-0 texture-diamonds mix-blend-overlay opacity-60"></div>
                 </div>
 
-                <div className="flex items-center gap-1.5 lg:gap-3 flex-shrink-0">
+                <div className="flex items-center gap-1.5 lg:gap-3 flex-shrink-0 z-10">
                     <button 
                         onClick={() => setMobileMenuOpen(true)}
                         className="lg:hidden w-10 h-10 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-white"
@@ -101,12 +101,11 @@ export default function SEACELayout({ children }: { children: React.ReactNode })
                     </div>
                 </div>
 
-                <div className="absolute left-1/2 -translate-x-1/2 hidden lg:flex flex-col items-center pointer-events-none">
+                <div className="hidden lg:flex flex-1 px-4 items-center justify-center pointer-events-none min-w-0 z-0">
                     <h2
-                        className="text-3xl lg:text-4xl uppercase select-none text-[#0F2C4A] dark:text-white"
+                        className="text-xl lg:text-2xl xl:text-3xl 2xl:text-4xl uppercase select-none text-[#0F2C4A] dark:text-white truncate tracking-[0.1em] lg:tracking-[0.15em] xl:tracking-[0.25em] 2xl:tracking-[0.48em] w-full text-center transition-all duration-300"
                         style={{
                             fontFamily: 'var(--font-bebas), sans-serif',
-                            letterSpacing: '0.48em',
                             textShadow: '0 1px 0 #4a7dab, 0 2px 0 #2c5f8a, 0 3px 0 #1a4a6e, 0 4px 6px rgba(0,0,0,0.25), 0 -1px 0 rgba(255,255,255,0.5)',
                         }}
                     >
@@ -114,7 +113,7 @@ export default function SEACELayout({ children }: { children: React.ReactNode })
                     </h2>
                 </div>
 
-                <div className="flex-shrink-0">
+                <div className="flex-shrink-0 z-10">
                     <HeaderActions />
                 </div>
             </header>
