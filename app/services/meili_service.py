@@ -258,6 +258,7 @@ def configure_index() -> bool:
                 "ganador_nombre",
                 "ganador_ruc",
                 "nombres_consorciados",
+                "rucs_consorciados",
                 "nomenclatura",
                 "comprador",
                 "descripcion",
