@@ -43,7 +43,7 @@ def disk_cache_set(key: str, data: dict):
         # Save atomically if possible or just write
         tmp_path = path + ".tmp"
         with open(tmp_path, 'w', encoding='utf-8') as f:
-            json.dump(data, f)
+            json.dump(data, f, default=str)
         os.replace(tmp_path, path)
     except Exception as e:
         print(f"Warning: Could not save cache: {e}")

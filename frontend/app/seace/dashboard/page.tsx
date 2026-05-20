@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useCallback } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { EcommerceMetrics } from "@/components/ecommerce/EcommerceMetrics";
 import { DistributionRadialChart } from "@/components/ecommerce/DistributionRadialChart";
 import { SalesAreaChart } from "@/components/ecommerce/SalesAreaChart";
@@ -92,6 +92,7 @@ export default function EcommerceDashboardPage() {
         queryFn:  () => fetchJson(`/api/dashboard/summary?${buildQuery()}`),
         staleTime: STALE_30MIN,
         gcTime:    GC_120MIN,
+        placeholderData: keepPreviousData,
         retry: 2,
     });
 
@@ -102,6 +103,7 @@ export default function EcommerceDashboardPage() {
         queryFn:  () => fetchJson(`/api/dashboard/department-ranking?${buildQueryNoDept()}`),
         staleTime: STALE_30MIN,
         gcTime:    GC_120MIN,
+        placeholderData: keepPreviousData,
         retry: 2,
     });
 
@@ -124,6 +126,7 @@ export default function EcommerceDashboardPage() {
         enabled:   true,
         staleTime: STALE_30MIN,
         gcTime:    GC_120MIN,
+        placeholderData: keepPreviousData,
         retry: 2,
     });
 
