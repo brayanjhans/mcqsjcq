@@ -9,8 +9,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
     const [queryClient] = useState(() => new QueryClient({
         defaultOptions: {
             queries: {
-                staleTime: 60 * 1000, // 1 minute
+                staleTime: 5 * 60 * 1000,  // 5 minutos — datos considerados frescos
+                gcTime:    10 * 60 * 1000, // 10 minutos — retener en memoria aunque no activo
                 refetchOnWindowFocus: false,
+                refetchOnReconnect: false,  // no re-fetch al reconectar wifi
+                retry: 1,                   // solo 1 reintento en caso de error
             },
         },
     }));

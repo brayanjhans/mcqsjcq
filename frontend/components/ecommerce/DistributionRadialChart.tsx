@@ -78,8 +78,7 @@ export const DistributionRadialChart: React.FC<DistributionRadialChartProps> = (
                         fontSize: '9px',
                         fontWeight: '850',
                         color: '#64748b',
-                        offsetY: -5,
-                        textAnchor: 'middle'
+                        offsetY: -5
                     },
                     value: {
                         show: true,

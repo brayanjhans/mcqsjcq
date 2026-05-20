@@ -78,9 +78,6 @@ export const RiskConcentrationChart: React.FC<RiskConcentrationChartProps> = ({ 
             pie: {
                 donut: {
                     size: "70%",
-                    hollow: {
-                        size: "65%"
-                    },
                     labels: {
                         show: true,
                         name: {

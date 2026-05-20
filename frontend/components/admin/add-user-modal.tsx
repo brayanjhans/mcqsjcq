@@ -38,21 +38,11 @@ export function AddUserModal({ isOpen, onClose, onSuccess }: AddUserModalProps) 
 
         setLoading(true);
         try {
-            // Intentar obtener token de ambas posibles claves
-            const token = null /*cookie-based: token in HttpOnly cookie*/ || null /*cookie-based: token in HttpOnly cookie*/;
-
-            // Debug: verificar que hay token
-            if (!token) {
-                throw new Error('No hay token de autenticación. Por favor inicia sesión nuevamente.');
-            }
-
-            console.log('Creando usuario con token:', token.substring(0, 20) + '...');
-
-            const response = await fetch('http://localhost:8000/api/auth/register', {
+            const response = await fetch('/api/auth/register', {
                 method: 'POST',
+                credentials: 'include',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify(formData)
             });
@@ -63,7 +53,6 @@ export function AddUserModal({ isOpen, onClose, onSuccess }: AddUserModalProps) 
                 const data = await response.json();
                 console.error('Error response:', data);
 
-                // Mostrar mensaje de error más detallado
                 if (response.status === 401) {
                     throw new Error('Sesión expirada. Por favor inicia sesión nuevamente.');
                 } else if (response.status === 403) {

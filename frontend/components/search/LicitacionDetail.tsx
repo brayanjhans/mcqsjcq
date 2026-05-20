@@ -1755,8 +1755,8 @@ export default function LicitacionDetail({ id, basePath = "/seace/busqueda" }: P
                 </div>
 
                 {/* NUEVO: ESTADO INFOBRAS (AVANCE FISICO) - REPEAT FOR EACH CUI (Collapsible) */}
-                {licitacion.cui?.split(',').map(c => c.trim()).filter(c => c).length > 0 && (
-                    <div className={licitacion.cui?.split(',').length > 1 ? "mt-6" : ""}>
+                {(licitacion.cui?.split(',').map(c => c.trim()).filter(c => c).length ?? 0) > 0 && (
+                    <div className={(licitacion.cui?.split(',').length ?? 0) > 1 ? "mt-6" : ""}>
                         {licitacion.cui?.split(',').map(c => c.trim()).filter(c => c).slice(0, visibleCUICount).map((c, i) => (
                             <EstadoInfobras key={c + i} cui={c} />
                         ))}

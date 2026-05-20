@@ -31,12 +31,9 @@ export function DeleteUserModal({ isOpen, onClose, user, onSuccess }: DeleteUser
 
         setLoading(true);
         try {
-            const token = null /*cookie-based: token in HttpOnly cookie*/ || null /*cookie-based: token in HttpOnly cookie*/;
-            const response = await fetch(`http://localhost:8000/api/users/${user.id}`, {
+            const response = await fetch(`/api/users/${user.id}`, {
                 method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
+                credentials: 'include'
             });
 
             if (!response.ok) {

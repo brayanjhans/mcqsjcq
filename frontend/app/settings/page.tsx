@@ -266,8 +266,8 @@ function SettingsForm({ user, onUpdate }: { user: any, onUpdate: () => void }) {
                     <Toggle
                         label="Autenticación de Dos Factores (2FA)"
                         description="Requerir código extra al iniciar sesión"
-                        checked={preferences.security.twoFactorEnabled}
-                        onChange={() => updateNestedPreference('security', 'twoFactorEnabled', !preferences.security.twoFactorEnabled)}
+                        checked={preferences.security.twoFactor ?? false}
+                        onChange={() => updateNestedPreference('security', 'twoFactor', !preferences.security.twoFactor)}
                     />
                 </div>
             </div>

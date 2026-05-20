@@ -2,9 +2,9 @@
 Dashboard endpoints using RAW SQL - adapted to real database structure.
 Uses licitaciones_cabecera (which has data) instead of empty licitaciones_adjudicaciones.
 """
-from fastapi import APIRouter, Depends, Query
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, Depends, Query, Response
 from sqlalchemy import text
+from sqlalchemy.orm import Session
 from app.database import get_db
 from typing import Optional
 from decimal import Decimal
@@ -15,6 +15,7 @@ router = APIRouter(prefix="/api/dashboard", tags=["Dashboard"])
 
 @router.get("/kpis")
 def get_dashboard_kpis(
+    response: Response,
     year: Optional[int] = Query(None, description="Filter by year. 0 or None for All."),
     mes: Optional[int] = Query(None, description="Filter by month 1-12"),
     estado: Optional[str] = Query(None, description="Filter by estado_proceso"),
@@ -28,6 +29,7 @@ def get_dashboard_kpis(
     """
     cache_key = f"kpis_{year}_{mes}_{estado}_{tipo_procedimiento}_{categoria}_{departamento}"
     cached_data = disk_cache_get(cache_key)
+    response.headers["Cache-Control"] = "public, max-age=180"
     if cached_data is not None:
         return cached_data
 
@@ -178,6 +180,7 @@ def get_dashboard_kpis(
 
 @router.get("/distribution-by-type")
 def get_distribution_by_type(
+    response: Response,
     year: int = 0,
     mes: Optional[int] = Query(None),
     estado: Optional[str] = Query(None),
@@ -188,6 +191,7 @@ def get_distribution_by_type(
 ):
     cache_key = f"dist_{year}_{mes}_{estado}_{tipo_procedimiento}_{categoria}_{departamento}"
     cached_data = disk_cache_get(cache_key)
+    response.headers["Cache-Control"] = "public, max-age=180"
     if cached_data is not None:
         return cached_data
 
@@ -285,6 +289,7 @@ def get_distribution_by_type(
 
 @router.get("/stats-by-status")
 def get_stats_by_status(
+    response: Response,
     year: int = 0,
     mes: Optional[int] = Query(None),
     estado: Optional[str] = Query(None),
@@ -295,6 +300,7 @@ def get_stats_by_status(
 ):
     cache_key = f"stats_{year}_{mes}_{estado}_{tipo_procedimiento}_{categoria}_{departamento}"
     cached_data = disk_cache_get(cache_key)
+    response.headers["Cache-Control"] = "public, max-age=180"
     if cached_data is not None:
         return cached_data
 
@@ -351,6 +357,7 @@ def get_stats_by_status(
 
 @router.get("/monthly-trend")
 def get_monthly_trend(
+    response: Response,
     year: int = 0,
     mes: Optional[int] = Query(None),
     estado: Optional[str] = Query(None),
@@ -361,6 +368,7 @@ def get_monthly_trend(
 ):
     cache_key = f"trend_{year}_{mes}_{estado}_{tipo_procedimiento}_{categoria}_{departamento}"
     cached_data = disk_cache_get(cache_key)
+    response.headers["Cache-Control"] = "public, max-age=180"
     if cached_data is not None:
         return cached_data
 
@@ -431,6 +439,7 @@ def get_monthly_trend(
 
 @router.get("/department-ranking")
 def get_department_ranking(
+    response: Response,
     year: int = 0,
     mes: Optional[int] = Query(None),
     estado: Optional[str] = Query(None),
@@ -440,6 +449,7 @@ def get_department_ranking(
 ):
     cache_key = f"dept_rank_{year}_{mes}_{estado}_{tipo_procedimiento}_{categoria}"
     cached_data = disk_cache_get(cache_key)
+    response.headers["Cache-Control"] = "public, max-age=180"
     if cached_data is not None:
         return cached_data
 
@@ -495,6 +505,7 @@ def get_department_ranking(
 
 @router.get("/financial-entities-ranking")
 def get_financial_entities_ranking(
+    response: Response,
     year: int = 0,
     mes: Optional[int] = Query(None),
     departamento: Optional[str] = Query(None, description="Filter by department"),
@@ -505,6 +516,7 @@ def get_financial_entities_ranking(
 ):
     cache_key = f"fin_rank_{year}_{mes}_{departamento}_{estado}_{tipo_procedimiento}_{categoria}"
     cached_data = disk_cache_get(cache_key)
+    response.headers["Cache-Control"] = "public, max-age=180"
     if cached_data is not None:
         return cached_data
         
@@ -616,6 +628,7 @@ def get_financial_entities_ranking(
 
 @router.get("/province-ranking")
 def get_province_ranking(
+    response: Response,
     department: str = Query(..., description="Department name"), 
     year: int = 0,
     mes: Optional[int] = Query(None),
@@ -626,6 +639,7 @@ def get_province_ranking(
 ):
     cache_key = f"prov_rank_{department}_{year}_{mes}_{estado}_{tipo_procedimiento}_{categoria}"
     cached_data = disk_cache_get(cache_key)
+    response.headers["Cache-Control"] = "public, max-age=180"
     if cached_data is not None:
         return cached_data
 
@@ -810,3 +824,42 @@ def get_adjudication_speed(
             "error": str(e)
         }
 
+
+import concurrent.futures
+
+@router.get("/summary")
+def get_dashboard_summary(
+    response: Response,
+    year: int = 0,
+    mes: Optional[int] = Query(None),
+    estado: Optional[str] = Query(None),
+    tipo_procedimiento: Optional[str] = Query(None),
+    categoria: Optional[str] = Query(None),
+    departamento: Optional[str] = Query(None),
+    db: Session = Depends(get_db)
+):
+    """
+    Unified endpoint that fetches all dashboard data in a single request,
+    significantly reducing network latency for the frontend.
+    """
+    response.headers["Cache-Control"] = "public, max-age=3600"
+    
+    # Llamadas secuenciales ya que la sesión de base de datos no es thread-safe.
+    # El caché en disco hace que esto sea casi instantáneo de todas formas.
+    kpis = get_dashboard_kpis(response, year, mes, estado, tipo_procedimiento, categoria, departamento, db)
+    trend = get_monthly_trend(response, year, mes, estado, tipo_procedimiento, categoria, departamento, db)
+    dist = get_distribution_by_type(response, year, mes, estado, tipo_procedimiento, categoria, departamento, db)
+    status = get_stats_by_status(response, year, mes, estado, tipo_procedimiento, categoria, departamento, db)
+    
+    # Department ranking excluye el departamento para no vaciar el mapa global
+    dept = get_department_ranking(response, year, mes, estado, tipo_procedimiento, categoria, db)
+    fin = get_financial_entities_ranking(response, year, mes, departamento, estado, tipo_procedimiento, categoria, db)
+
+    return {
+        "kpis": kpis,
+        "trend": trend,
+        "distribution": dist,
+        "status": status,
+        "department_ranking": dept,
+        "financial_entities": fin
+    }

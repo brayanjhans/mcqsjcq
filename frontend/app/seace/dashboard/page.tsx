@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useState, useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { EcommerceMetrics } from "@/components/ecommerce/EcommerceMetrics";
 import { DistributionRadialChart } from "@/components/ecommerce/DistributionRadialChart";
-
 import { SalesAreaChart } from "@/components/ecommerce/SalesAreaChart";
 import dynamic from "next/dynamic";
 import { FinancialEntitiesTable } from "@/components/ecommerce/FinancialEntitiesTable";
@@ -14,288 +14,169 @@ import { ChevronDown, Filter, RotateCcw, SlidersHorizontal, Calendar, CalendarDa
 
 const PeruInteractiveMap = dynamic(
     () => import("@/components/ecommerce/PeruInteractiveMap").then(mod => mod.PeruInteractiveMap),
-    { ssr: false }
+    {
+        ssr: false,
+        loading: () => (
+            <div className="w-full h-full min-h-[500px] rounded-2xl bg-slate-100 dark:bg-[#111c44] animate-pulse flex items-center justify-center">
+                <div className="text-center space-y-3">
+                    <div className="w-12 h-12 rounded-full bg-slate-200 dark:bg-slate-700 mx-auto animate-pulse" />
+                    <p className="text-xs text-slate-400 font-medium">Cargando mapa interactivo...</p>
+                </div>
+            </div>
+        )
+    }
 );
 
+// ─── Constantes de caché ────────────────────────────────────────────
+const STALE_30MIN = 30 * 60 * 1000;  // 30 minutos — datos del dashboard en memoria
+const STALE_60MIN = 60 * 60 * 1000;  // 60 minutos — opciones de filtro (no cambian)
+const GC_120MIN   = 120 * 60 * 1000; // 2 horas — retención en garbage collection
+
+// ─── Fetchers tipados ────────────────────────────────────────────────
+async function fetchJson(url: string) {
+    const res = await fetch(url, { credentials: "include" });
+    if (!res.ok) throw new Error(`HTTP ${res.status} — ${url}`);
+    return res.json();
+}
+
 export default function EcommerceDashboardPage() {
-    // --- Data States ---
-    const [kpisLic, setKpisLic] = useState<any>(null); // For Lictaciones card
-    const [kpisMonto, setKpisMonto] = useState<any>(null); // For Monto card
-    const [distribution, setDistribution] = useState<any[]>([]);
-    const [monthlyTrend, setMonthlyTrend] = useState<any[]>([]);
-    const [financialEntities, setFinancialEntities] = useState<any[]>([]);
-    const [departmentRanking, setDepartmentRanking] = useState<any[]>([]);
-    const [statusStats, setStatusStats] = useState<any[]>([]);
-
-    const [provinceRanking, setProvinceRanking] = useState<any[]>([]);
-
-    // --- Filter States (Global) ---
-    // User Requested: Year, Month, Procedure Type (Third Section)
-    const [filterAnio, setFilterAnio] = useState<number>(0); // 0 = All Years
-    const [filterMes, setFilterMes] = useState<number>(0);   // 0 = All Months
-    const [filterTipo, setFilterTipo] = useState("");        // Procedure Type
-
-    // We keep a local state for Map Department selection since it's no longer a global filter bar item
+    // ─── Estados de filtro ────────────────────────────────────────────
+    const [filterAnio, setFilterAnio] = useState<number>(0);
+    const [filterMes,  setFilterMes]  = useState<number>(0);
+    const [filterTipo, setFilterTipo] = useState("");
     const [selectedMapDept, setSelectedMapDept] = useState<string>("");
 
-    // Filter Options
-    const [options, setOptions] = useState({
-        tipos: DEFAULT_TIPOS_PROCEDIMIENTO, // Initialize with static list
-        anios: [],
-        meses: [
-            { id: 1, name: "Enero" }, { id: 2, name: "Febrero" }, { id: 3, name: "Marzo" },
-            { id: 4, name: "Abril" }, { id: 5, name: "Mayo" }, { id: 6, name: "Junio" },
-            { id: 7, name: "Julio" }, { id: 8, name: "Agosto" }, { id: 9, name: "Septiembre" },
-            { id: 10, name: "Octubre" }, { id: 11, name: "Noviembre" }, { id: 12, name: "Diciembre" }
-        ]
-    });
-
-    // --- Loading States ---
-    const [loadingKpis, setLoadingKpis] = useState(true);
-    const [loadingMap, setLoadingMap] = useState(false);
-
-    // 0. Load Filter Options
-    useEffect(() => {
-        async function loadOptions() {
-            try {
-                const data = await licitacionService.getFilters();
-                setOptions(prev => ({
-                    ...prev,
-                    // tipos: data.tipos_entidad || [], // OLD: Dynamic from DB
-                    tipos: DEFAULT_TIPOS_PROCEDIMIENTO, // NEW: Static List (Contains "Contratación Directa")
-                    // Use backend years if available, else default
-                    anios: data.anios || [2028, 2027, 2026, 2025, 2024, 2023, 2022, 2021, 2020]
-                }));
-            } catch (error) {
-                console.error("Error options:", error);
-            }
-        }
-        loadOptions();
-    }, []);
-
-    // Helper to build query string
-    const getQueryParams = useCallback((extraParams: any = {}) => {
-        const params = new URLSearchParams();
-
-        // Global Filters are always applied
-        if (filterAnio > 0) params.append("year", filterAnio.toString());
-        if (filterMes > 0) params.append("mes", filterMes.toString());
-        if (filterTipo) params.append("tipo_procedimiento", filterTipo);
-
-        // Map Selection (treated as a filter for other widgets if needed, or primarily for Drilldown)
-        // Let's decide: Should selecting a department on map filter everything else?
-        // User request didn't specify, but "Global Dept" filter was removed.
-        // Let's allow map selection to filter "Province Ranking" and maybe "Financial Entities".
-        if (selectedMapDept) params.append("departamento", selectedMapDept);
-
-        // Merge extra params
-        Object.keys(extraParams).forEach(key => {
-            if (extraParams[key] !== undefined && extraParams[key] !== null) {
-                // If the widget overrides year, use widget's year. 
-                // BUT user wants global year filter. So Global wins?
-                // Let's adopt a policy: Global Filter wins unless explicit override is intended to show specific historical context.
-                // However, charts often have their own time axis (Trend). 
-                // If Global Year is selected (e.g. 2024), Trend should show 2024 months.
-                // If Global Year is All (0), Trend should show... all years? Or specific year?
-                // Usually Trend takes a year argument.
-                // We will let the Global Filter drive the 'default'.
-                params.set(key, extraParams[key].toString());
-            }
-        });
-
-        return params.toString();
+    // ─── Query params helper ──────────────────────────────────────────
+    const buildQuery = useCallback((extra: Record<string, string | number | undefined> = {}) => {
+        const p = new URLSearchParams();
+        if (filterAnio > 0)  p.set("year",              filterAnio.toString());
+        if (filterMes  > 0)  p.set("mes",               filterMes.toString());
+        if (filterTipo)      p.set("tipo_procedimiento", filterTipo);
+        if (selectedMapDept) p.set("departamento",       selectedMapDept);
+        Object.entries(extra).forEach(([k, v]) => { if (v !== undefined && v !== null) p.set(k, String(v)); });
+        return p.toString();
     }, [filterAnio, filterMes, filterTipo, selectedMapDept]);
 
-    // 1. Initial Load (Static Data + First Fetch)
-    useEffect(() => {
-        async function fetchStatic() {
-            try {
-                const query = getQueryParams();
-                const baseUrl = '/api/dashboard';
-                const [status] = await Promise.all([
-                    fetch(`${baseUrl}/stats-by-status?${query}`).then(r => r.json())
-                ]);
+    const buildQueryNoDept = useCallback(() => {
+        const p = new URLSearchParams();
+        if (filterAnio > 0)  p.set("year",              filterAnio.toString());
+        if (filterMes  > 0)  p.set("mes",               filterMes.toString());
+        if (filterTipo)      p.set("tipo_procedimiento", filterTipo);
+        return p.toString();
+    }, [filterAnio, filterMes, filterTipo]);
 
-                // Transform Status to be resilient
-                const transformedStatus = (status.data || []).map((item: any) => ({
-                    status: item.name,
-                    count: item.value
-                }));
-                setStatusStats(transformedStatus);
+    // ─── Opciones de filtro (semi-estáticas) ──────────────────────────
+    const { data: filterOptions } = useQuery({
+        queryKey: ["dashboard-filter-options"],
+        queryFn:  () => licitacionService.getFilters(),
+        staleTime: STALE_60MIN,
+        gcTime:    GC_120MIN,
+        retry: 1,
+    });
 
-            } catch (error) {
-                console.error("Error static:", error);
-            }
-        }
-        fetchStatic();
-    }, [getQueryParams]); // Re-fetch on global filter change
-
-
-    // 2. KPIs - Licitaciones y Monto
-    useEffect(() => {
-        async function fetchKpis() {
-            try {
-                setLoadingKpis(true);
-                const query = getQueryParams();
-                const res = await fetch(`/api/dashboard/kpis?${query}`).then(r => r.json());
-                setKpisLic(res);
-                setKpisMonto({
-                    ...res,
-                    monto_total_adjudicado: parseFloat(res?.monto_total_adjudicado || res?.monto_total_estimado || "0")
-                });
-            } catch (e) {
-                console.error("KPI error", e);
-            } finally {
-                setLoadingKpis(false);
-            }
-        }
-        fetchKpis();
-    }, [getQueryParams]);
-
-    // 4a. Map Data - Department Ranking
-    useEffect(() => {
-        async function fetchDepartmentRanking() {
-            setLoadingMap(true);
-            try {
-                // Special Case: If we select a department on the map, we don't want the MAP ITSELF to filter to only that department (it would look empty).
-                // But we DO want it to respect Year/Month/Proc.
-                // So we construct a query WITHOUT 'departamento'.
-                const params = new URLSearchParams();
-                if (filterAnio > 0) params.append("year", filterAnio.toString());
-                if (filterMes > 0) params.append("mes", filterMes.toString());
-                if (filterTipo) params.append("tipo_procedimiento", filterTipo);
-
-                const baseUrl = '/api/dashboard';
-                const deptRes = await fetch(`${baseUrl}/department-ranking?${params.toString()}`).then(r => r.json());
-                setDepartmentRanking(deptRes.data || []);
-            } catch (error) {
-                console.error("Error dept data:", error);
-            } finally {
-                setLoadingMap(false);
-            }
-        }
-        fetchDepartmentRanking();
-    }, [filterAnio, filterMes, filterTipo]); // Depend explicitly on Global Filters
-
-    // 4b. Map Data - Province Ranking (On Map Selection)
-    useEffect(() => {
-        async function fetchProvinceRanking() {
-            if (!selectedMapDept) {
-                setProvinceRanking([]);
-                return;
-            }
-            try {
-                const cleanDept = selectedMapDept.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
-
-                // Use helper but force department (just in case)
-                const query = getQueryParams({
-                    department: cleanDept
-                });
-
-                const provRes = await fetch(`/api/dashboard/province-ranking?${query}`).then(r => r.json());
-                setProvinceRanking(provRes.data || []);
-            } catch (error) {
-                console.error("Error prov data:", error);
-                setProvinceRanking([]);
-            }
-        }
-        fetchProvinceRanking();
-    }, [selectedMapDept, getQueryParams]);
-
-
-    // 3. Monthly Trend
-    useEffect(() => {
-        async function fetchTrend() {
-            try {
-                const query = getQueryParams();
-                const res = await fetch(`/api/dashboard/monthly-trend?${query}`).then(r => r.json());
-                const transformed = (res.data || []).map((item: any) => ({
-                    month: item.month || item.name,
-                    total: item.total || item.count || item.value || 0
-                }));
-                setMonthlyTrend(transformed);
-            } catch (e) {
-                console.error("Trend error", e);
-            }
-        }
-        fetchTrend();
-    }, [getQueryParams]);
-
-    // 4. Distribution
-    useEffect(() => {
-        async function fetchDist() {
-            try {
-                const query = getQueryParams();
-                const res = await fetch(`/api/dashboard/distribution-by-type?${query}`).then(r => r.json());
-                const transformed = (res.data || []).map((item: any) => ({
-                    type: item.name,
-                    total: item.value
-                }));
-                setDistribution(transformed);
-            } catch (e) {
-                console.error("Dist error", e);
-            }
-        }
-        fetchDist();
-    }, [getQueryParams]);
-
-    // 5. Financial Entities
-    useEffect(() => {
-        async function fetchFinance() {
-            try {
-                const query = getQueryParams(); // Respects selectedMapDept if set
-                const res = await fetch(`/api/dashboard/financial-entities-ranking?${query}`).then(r => r.json());
-
-                const transformed = (res.data || []).map((item: any) => ({
-                    name: item.name,
-                    garantias: item.count,
-                    monto: item.amount,
-                    depts: `${item.dept_count || 0} Depts.`,
-                    cobertura: "Nacional"
-                }));
-                setFinancialEntities(transformed);
-            } catch (e) {
-                console.error("Finance error", e);
-            }
-        }
-        fetchFinance();
-    }, [getQueryParams]);
-
-
-
-
-    // Map click updates local state
-    const handleDepartmentClick = useCallback((dept: string | null) => setSelectedMapDept(dept || ""), []);
-
-    const handleClearFilters = () => {
-        setFilterAnio(0);
-        setFilterMes(0);
-        setFilterTipo("");
-        setSelectedMapDept("");
+    const options = {
+        tipos: DEFAULT_TIPOS_PROCEDIMIENTO,
+        anios: filterOptions?.anios ?? [2028, 2027, 2026, 2025, 2024, 2023, 2022, 2021, 2020],
+        meses: [
+            { id: 1, name: "Enero" }, { id: 2, name: "Febrero" }, { id: 3, name: "Marzo" },
+            { id: 4, name: "Abril" }, { id: 5, name: "Mayo" },    { id: 6, name: "Junio" },
+            { id: 7, name: "Julio" }, { id: 8, name: "Agosto" },  { id: 9, name: "Septiembre" },
+            { id: 10, name: "Octubre" }, { id: 11, name: "Noviembre" }, { id: 12, name: "Diciembre" }
+        ]
     };
 
+    // ─── 1. Unificado: Resumen de Dashboard ───────────────────────────
+    // Llamada única que trae todos los KPIs, tendencias y distribuciones
+    const { data: summaryRaw, isLoading: loadingKpis } = useQuery({
+        queryKey: ["dashboard-summary", filterAnio, filterMes, filterTipo, selectedMapDept],
+        queryFn:  () => fetchJson(`/api/dashboard/summary?${buildQuery()}`),
+        staleTime: STALE_30MIN,
+        gcTime:    GC_120MIN,
+        retry: 2,
+    });
+
+    // ─── 2. Ranking departamentos (sin filtro dept para no vaciar el mapa) ──
+    // Se mantiene separado porque no usa el filtro `selectedMapDept`
+    const { data: deptRankingRaw, isLoading: loadingMap } = useQuery({
+        queryKey: ["dashboard-dept-ranking", filterAnio, filterMes, filterTipo],
+        queryFn:  () => fetchJson(`/api/dashboard/department-ranking?${buildQueryNoDept()}`),
+        staleTime: STALE_30MIN,
+        gcTime:    GC_120MIN,
+        retry: 2,
+    });
+
+    // Desestructurar datos del summary
+    const kpisRaw = summaryRaw?.kpis;
+    const trendRaw = summaryRaw?.trend;
+    const distRaw = summaryRaw?.distribution;
+    const statusRaw = summaryRaw?.status;
+    const finRaw = summaryRaw?.financial_entities;
+
+    // ─── 3. Ranking provincias (solo cuando hay dept seleccionado) ─────
+    const { data: provRankingRaw } = useQuery({
+        queryKey: ["dashboard-prov-ranking", selectedMapDept, filterAnio, filterMes, filterTipo],
+        queryFn:  () => {
+            if (!selectedMapDept) return Promise.resolve({ data: [] });
+            const cleanDept = selectedMapDept.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+            const q = buildQuery({ department: cleanDept });
+            return fetchJson(`/api/dashboard/province-ranking?${q}`);
+        },
+        enabled:   true,
+        staleTime: STALE_30MIN,
+        gcTime:    GC_120MIN,
+        retry: 2,
+    });
+
+    // ─── Transformaciones de datos ────────────────────────────────────
+    const kpisLic   = kpisRaw   ?? null;
+    const kpisMonto = kpisRaw   ? { ...kpisRaw, monto_total_adjudicado: parseFloat(kpisRaw?.monto_total_adjudicado || kpisRaw?.monto_total_estimado || "0") } : null;
+
+    const monthlyTrend = (trendRaw?.data ?? []).map((item: any) => ({
+        month: item.month || item.name,
+        total: item.total || item.count || item.value || 0
+    }));
+
+    const distribution = (distRaw?.data ?? []).map((item: any) => ({
+        type:  item.name ?? item.type,
+        total: item.value ?? item.total
+    }));
+
+    const departmentRanking = deptRankingRaw?.data ?? [];
+    const totalMapLic       = departmentRanking.reduce((acc: number, item: any) => acc + (item.count || 0), 0) || 1;
+    const finalDeptRanking  = departmentRanking.map((item: any, index: number) => ({
+        rank:       index + 1,
+        name:       item.name,
+        count:      item.count,
+        percentage: Math.round((item.count / totalMapLic) * 100)
+    }));
+
+    const financialEntities = (finRaw?.data ?? []).map((item: any) => ({
+        name:      item.name,
+        garantias: item.count  ?? item.garantias,
+        monto:     item.amount ?? item.monto,
+        depts:     `${item.dept_count || 0} Depts.`,
+        cobertura: "Nacional"
+    }));
+
+    const provinceRanking = provRankingRaw?.data ?? [];
+
+    const processLabel = filterTipo ? filterTipo : "Procesos";
+
+    // ─── Handlers ────────────────────────────────────────────────────
+    const handleDepartmentClick = useCallback((dept: string | null) => setSelectedMapDept(dept || ""), []);
+    const handleClearFilters    = () => { setFilterAnio(0); setFilterMes(0); setFilterTipo(""); setSelectedMapDept(""); };
+
+    // ─── Loading state — solo en la carga inicial (primera visita) ────
     if (loadingKpis && !kpisLic) {
         return (
             <div className="min-h-screen bg-white dark:bg-[#0b122b] p-4 sm:p-6 lg:p-8 flex items-center justify-center">
-                <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500"></div>
+                <div className="text-center space-y-4">
+                    <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500 mx-auto" />
+                    <p className="text-sm text-slate-400 font-medium">Cargando dashboard unificado...</p>
+                </div>
             </div>
         );
     }
-
-    // Prep Dept Ranking with percentages
-    const totalMapLicitaciones = departmentRanking.reduce((acc: number, item: any) => acc + (item.count || 0), 0) || 1;
-    const finalDeptRanking = departmentRanking.map((item: any, index: number) => ({
-        rank: index + 1,
-        name: item.name,
-        count: item.count,
-        percentage: Math.round((item.count / totalMapLicitaciones) * 100)
-    }));
-
-    // Dynamic Label Logic
-    // If a specific procedure is selected, use it. Otherwise "Procesos".
-    // We might want to pluralize or format it, but raw string is often okay or we can append "(s)" if needed.
-    // For now, let's use the singular term from the filter or "Procesos" (Plural).
-    const processLabel = filterTipo ? filterTipo : "Procesos";
 
     return (
         <div className="min-h-screen bg-white dark:bg-[#0b122b] bg-[radial-gradient(#e2e8f0_1.2px,transparent_1.2px)] dark:bg-[radial-gradient(#ffffff03_1.2px,transparent_1.2px)] [background-size:20px_20px] p-4 text-slate-800 dark:text-slate-200 font-sans fade-in transition-colors duration-300 relative overflow-hidden">
@@ -305,20 +186,15 @@ export default function EcommerceDashboardPage() {
 
             <div className="mx-auto max-w-[1600px] space-y-6 relative z-10">
 
-                {/* --- Display User's Request: Year, Month, Procedure count? --- */}
-                {/* --- Filter Bar (Modified to Peak Premium with 3D Relief) --- */}
+                {/* ── Filter Bar ── */}
                 <div className="bg-white/95 dark:bg-[#111c44]/95 backdrop-blur-md rounded-2xl p-4 shadow-[0_12px_32px_rgba(0,0,0,0.06),_0_2px_4px_rgba(0,0,0,0.02)] border border-slate-300/80 border-t-white/80 dark:border-slate-800/80 dark:border-t-white/10 transition-all duration-300 relative overflow-hidden">
-                    {/* Glowing background highlights */}
                     <div className="absolute -top-10 -left-10 w-40 h-40 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none" />
                     <div className="absolute top-0 right-0 w-32 h-[1px] bg-gradient-to-r from-transparent via-indigo-500/40 to-transparent" />
-                    
-                    {/* Decorative Star/Sparkle for high-end feel */}
                     <div className="absolute top-1/2 right-6 -translate-y-1/2 pointer-events-none opacity-20 animate-pulse hidden xl:block">
                         <Sparkles className="w-5 h-5 text-indigo-400 animate-spin [animation-duration:12s]" />
                     </div>
 
                     <div className="flex flex-col xl:flex-row items-center gap-4 relative z-10">
-                        {/* Title Badge (Debossed/Sunken Relief style) */}
                         <div className="flex items-center gap-2.5 px-4 py-2 rounded-full bg-gradient-to-r from-indigo-500/10 via-purple-500/5 to-transparent border border-indigo-500/20 dark:border-indigo-400/30 text-indigo-600 dark:text-indigo-400 font-black text-[10px] tracking-widest uppercase flex-shrink-0 shadow-[inset_0_2px_4px_rgba(0,0,0,0.03)] dark:shadow-[inset_0_2px_4px_rgba(0,0,0,0.2)]">
                             <span className="relative flex h-2.5 w-2.5">
                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -328,9 +204,8 @@ export default function EcommerceDashboardPage() {
                             Filtros Inteligentes
                         </div>
 
-                        {/* Filter Inputs Grid */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full flex-1">
-                            {/* 1. Procedimiento select (Tactile Beveled 3D style) */}
+                            {/* Procedimiento */}
                             <div className="relative w-full group">
                                 <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center pointer-events-none z-10 transition-colors duration-300">
                                     <FileText className="h-4 w-4 text-indigo-500 dark:text-indigo-400 group-hover:scale-110 transition-transform duration-300" />
@@ -348,7 +223,7 @@ export default function EcommerceDashboardPage() {
                                 <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
                             </div>
 
-                            {/* 2. Año select (Tactile Beveled 3D style) */}
+                            {/* Año */}
                             <div className="relative w-full group">
                                 <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center pointer-events-none z-10 transition-colors duration-300">
                                     <Calendar className="h-4 w-4 text-violet-500 dark:text-violet-400 group-hover:scale-110 transition-transform duration-300" />
@@ -366,7 +241,7 @@ export default function EcommerceDashboardPage() {
                                 <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
                             </div>
 
-                            {/* 3. Mes select (Tactile Beveled 3D style) */}
+                            {/* Mes */}
                             <div className="relative w-full group">
                                 <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center pointer-events-none z-10 transition-colors duration-300">
                                     <CalendarDays className="h-4 w-4 text-emerald-500 dark:text-emerald-400 group-hover:scale-110 transition-transform duration-300" />
@@ -385,7 +260,6 @@ export default function EcommerceDashboardPage() {
                             </div>
                         </div>
 
-                        {/* Action Button (Elevated physical click style) */}
                         <button
                             onClick={handleClearFilters}
                             className="flex items-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-rose-500/10 to-pink-500/5 hover:from-rose-500 hover:to-pink-500 text-rose-600 hover:text-white border border-rose-500/20 hover:border-transparent text-xs font-black transition-all duration-300 w-full xl:w-auto justify-center shadow-[0_3px_6px_rgba(244,63,94,0.1)] hover:shadow-[0_6px_16px_rgba(244,63,94,0.25)] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.15)] active:translate-y-[1px] active:scale-98"
@@ -396,7 +270,7 @@ export default function EcommerceDashboardPage() {
                     </div>
                 </div>
 
-                {/* --- Main Dashboard Grid --- */}
+                {/* ── Main Dashboard Grid ── */}
                 <div className="space-y-6">
 
                     {/* ROW 1: Key Metrics */}
@@ -416,9 +290,8 @@ export default function EcommerceDashboardPage() {
                         />
                     </div>
 
-                    {/* ROW 2: Charts (Trend + Distribution) */}
+                    {/* ROW 2: Charts */}
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-                        {/* Left: Monthly Trend (Main Chart) */}
                         <div className="lg:col-span-8 h-[320px]">
                             <SalesAreaChart
                                 data={monthlyTrend}
@@ -427,8 +300,6 @@ export default function EcommerceDashboardPage() {
                                 label={processLabel}
                             />
                         </div>
-
-                        {/* Right: Distribution (Radial) */}
                         <div className="lg:col-span-4 h-[320px]">
                             <DistributionRadialChart
                                 data={distribution}
@@ -439,9 +310,8 @@ export default function EcommerceDashboardPage() {
                         </div>
                     </div>
 
-                    {/* ROW 3: Detailed Tables (Bento Grid Style) */}
+                    {/* ROW 3: Map + Tables */}
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-                        {/* Left: Peru Interactive Map Heatmap */}
                         <div className="lg:col-span-6">
                             <PeruInteractiveMap
                                 departmentRanking={finalDeptRanking}
@@ -452,8 +322,6 @@ export default function EcommerceDashboardPage() {
                                 label={processLabel}
                             />
                         </div>
-
-                        {/* Middle: Financial & Contratistas Leaderboards */}
                         <div className="lg:col-span-3">
                             <FinancialEntitiesTable
                                 data={financialEntities}
@@ -462,15 +330,12 @@ export default function EcommerceDashboardPage() {
                                 selectedDepartment={selectedMapDept}
                             />
                         </div>
-
-                        {/* Right: Real-time Activity Radar Feed */}
                         <div className="lg:col-span-3">
                             <ActivityRadar />
                         </div>
                     </div>
 
                 </div>
-
             </div>
         </div>
     );

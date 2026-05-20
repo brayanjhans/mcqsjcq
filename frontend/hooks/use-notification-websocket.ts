@@ -23,7 +23,7 @@ export function useNotificationWebSocket() {
             }
 
             try {
-                const wsUrl = `ws://localhost:8000/api/notifications/ws?token=${token}`;
+                const wsUrl = `ws://localhost:8000/api/notifications/ws`;
                 const ws = new WebSocket(wsUrl);
 
                 ws.onopen = () => {

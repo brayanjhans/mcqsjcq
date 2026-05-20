@@ -176,7 +176,7 @@ export const LicitacionCard: React.FC<Props> = ({
         };
     };
 
-    const statusTheme = getStatusTheme(licitacion.estado_proceso);
+    const statusTheme = getStatusTheme(licitacion.estado_proceso ?? '');
     const statusUpper = licitacion.estado_proceso?.toUpperCase() || "SIN ESTADO";
     const isContratado = statusUpper.includes("CONTRATADO") || statusUpper.includes("ADJUDICADO") || statusUpper.includes("CONSENTIDO");
     const isConvocado = statusUpper.includes("CONVOCADO");

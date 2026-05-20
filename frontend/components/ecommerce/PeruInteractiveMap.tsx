@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import DeckGL from "@deck.gl/react";
 import { GeoJsonLayer, TextLayer } from "@deck.gl/layers";
 import { LightingEffect, AmbientLight, DirectionalLight, FlyToInterpolator } from "@deck.gl/core";
@@ -345,6 +345,9 @@ export const PeruInteractiveMap: React.FC<PeruInteractiveMapProps> = ({
     // Floating Tooltip coordinates
     const [tooltip, setTooltip] = useState<{ name: string; count: number; x: number; y: number } | null>(null);
 
+    // Ref to the map container for tooltip clamping
+    const mapContainerRef = useRef<HTMLDivElement>(null);
+
     // Sync selection with parent
     useEffect(() => {
         if (!selectedDepartment) {
@@ -470,12 +473,16 @@ export const PeruInteractiveMap: React.FC<PeruInteractiveMapProps> = ({
             pitch = 45;
             bearing = 10;
         } else if (nivelActual === 1) {
-            // Map React Simple Maps zoom config to dynamic DeckGL zoom scale
-            deckZoom = 5.8 + (viewConfig.zoom * 0.45);
+            // Calibrated zoom for department-level view in Peru:
+            // bbox span 1–3° → zoom 6.0–5.2, large depts (Loreto ~8°) → 4.5
+            const span1 = getBBoxSpan(provincesGeoJSON?.features ?? []) || 3;
+            deckZoom = Math.min(6.0, Math.max(4.2, 8.5 / (span1 + 0.5)));
             pitch = 48;
             bearing = 15;
         } else if (nivelActual === 2) {
-            deckZoom = 6.2 + (viewConfig.zoom * 0.50);
+            // Calibrated zoom for province-level view (districts)
+            const span2 = getBBoxSpan(districtsGeoJSON?.features ?? []) || 1;
+            deckZoom = Math.min(7.5, Math.max(5.5, 8.0 / (span2 + 0.3)));
             pitch = 50;
             bearing = 20;
         }
@@ -540,7 +547,7 @@ export const PeruInteractiveMap: React.FC<PeruInteractiveMapProps> = ({
         return () => cancelAnimationFrame(animationFrameId);
     }, [nivelActual, currentGeoJSON]);
 
-    // 3. Cinematic auto-rotation sweep continuously at any level (very slow and majestic)
+    // 3. Cinematic auto-rotation sweep continuously at any level (ultra slow and cinematic)
     useEffect(() => {
         if (!isMounted || !isAutoRotating) return;
 
@@ -548,7 +555,7 @@ export const PeruInteractiveMap: React.FC<PeruInteractiveMapProps> = ({
         const rotate = () => {
             setViewState((prev: any) => ({
                 ...prev,
-                bearing: (prev.bearing + 0.025) % 360 // Elegantly slow and majestic orbital drift
+                bearing: (prev.bearing + 0.010) % 360 // Ultra slow cinematic orbital drift
             }));
             animationFrameId = requestAnimationFrame(rotate);
         };
@@ -848,27 +855,37 @@ export const PeruInteractiveMap: React.FC<PeruInteractiveMapProps> = ({
                 </div>
             )}
 
-            {/* Premium Glassmorphic Tooltip */}
-            {tooltip && (
-                <div 
-                    className="fixed pointer-events-none z-[9999] px-4 py-3 bg-[#0A192F]/95 backdrop-blur-md border border-white/10 shadow-2xl rounded-2xl animate-in fade-in duration-200"
-                    style={{ 
-                        left: `${tooltip.x + 15}px`, 
-                        top: `${tooltip.y + 15}px` 
-                    }}
-                >
-                    <p className="text-[9px] uppercase tracking-widest text-indigo-300 font-black mb-0.5">
-                        {nivelActual === 0 ? "DEPARTAMENTO" : nivelActual === 1 ? "PROVINCIA" : "DISTRITO"}
-                    </p>
-                    <h4 className="text-xs font-black text-white uppercase mb-1">{tooltip.name}</h4>
-                    <div className="flex items-center gap-1.5 mt-1.5">
-                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse"></span>
-                        <p className="text-xs font-black text-white">
-                            {new Intl.NumberFormat('es-PE').format(tooltip.count)} <span className="text-slate-400 font-bold">{label}</span>
+            {/* Premium Glassmorphic Tooltip - confined inside map container */}
+            {tooltip && mapContainerRef.current && (() => {
+                const containerRect = mapContainerRef.current!.getBoundingClientRect();
+                const TOOLTIP_W = 190;
+                const TOOLTIP_H = 90;
+                const rawLeft = tooltip.x - containerRect.left + 15;
+                const rawTop  = tooltip.y - containerRect.top  + 15;
+                const clampedLeft = Math.min(rawLeft, containerRect.width  - TOOLTIP_W - 8);
+                const clampedTop  = Math.min(rawTop,  containerRect.height - TOOLTIP_H - 8);
+                return (
+                    <div 
+                        className="absolute pointer-events-none z-[9999] px-4 py-3 bg-[#0A192F]/95 backdrop-blur-md border border-white/10 shadow-2xl rounded-2xl animate-in fade-in duration-200"
+                        style={{ 
+                            left: `${clampedLeft}px`, 
+                            top:  `${clampedTop}px`,
+                            width: `${TOOLTIP_W}px`
+                        }}
+                    >
+                        <p className="text-[9px] uppercase tracking-widest text-indigo-300 font-black mb-0.5">
+                            {nivelActual === 0 ? "DEPARTAMENTO" : nivelActual === 1 ? "PROVINCIA" : "DISTRITO"}
                         </p>
+                        <h4 className="text-xs font-black text-white uppercase mb-1">{tooltip.name}</h4>
+                        <div className="flex items-center gap-1.5 mt-1.5">
+                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse"></span>
+                            <p className="text-xs font-black text-white">
+                                {new Intl.NumberFormat('es-PE').format(tooltip.count)} <span className="text-slate-400 font-bold">{label}</span>
+                            </p>
+                        </div>
                     </div>
-                </div>
-            )}
+                );
+            })()}
 
             {/* Header / Controls */}
             <div className="flex flex-row justify-between items-start mb-2 relative z-10">
@@ -921,7 +938,7 @@ export const PeruInteractiveMap: React.FC<PeruInteractiveMapProps> = ({
                 </div>
             </div>
             {/* Map Container */}
-            <div className="relative rounded-2xl h-[850px] bg-white dark:bg-[#0A192F] border border-slate-200 dark:border-white/10 my-2 overflow-hidden shadow-sm">
+            <div ref={mapContainerRef} className="relative rounded-2xl h-[850px] bg-white dark:bg-[#0A192F] border border-slate-200 dark:border-white/10 my-2 overflow-hidden shadow-sm">
                 {(!isMounted || !currentGeoJSON) ? (
                     <div className="absolute inset-0 bg-white dark:bg-[#0A192F] flex flex-col items-center justify-center text-indigo-600 dark:text-indigo-200 gap-4 animate-pulse">
                         <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600 dark:border-indigo-400"></div>

@@ -2,7 +2,7 @@
 Dashboard endpoints for KPIs and analytics.
 Enhanced version with filters and additional data for executive dashboard.
 """
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Response
 from sqlalchemy.orm import Session
 from sqlalchemy import func, extract, and_
 from app.database import get_db
@@ -265,31 +265,37 @@ def _get_financial_entities_ranking_data(db):
 
 @router.get("/kpis", response_model=DashboardKPIsSchema)
 def get_dashboard_kpis(
+    response: Response,
     estado: Optional[str] = Query(None, description="Filter by estado_proceso"),
     aseguradora: Optional[str] = Query(None, description="Filter by entidad_financiera"),
     tipo_entidad: Optional[str] = Query(None, description="Filter by tipo_procedimiento"),
     objeto: Optional[str] = Query(None, description="Filter by categoria"),
     db: Session = Depends(get_db)
 ):
+    response.headers["Cache-Control"] = "public, max-age=180"
     return _get_kpis_data(estado, aseguradora, tipo_entidad, objeto, db=db)
 
 
 @router.get("/monthly-trend")
 def get_monthly_trend(
+    response: Response,
     year: Optional[int] = Query(None, description="Filter by year"),
     db: Session = Depends(get_db)
 ):
+    response.headers["Cache-Control"] = "public, max-age=180"
     current_year = year or datetime.now().year
     return _get_monthly_trend_data(current_year, db=db)
 
 
 @router.get("/distribution-by-type")
-def get_distribution_by_type(db: Session = Depends(get_db)):
+def get_distribution_by_type(response: Response, db: Session = Depends(get_db)):
+    response.headers["Cache-Control"] = "public, max-age=180"
     return _get_distribution_data(db=db)
 
 
 @router.get("/stats-by-status")
-def get_stats_by_status(db: Session = Depends(get_db)):
+def get_stats_by_status(response: Response, db: Session = Depends(get_db)):
+    response.headers["Cache-Control"] = "public, max-age=180"
     return _get_stats_by_status_data(db=db)
 
 
@@ -336,10 +342,12 @@ def get_filter_options(db: Session = Depends(get_db)):
 
 
 @router.get("/department-ranking")
-def get_department_ranking(db: Session = Depends(get_db)):
+def get_department_ranking(response: Response, db: Session = Depends(get_db)):
+    response.headers["Cache-Control"] = "public, max-age=180"
     return _get_department_ranking_data(db=db)
 
 
 @router.get("/financial-entities-ranking")
-def get_financial_entities_ranking(db: Session = Depends(get_db)):
+def get_financial_entities_ranking(response: Response, db: Session = Depends(get_db)):
+    response.headers["Cache-Control"] = "public, max-age=180"
     return _get_financial_entities_ranking_data(db=db)
